@@ -1,22 +1,20 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "1552250",
+  "sha": "c29371f",
   "ref": "dev",
-  "at": "2026-11-14T21:55:22.047Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43645227181",
+  "at": "2026-11-14T21:57:59.867Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43645469996",
   "logs": {
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
-      "creating \"BabyLog TEST\" (sheet + bound script)",
       "::add-mask::[token]",
-      "script created and its id saved",
+      "using existing test script",
       "server bundle ready (test, 26 KB)",
-      "Pushed 2 files at 9:55:16 PM.",
-      "└─ apps-script/dist/appsscript.json",
-      "└─ apps-script/dist/Code.js",
+      "Script is already up to date.",
       "::add-mask::[deployment]",
-      "created web app deployment (version 1)",
+      "::add-mask::[deployment]",
+      "redeployed existing web app deployment (version 2)",
       "::add-mask::[deployment]",
       "test server deployed"
     ],
@@ -26,7 +24,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 653 packages, and audited 654 packages in 4s",
+      "added 653 packages, and audited 654 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -43,7 +41,7 @@
     ],
     "live-test": [
       "+ npx tsx scripts/live-test.ts",
-      "PENDING  server answered with a non-API page (HTTP 403). The owner has not approved the script yet (run setup once). Live test skipped."
+      "PENDING  server answered with a non-API page (HTTP 403, page title: \"Access Denied\"). The owner has probably not approved the script yet (run setup once). Live test skipped."
     ]
   }
 }
