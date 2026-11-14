@@ -29,8 +29,8 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - [x] Stage 4: app home screen (status bar, buttons, undo, lock, offline queue, night mode)
 - [x] Stage 5: backfill form, history, edit, soft delete
 - [x] Stage 6: daily summary and settings
-- [ ] Stage 7: Siri shortcut generator, signing script for the Mac, install guide
-- [ ] Stage 8: "read me" sheet tab, AI test questions, owner guides
+- [x] Stage 7: Siri shortcut generator (`scripts/shortcuts`), Mac signing script, install guide `docs/INSTALL.he.md`. NOT verified on a real device: see Open risks
+- [x] Stage 8: "read me" sheet tab (in `setup()`), AI test questions and owner guide (in `docs/INSTALL.he.md`)
 
 ## Owner actions still pending (cannot be done by the agent)
 - Enable GitHub Pages once: repository Settings > Pages > Source: Deploy from a branch > `gh-pages` / root. (The pipeline publishes to that branch; the sandbox cannot call the Pages API.)
@@ -51,3 +51,17 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   in-memory tombstones in the engine (fixed, unit-tested). Summary e2e tests pin the app clock (`page.clock`)
   so they do not depend on the time of day.
 - Dev tip: `npm run build && npx playwright test --trace off` runs e2e; the config starts preview + mock servers.
+- Stages 7-8 done: shortcuts are self-contained (address/key/name are filled in locally by `sign.sh` on the owner's
+  Mac, so nothing secret or personal is in the repo or on the site). 143 unit tests + 45 e2e tests pass locally and in CI.
+- Pipeline finding: Google reports the web app deployments as ANYONE_ANONYMOUS / USER_DEPLOYING, but anonymous calls
+  still get HTTP 403 "Access Denied" until the owner runs `setup` once (assumed cause, unconfirmed). The live test
+  reports PENDING until then; after approval it must report LIVE TEST PASSED.
+- Pages: publishing to `gh-pages` works; the site stays 404 until the owner enables Pages (Settings > Pages > gh-pages).
+
+## Open risks to verify with the owner (cannot be tested in the cloud sandbox)
+1. Live test after the owner ran `setup`: expect "LIVE TEST PASSED" (else follow the troubleshooting list in INSTALL.he.md).
+2. Shortcut files: `shortcuts sign` must accept them and iOS must import them. Structure follows the open-source
+   shortcuts-js reference and a documented subset (see tests/shortcut-interp.ts). If rejected, fall back to the manual recipe.
+3. Whether a network shortcut runs while the phone is locked (may ask for Face ID).
+4. Gemini reading a sheet shared from another account.
+5. First real use of the app on iPhone Safari/PWA: install flow, safe areas, status bar, date/time pickers.
