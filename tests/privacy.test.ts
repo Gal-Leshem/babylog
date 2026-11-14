@@ -19,10 +19,10 @@ describe('privacy word matching', () => {
   });
 
   it('does not match inside longer words', () => {
-    const d = p('Gal');
-    expect(matches('gallery', d)).toBe(false);
-    expect(matches('Galaxy', d)).toBe(false);
-    expect(matches('by gal.', d)).toBe(true);
+    const d = p('Sam');
+    expect(matches('sample', d)).toBe(false);
+    expect(matches('Samurai', d)).toBe(false);
+    expect(matches('by sam.', d)).toBe(true);
   });
 
   it('matches Hebrew names with and without one-letter prefixes', () => {
