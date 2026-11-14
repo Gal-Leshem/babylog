@@ -19,7 +19,7 @@ const outDir = process.env.RUNNER_TEMP ?? tmpdir();
 const sha = (process.env.GITHUB_SHA ?? 'local').slice(0, 7);
 
 const clasp = (...args: string[]): string =>
-  execFileSync('node_modules/.bin/clasp', ['-A', authDir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('node_modules/.bin/clasp', ['-A', join(authDir, '.clasprc.json'), ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
 const mask = (v: string) => console.log(`::add-mask::${v}`);
 
