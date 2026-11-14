@@ -219,6 +219,28 @@ describe('undo', () => {
     expect(server.all()[0]).toMatchObject({ id: 'a', deleted: true });
   });
 
+  it('can restore an event after the delete was sent and the server list no longer returns it', async () => {
+    const e = makeEngine();
+    e.dispatch(feed('a'));
+    await idle();
+    e.dispatch({ action: 'delete', id: 'a' });
+    await idle();
+    await e.refresh(); // the server does not list deleted rows, so the local copy forgets it
+    expect(e.getState().allEvents.some((x) => x.id === 'a')).toBe(false);
+    const r = e.dispatch({ action: 'restore', id: 'a' });
+    expect(r).toMatchObject({ ok: true });
+    expect(e.getState().events.map((x) => x.id)).toEqual(['a']); // visible at once
+    await idle();
+    expect(server.all()[0]).toMatchObject({ id: 'a', deleted: false });
+    await e.refresh();
+    expect(e.getState().events.map((x) => x.id)).toEqual(['a']);
+  });
+
+  it('refuses to restore something it never knew', () => {
+    const e = makeEngine();
+    expect(e.dispatch({ action: 'restore', id: 'ghost' })).toMatchObject({ ok: false, error: 'not_found' });
+  });
+
   it('can restore a deleted event', async () => {
     const e = makeEngine();
     e.dispatch(feed('a'));

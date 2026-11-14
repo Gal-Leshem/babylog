@@ -80,6 +80,8 @@ export class Engine {
   private listeners = new Set<() => void>();
   private snapshot: EngineState;
 
+  /** Recently deleted events (memory only), so an undo can bring one back after the server stopped listing it. */
+  private tombstones = new Map<string, BabyEvent>();
   private flushing = false;
   private refreshing = false;
   private inFlight: string | null = null;
@@ -158,6 +160,11 @@ export class Engine {
     this.emit();
   }
 
+  clearError(): void {
+    this.lastError = null;
+    this.emit();
+  }
+
   setMe(me: string): void {
     if (!this.config) return;
     this.configure({ ...this.config, me });
@@ -181,10 +188,19 @@ export class Engine {
    * Returns the local outcome, which is exactly what the server would answer.
    */
   dispatch(req: ApiRequest): DispatchResult {
+    if (req.action === 'restore' && !this.p.serverEvents.some((e) => e.id === req.id)) {
+      const tomb = this.tombstones.get(req.id);
+      if (tomb) this.p.serverEvents.push({ ...tomb, deleted: true });
+      this.snapshot = this.compute();
+    }
     const store = new MemoryStore(this.snapshot.allEvents, this.snapshot.settings);
     const r: ApiResponse = handle({ key: '', ...req }, localDeps(store, this.now));
     if (!r.ok) return { ok: false, error: r.error, detail: r.detail };
     if (r.duplicate || r.noop) return { ok: true, opId: '', event: r.event, noop: r.noop, duplicate: r.duplicate, queued: false };
+    if (req.action === 'delete' && r.event) {
+      this.tombstones.set(req.id, r.event);
+      if (this.tombstones.size > 50) this.tombstones.delete(this.tombstones.keys().next().value as string);
+    }
     const op: Op = { opId: this.newId(), req, at: this.now() };
     this.p.queue.push(op);
     this.persist();

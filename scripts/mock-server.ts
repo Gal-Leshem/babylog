@@ -4,8 +4,15 @@ import { MemoryStore } from '../src/server/memory-store';
 
 /** Local stand-in for the Apps Script server: same core, memory storage. Used by e2e tests and dev. */
 export function startMockServer(port = 8787, key = 'test-key') {
-  const store = new MemoryStore();
-  const deps: Deps = { store, now: () => Date.now(), checkKey: (k) => k === key, withLock: (fn) => fn() };
+  let store = new MemoryStore();
+  const deps: Deps = {
+    get store() {
+      return store;
+    },
+    now: () => Date.now(),
+    checkKey: (k) => k === key,
+    withLock: (fn) => fn(),
+  };
   const calls: unknown[] = [];
   let delayMs = 0;
   let offline = false;
@@ -17,8 +24,22 @@ export function startMockServer(port = 8787, key = 'test-key') {
       const q = new URL(req.url, 'http://x').searchParams;
       if (q.has('offline')) offline = q.get('offline') === '1';
       if (q.has('delay')) delayMs = Number(q.get('delay'));
-      if (q.has('reset')) store.setSettings(new MemoryStore().getSettings());
+      if (q.has('reset')) {
+        store = new MemoryStore();
+        calls.length = 0;
+        offline = false;
+        delayMs = 0;
+      }
       return void res.writeHead(200).end('ok');
+    }
+    if (req.method === 'POST' && req.url?.startsWith('/__seed')) {
+      let raw = '';
+      req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        for (const e of JSON.parse(raw) as import('../src/shared/types').BabyEvent[]) store.append(e);
+        res.writeHead(200).end('ok');
+      });
+      return;
     }
     if (req.method === 'GET') return void res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"ok":true,"app":"babylog"}');
     let body = '';
@@ -38,7 +59,9 @@ export function startMockServer(port = 8787, key = 'test-key') {
     });
   });
   return {
-    store,
+    get store() {
+      return store;
+    },
     calls,
     listen: () => new Promise<void>((r) => server.listen(port, '127.0.0.1', r)),
     close: () => new Promise<void>((r) => server.close(() => r())),
