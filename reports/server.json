@@ -1,33 +1,11 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "c29371f",
-  "ref": "main",
-  "at": "2026-11-14T21:58:25.092Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43645472523",
+  "sha": "1fb703b",
+  "ref": "dev",
+  "at": "2026-11-14T22:01:47.700Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43645785810",
   "logs": {
-    "deploy-prod": [
-      "+ npx tsx scripts/deploy-server.ts prod",
-      "creating \"BabyLog\" (sheet + bound script)",
-      "::add-mask::[token]",
-      "To https://github.com/[redacted]-[redacted]/babylog",
-      " ! [rejected]        HEAD -> ci-status (fetch first)",
-      "error: failed to push some refs to 'https://github.com/[redacted]-[redacted]/babylog'",
-      "hint: Updates were rejected because the remote contains work that you do not",
-      "hint: have locally. This is usually caused by another repository pushing to",
-      "hint: the same ref. If you want to integrate the remote changes, use",
-      "hint: 'git pull' before pushing again.",
-      "hint: See the 'Note about fast-forwards' in 'git push --help' for details.",
-      "script created and its id saved",
-      "server bundle ready (production, 26 KB)",
-      "Pushed 2 files at 9:58:21 PM.",
-      "└─ apps-script/dist/appsscript.json",
-      "└─ apps-script/dist/Code.js",
-      "::add-mask::[deployment]",
-      "created web app deployment (version 1)",
-      "::add-mask::[deployment]",
-      "prod server deployed"
-    ],
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
       "::add-mask::[token]",
@@ -36,7 +14,7 @@
       "Script is already up to date.",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "redeployed existing web app deployment (version 3)",
+      "redeployed existing web app deployment (version 4)",
       "::add-mask::[deployment]",
       "test server deployed"
     ],
@@ -46,7 +24,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 653 packages, and audited 654 packages in 6s",
+      "added 653 packages, and audited 654 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -63,7 +41,8 @@
     ],
     "live-test": [
       "+ npx tsx scripts/live-test.ts",
-      "PENDING  server answered with a non-API page (HTTP 403, page title: \"Access Denied\"). The owner has probably not approved the script yet (run setup once). Live test skipped."
+      "PENDING  server answered with a non-API page (HTTP 403, page title: \"Access Denied\"). The owner has probably not approved the script yet (run setup once). Live test skipped.",
+      "page text: Access Denied &nbsp;Drive You need access Open the document directly to see if requesting access is possible, or switch to an account with access. Learn more You are signed in as"
     ]
   }
 }
