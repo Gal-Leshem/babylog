@@ -6,7 +6,7 @@
   "description": "Shared baby log: PWA + Apps Script server + iOS shortcuts",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && tsx scripts/build-shortcuts.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:server": "tsx scripts/build-server.ts",
@@ -22,7 +22,9 @@
     "@preact/preset-vite": "2.10.6",
     "@types/google-apps-script": "2.0.8",
     "@types/node": "22.15.0",
+    "@types/plist": "3.0.5",
     "esbuild": "0.28.2",
+    "plist": "3.1.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vite": "8.3.8",

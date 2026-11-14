@@ -64,6 +64,8 @@ export function startMockServer(port = 8787, key = 'test-key') {
     },
     calls,
     listen: () => new Promise<void>((r) => server.listen(port, '127.0.0.1', r)),
+    /** The port actually in use (useful when started with port 0). */
+    port: () => (server.address() as { port: number }).port,
     close: () => new Promise<void>((r) => server.close(() => r())),
   };
 }

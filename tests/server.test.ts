@@ -152,6 +152,24 @@ describe('asleep / awake', () => {
   });
 });
 
+describe('shortcut conventions', () => {
+  it('treats "-" as no detail', () => {
+    expect(ok(log('vitamin_d', '-', '2026-11-14 11:00')).event).toMatchObject({ type: 'vitamin_d', detail: '' });
+    expect(log('feed', '-', '2026-11-14 11:00')).toMatchObject({ ok: false, error: 'invalid_event' });
+  });
+
+  it('accepts "start" as the wake-up time and ignores unrelated fields', () => {
+    call({ action: 'asleep', id: 'a', user: 'P', source: 'siri', start: '2026-11-14 10:00', type: '-', detail: '-' });
+    const w = ok(call({ action: 'awake', id: 'b', user: 'P', source: 'siri', start: '2026-11-14 11:30', type: '-', detail: '-' }));
+    expect(w.speech).toBe('Awake. Slept 1 hour 30 minutes');
+    expect(store.all()[0]).toMatchObject({ end: '2026-11-14 11:30' });
+  });
+
+  it('answers status when extra fields are present', () => {
+    expect(ok(call({ action: 'status', id: 'x', user: 'P', source: 'siri', type: '-', detail: '-', start: '2026-11-14 12:00' })).speech).toBe('No feeds logged yet');
+  });
+});
+
 describe('update, delete, restore', () => {
   it('edits fields, stamps edited and keeps created', () => {
     const e = ok(log('feed', 'left', '2026-11-14 11:00')).event!;

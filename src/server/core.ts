@@ -243,7 +243,9 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
   if (existing) return { ok: true, duplicate: true, event: existing, speech: speechForLogged(existing, store.recent(RECENT_ROWS)) };
 
   const type = o.type as BabyEvent['type'];
-  const e = newEvent(o, type, optString(o, 'detail', 20), optString(o, 'start', 16), optString(o, 'end', 16), now);
+  // iOS shortcuts cannot send an empty field reliably, so "-" means "no detail".
+  const rawDetail = optString(o, 'detail', 20);
+  const e = newEvent(o, type, rawDetail === '-' ? '' : rawDetail, optString(o, 'start', 16), optString(o, 'end', 16), now);
   validateEvent(e, now);
   const recent = store.recent(RECENT_ROWS);
 
@@ -280,7 +282,8 @@ function asleep(o: Obj, deps: Deps, now: number): ApiResponse {
 function awake(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
-  const end = optString(o, 'end', 16);
+  // Shortcuts always send "start" (their current time); accept it as the wake-up time when no "end" is given.
+  const end = optString(o, 'end', 16) || optString(o, 'start', 16);
   const existing = store.find(id);
   if (existing) return { ok: true, duplicate: true, event: existing, speech: speechAwake(sleepMinutes(existing)) };
 
