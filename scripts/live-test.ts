@@ -35,6 +35,21 @@ const check = (name: string, cond: boolean, detail = '') => {
   if (!cond) failures++;
 };
 
+async function redirectTrace(method: 'GET' | 'POST'): Promise<string> {
+  // follow redirects by hand and describe each hop without printing ids
+  const hops: string[] = [];
+  let target = url;
+  for (let i = 0; i < 5; i++) {
+    const res = await fetch(target, { method: i === 0 ? method : 'GET', redirect: 'manual', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: i === 0 && method === 'POST' ? JSON.stringify({ key, action: 'ping' }) : undefined });
+    const loc = res.headers.get('location');
+    const where = loc ? `${new URL(loc, target).host}${new URL(loc, target).pathname.replace(/\/s\/[\w-]+/, '/s/[id]').replace(/\/macros\/echo.*/, '/macros/echo')}` : '';
+    hops.push(`${res.status}${where ? ` -> ${where}` : ''}`);
+    if (!loc) break;
+    target = new URL(loc, target).toString();
+  }
+  return `${method}: ${hops.join(' | ')}`;
+}
+
 const first = await call({ action: 'ping' });
 if (!first.json) {
   const looksLikeAuth = /accounts\.google\.com|authorization|sign in|ServiceLogin|Google Accounts|script\.google\.com\/macros\/(?:d|s)/i.test(first.raw);
@@ -43,6 +58,8 @@ if (!first.json) {
     const text = first.raw.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
     console.log(`PENDING  server answered with a non-API page (HTTP ${first.status}, page title: "${title}"). The owner has probably not approved the script yet (run setup once). Live test skipped.`);
     console.log(`page text: ${text}`);
+    console.log(await redirectTrace('POST'));
+    console.log(await redirectTrace('GET'));
     process.exit(0);
   }
   console.log(`FAIL  ping returned a non-JSON answer (HTTP ${first.status}, ${first.raw.length} chars)`);

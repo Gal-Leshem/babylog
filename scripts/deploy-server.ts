@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { describeDeployments } from './google-api';
 
 /**
  * Deploys the Apps Script server (creates the sheet + script on first run).
@@ -97,6 +98,13 @@ if (webApps.length > 0) {
   console.log(`created web app deployment (version ${d.versionNumber ?? '?'})`);
 }
 mask(deploymentId);
+
+// 3b. Diagnostics: what access settings does Google report for the deployments?
+try {
+  for (const line of await describeDeployments(join(authDir, '.clasprc.json'), scriptId)) console.log(line);
+} catch (e) {
+  console.log(`could not describe deployments: ${e instanceof Error ? e.message : String(e)}`);
+}
 
 // 4. Hand the (secret) URL to later steps of this job only
 writeFileSync(join(outDir, `server-${env}.json`), JSON.stringify({ url: `https://script.google.com/macros/s/${deploymentId}/exec` }));
