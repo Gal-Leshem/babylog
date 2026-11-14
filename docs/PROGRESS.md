@@ -33,6 +33,7 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - [ ] Stage 8: "read me" sheet tab, AI test questions, owner guides
 
 ## Owner actions still pending (cannot be done by the agent)
+- Enable GitHub Pages once: repository Settings > Pages > Source: Deploy from a branch > `gh-pages` / root. (The pipeline publishes to that branch; the sandbox cannot call the Pages API.)
 - Approve sheet permissions for both servers: open each script, run `setup`, approve (about 3 min).
 - Install the app on both phones and paste the setup code printed by `setup`.
 - On the Mac: run the single shortcuts signing command, AirDrop the files.

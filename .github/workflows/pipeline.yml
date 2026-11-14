@@ -109,6 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -129,6 +130,12 @@ jobs:
         run: bash scripts/run-logged.sh privacy npm run privacy
       - name: Publish to GitHub Pages branch
         run: bash scripts/run-logged.sh publish bash scripts/publish-pages.sh
+      - name: Try to enable GitHub Pages (may be refused; then enable it once in the repository settings)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/run-logged.sh enable-pages bash -c 'gh api -X POST "repos/$GITHUB_REPOSITORY/pages" -f "source[branch]=gh-pages" -f "source[path]=/" --silent && echo "pages enabled" || echo "could not enable pages automatically"'
       - name: Verify the live site
         run: bash scripts/run-logged.sh verify node scripts/verify-pages.mjs
       - name: Report

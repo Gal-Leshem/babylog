@@ -40,7 +40,9 @@ if (!first.json) {
   const looksLikeAuth = /accounts\.google\.com|authorization|sign in|ServiceLogin|Google Accounts|script\.google\.com\/macros\/(?:d|s)/i.test(first.raw);
   if (looksLikeAuth || first.status === 401 || first.status === 403 || first.status === 404) {
     const title = /<title>([^<]*)<\/title>/i.exec(first.raw)?.[1]?.trim().slice(0, 80) ?? '(no title)';
+    const text = first.raw.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
     console.log(`PENDING  server answered with a non-API page (HTTP ${first.status}, page title: "${title}"). The owner has probably not approved the script yet (run setup once). Live test skipped.`);
+    console.log(`page text: ${text}`);
     process.exit(0);
   }
   console.log(`FAIL  ping returned a non-JSON answer (HTTP ${first.status}, ${first.raw.length} chars)`);
