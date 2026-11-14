@@ -153,9 +153,14 @@ export class Engine {
 
   // ---------- configuration ----------
 
-  configure(cfg: Config): void {
+  /** Stores the connection. `settings` (if known, e.g. from first-run setup) are shown until the first refresh. */
+  configure(cfg: Config, settings?: Settings): void {
     this.config = cfg;
     this.storage.set(CONFIG_KEY, cfg);
+    if (settings) {
+      this.p.settings = settings;
+      this.persist();
+    }
     this.status = 'idle';
     this.emit();
   }

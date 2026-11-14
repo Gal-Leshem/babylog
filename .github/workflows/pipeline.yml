@@ -49,6 +49,10 @@ jobs:
         run: bash scripts/run-logged.sh privacy npm run privacy
       - run: bash scripts/run-logged.sh playwright-install npx playwright install --with-deps chromium
       - run: bash scripts/run-logged.sh e2e npm run e2e
+      - name: End-to-end tests again with a slow server (finds timing problems)
+        env:
+          MOCK_DELAY: '250'
+        run: bash scripts/run-logged.sh e2e-slow npm run e2e
       - name: Report
         if: always()
         env:

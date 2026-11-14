@@ -14,7 +14,8 @@ export function startMockServer(port = 8787, key = 'test-key') {
     withLock: (fn) => fn(),
   };
   const calls: unknown[] = [];
-  let delayMs = 0;
+  const baseDelay = Number(process.env.MOCK_DELAY ?? 0);
+  let delayMs = baseDelay;
   let offline = false;
   const server = createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +29,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
         store = new MemoryStore();
         calls.length = 0;
         offline = false;
-        delayMs = 0;
+        delayMs = baseDelay;
       }
       return void res.writeHead(200).end('ok');
     }

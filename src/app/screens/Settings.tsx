@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode } from '../config';
 import { engine, setNightMode, useEngine, usePrefs } from '../state';
 
@@ -18,14 +18,27 @@ export function Settings() {
   const [win, setWin] = useState(String(st.settings.mergeWindowMin));
   const [msg, setMsg] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const synced = useRef(JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]));
 
-  // Pick up server changes (e.g. the other parent renamed something) when nothing is being edited.
+  // Pick up server changes (e.g. the other parent renamed something), but only when the values really
+  // changed and never over something that is being typed.
   useEffect(() => {
+    const now = JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]);
+    if (now === synced.current) return;
+    synced.current = now;
+    if (dirty) return;
     setBaby(st.settings.babyName);
     setP1(st.settings.parents[0]);
     setP2(st.settings.parents[1]);
     setWin(String(st.settings.mergeWindowMin));
-  }, [st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]);
+  }, [st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin, dirty]);
+
+  const edit = (set: (v: string) => void) => (e: Event) => {
+    setDirty(true);
+    setMsg('');
+    set((e.target as HTMLInputElement).value);
+  };
 
   const save = () => {
     const n = Number(win);
@@ -38,6 +51,7 @@ export function Settings() {
     const old = st.settings.parents;
     if (me === old[0] && p1.trim() !== old[0]) engine.setMe(p1.trim());
     else if (me === old[1] && p2.trim() !== old[1]) engine.setMe(p2.trim());
+    setDirty(false);
     setMsg('נשמר');
   };
 
@@ -56,13 +70,13 @@ export function Settings() {
 
       <h3>פרטים (נשמרים בגיליון)</h3>
       <label class="fl">שם התינוק</label>
-      <input data-testid="baby-name" value={baby} maxLength={40} onInput={(e) => setBaby((e.target as HTMLInputElement).value)} />
+      <input data-testid="baby-name" value={baby} maxLength={40} onInput={edit(setBaby)} />
       <label class="fl">הורה 1</label>
-      <input data-testid="parent-1" value={p1} maxLength={20} onInput={(e) => setP1((e.target as HTMLInputElement).value)} />
+      <input data-testid="parent-1" value={p1} maxLength={20} onInput={edit(setP1)} />
       <label class="fl">הורה 2</label>
-      <input data-testid="parent-2" value={p2} maxLength={20} onInput={(e) => setP2((e.target as HTMLInputElement).value)} />
+      <input data-testid="parent-2" value={p2} maxLength={20} onInput={edit(setP2)} />
       <label class="fl">חלון איחוד הנקות (דקות)</label>
-      <input data-testid="merge-window" type="number" inputMode="numeric" min={0} max={180} value={win} onInput={(e) => setWin((e.target as HTMLInputElement).value)} />
+      <input data-testid="merge-window" type="number" inputMode="numeric" min={0} max={180} value={win} onInput={edit(setWin)} />
       <div class="actions">
         <button type="button" class="primary" data-testid="save-settings" onClick={save}>
           שמירה

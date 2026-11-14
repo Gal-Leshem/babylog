@@ -66,6 +66,7 @@ export async function install(page: Page, who: 1 | 2 = 1): Promise<void> {
   await page.getByTestId(`me-${who}`).click();
   await page.getByTestId('finish').click();
   await expect(page.getByTestId('home')).toBeVisible();
+  await expect(page.getByTestId('banner-sync')).toBeHidden(); // first-run syncing is done
 }
 
 /** Sets up a device that is already installed against a server that already has names. */

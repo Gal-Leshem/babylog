@@ -334,6 +334,13 @@ describe('robustness', () => {
     expect(makeEngine().getState().pending).toBe(0);
   });
 
+  it('shows the settings handed over at first-run setup before any refresh', () => {
+    const e = new Engine({ storage, fetchImpl, now: () => clock });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'A' }, { babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'] });
+    expect(e.getState().settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'] });
+    expect(new Engine({ storage, fetchImpl, now: () => clock }).getState().settings.parents).toEqual(['A', 'B']); // persisted
+  });
+
   it('forgets everything on reset', async () => {
     const e = makeEngine();
     e.dispatch(feed('a'));

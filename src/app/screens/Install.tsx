@@ -39,7 +39,7 @@ export function Install() {
     if (!a || !b || a === b || !baby.trim()) return setError('מלאו שני שמות שונים להורים ושם לתינוק');
     // "me" follows a renamed parent
     const chosen = me === conn.settings.parents[0] ? a : me === conn.settings.parents[1] ? b : me;
-    engine.configure({ url: conn.url, key: conn.key, me: chosen });
+    engine.configure({ url: conn.url, key: conn.key, me: chosen }, conn.settings);
     const s = conn.settings;
     if (a !== s.parents[0] || b !== s.parents[1] || baby.trim() !== s.babyName) {
       engine.dispatch({ action: 'settings', set: { parents: [a, b], babyName: baby.trim() } });
