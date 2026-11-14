@@ -1,0 +1,15 @@
+node_modules/
+dist/
+apps-script/dist/
+coverage/
+test-results/
+playwright-report/
+*.log
+.env
+.env.*
+.clasprc.json
+.DS_Store
+.ci-status/
+.ci-logs/
+.pages-tmp/
+.clasp.json

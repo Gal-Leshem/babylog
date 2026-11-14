@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": [
+      "node",
+      "google-apps-script",
+      "vite/client",
+      "vite-plugin-pwa/client"
+    ],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src",
+    "scripts",
+    "e2e",
+    "tests",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ]
+}

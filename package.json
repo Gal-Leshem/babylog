@@ -1,0 +1,32 @@
+{
+  "name": "babylog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared baby log: PWA + Apps Script server + iOS shortcuts",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build:server": "tsx scripts/build-server.ts",
+    "privacy": "tsx scripts/privacy-check.ts",
+    "e2e": "playwright test --trace off --pass-with-no-tests"
+  },
+  "dependencies": {
+    "preact": "11.2.0"
+  },
+  "devDependencies": {
+    "@google/clasp": "3.4.1",
+    "@playwright/test": "1.63.0",
+    "@preact/preset-vite": "2.10.6",
+    "@types/google-apps-script": "2.0.8",
+    "@types/node": "22.15.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "5.1.0"
+  }
+}
