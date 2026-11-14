@@ -23,9 +23,9 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 
 ## Stage checklist (see ARCHITECTURE.md for the design)
 - [x] Stage 0: repo connected, push access verified, secrets stored by the owner
-- [ ] Stage 1: project skeleton, CI pipeline, first deploy to GitHub Pages
-- [ ] Stage 2: shared domain logic with unit tests (time zone, feed merge, sleep state, summaries, Siri phrases)
-- [ ] Stage 3: server core + Apps Script wrapper + sheet creation via Actions (test + prod scripts)
+- [x] Stage 1: project skeleton, PWA shell, CI pipeline (tests, privacy guard, report branch). First Pages deploy: see Log
+- [x] Stage 2: shared domain logic with unit tests (time zone, feed merge, sleep state, summaries, Siri phrases)
+- [x] Stage 3: server core + Apps Script wrapper, tested against a fake Google runtime; TEST sheet+script created and deployed by the pipeline. Live test is PENDING until the owner approves the script once (run `setup`).
 - [ ] Stage 4: app home screen (status bar, buttons, undo, lock, offline queue, night mode)
 - [ ] Stage 5: backfill form, history, edit, soft delete
 - [ ] Stage 6: daily summary and settings
@@ -39,3 +39,8 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 
 ## Log
 - Stage 0 done: repository empty at start; push works after the GitHub app was installed on the repo.
+- Stage 1-3 done on branch `dev` (87 unit tests green in CI, privacy check green, TEST server deployed).
+  Findings worth remembering: clasp `-A` needs the credential FILE path, not a folder; bound scripts cannot be
+  found by title (their id is stored on `ci-status:envs/<env>.json`); the report sanitizer redacts word-list
+  hits as substrings (e.g. inside ordinary words), which is intended.
+- Live test prints PENDING (HTTP 403) before the owner has run `setup` once. After approval it must say LIVE TEST PASSED.
