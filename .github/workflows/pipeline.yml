@@ -1,0 +1,139 @@
+name: pipeline
+
+# Only branch pushes trigger this: no pull_request / fork triggers, so outside contributors can never run code with secrets.
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pipeline-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  NO_COLOR: '1'
+  FORCE_COLOR: '0'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # publishes the sanitized report to the ci-status branch
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: bash scripts/run-logged.sh install npm ci
+      - run: bash scripts/run-logged.sh typecheck npm run typecheck
+      - name: Unit tests
+        env:
+          # the unit tests exercise the privacy check with their own word lists
+          PRIVACY_DENYLIST: ''
+        run: bash scripts/run-logged.sh unit npm test
+      - run: bash scripts/run-logged.sh build-app npm run build
+      - run: bash scripts/run-logged.sh build-server npm run build:server
+      - name: Privacy check (tree, build output, git history)
+        env:
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: bash scripts/run-logged.sh privacy npm run privacy
+      - run: bash scripts/run-logged.sh playwright-install npx playwright install --with-deps chromium
+      - run: bash scripts/run-logged.sh e2e npm run e2e
+      - name: Report
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: bash scripts/report.sh test
+
+  server:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: bash scripts/run-logged.sh install npm ci
+      - name: Google credentials and test key
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/clasp"
+          printf '%s' "$CLASPRC_JSON" > "$RUNNER_TEMP/clasp/.clasprc.json"
+          chmod 600 "$RUNNER_TEMP/clasp/.clasprc.json"
+          echo "CLASP_AUTH_DIR=$RUNNER_TEMP/clasp" >> "$GITHUB_ENV"
+          # The test server accepts a key derived from the credential, so no extra secret is needed.
+          KEY=$(node -e "const c=require('crypto');const j=JSON.parse(process.env.CLASPRC_JSON);const rt=(j.tokens&&j.tokens.default?j.tokens.default:j).refresh_token;process.stdout.write(c.createHmac('sha256',rt).update('babylog-test-key').digest('hex'))")
+          echo "::add-mask::$KEY"
+          echo "FIXED_KEY=$KEY" >> "$GITHUB_ENV"
+      - run: bash scripts/status-branch.sh init
+      - name: Deploy test server
+        run: bash scripts/run-logged.sh deploy-test npx tsx scripts/deploy-server.ts test
+      - name: Live test against the test server
+        run: bash scripts/run-logged.sh live-test npx tsx scripts/live-test.ts
+      - name: Deploy production server
+        if: github.ref == 'refs/heads/main'
+        run: bash scripts/run-logged.sh deploy-prod npx tsx scripts/deploy-server.ts prod
+      - name: Report
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: |
+          rm -f "$RUNNER_TEMP/clasp/.clasprc.json"
+          bash scripts/report.sh server
+
+  pages:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: bash scripts/run-logged.sh install npm ci
+      - run: bash scripts/run-logged.sh build-app npm run build
+      - name: Privacy check on the built site
+        env:
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: bash scripts/run-logged.sh privacy npm run privacy
+      - name: Publish to GitHub Pages branch
+        run: bash scripts/run-logged.sh publish bash scripts/publish-pages.sh
+      - name: Verify the live site
+        run: bash scripts/run-logged.sh verify node scripts/verify-pages.mjs
+      - name: Report
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: bash scripts/report.sh pages
