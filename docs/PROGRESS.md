@@ -36,6 +36,9 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - Live test against the test server reports PENDING (HTTP 403 "Access Denied") until the owner runs `setup` once.
 - Nothing is left to build for the agreed MVP. Remaining work is verification with the owner and polish (see Ideas).
 
+- Owner reported (Sun morning) that Pages is enabled (site answers HTTP 200) and that `setup` was run in the script editor;
+  verifying via the live test, which only exercises the TEST server (PASSED = approved there).
+
 ## Stage checklist (see ARCHITECTURE.md for the design)
 - [x] Stage 0: repo connected, push access verified, secrets stored by the owner
 - [x] Stage 1: project skeleton, PWA shell, CI pipeline (tests, privacy guard, report branch). First Pages deploy: see Log
