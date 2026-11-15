@@ -1,20 +1,22 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "afb1500",
+  "sha": "ae26aea",
   "ref": "dev",
-  "at": "2026-11-15T08:20:07.217Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43693747210",
+  "at": "2026-11-15T08:42:59.977Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43695528023",
   "logs": {
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
       "::add-mask::[token]",
       "using existing test script",
-      "server bundle ready (test, 27 KB)",
-      "Script is already up to date.",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "redeployed existing web app deployment (version 14)",
+      "server bundle ready (test, 28 KB)",
+      "Pushed 2 files at 8:42:34 AM.",
+      "└─ apps-script/dist/appsscript.json",
+      "└─ apps-script/dist/Code.js",
+      "redeployed existing web app deployment (version 15)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "deployment version=14 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
@@ -26,7 +28,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 6s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -43,10 +45,21 @@
     ],
     "live-test": [
       "+ npx tsx scripts/live-test.ts",
-      "PENDING  server answered with a non-API page (HTTP 403, page title: \"Access Denied\"). The owner has probably not approved the script yet (run setup once). Live test skipped.",
-      "page text: Access Denied &nbsp;Drive You need access Open the document directly to see if requesting access is possible, or switch to an account with access. Learn more You are signed in as",
-      "POST: 403",
-      "GET: 403"
+      "PASS  ping ok",
+      "PASS  wrong key rejected",
+      "PASS  settings readable",
+      "PASS  feed logged with speech",
+      "PASS  duplicate id is not written twice",
+      "PASS  list contains the feed",
+      "PASS  list returns settings and server time",
+      "PASS  update works",
+      "PASS  invalid event rejected",
+      "PASS  asleep ok",
+      "PASS  second asleep is a no-op",
+      "PASS  awake closes the sleep",
+      "PASS  status sentence",
+      "PASS  cleanup removed this run from the list",
+      "LIVE TEST PASSED"
     ]
   }
 }
