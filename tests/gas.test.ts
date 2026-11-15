@@ -119,6 +119,21 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'list', from: '2026-07-04', to: '2026-07-04' }).events[0].start).toBe('2026-07-04 23:59');
   });
 
+  it('keeps the data revision in a script property, so every phone sees the same number', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const rev = () => post({ key, action: 'poll' }).rev;
+    expect(rev()).toBe('0');
+    post({ key, action: 'log', id: 'r1', type: 'diaper', detail: 'wet', start: '2000-01-01 00:00', user: 'P', source: 'app' });
+    expect(rev()).toBe('1');
+    post({ key, action: 'log', id: 'r1', type: 'diaper', detail: 'wet', start: '2000-01-01 00:00', user: 'P', source: 'app' }); // duplicate
+    expect(rev()).toBe('1');
+    post({ key, action: 'delete', id: 'r1' });
+    expect(rev()).toBe('2');
+    expect(rt.props.get('REV')).toBe('2');
+  });
+
   it('keeps settings in the Settings sheet', () => {
     const { rt, g, post } = boot();
     g.setup!();

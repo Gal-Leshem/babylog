@@ -102,6 +102,12 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   on top of the safe-area inset) because iOS fades content right under the status bar; history gets the same scroll container as
   settings (test drags starting on a row, bottom padding so the last row clears the tab bar). Vitamin D row got more weight (0.8fr)
   so every button stays at least 56px tall even at a 560px-high screen.
+- Owner feedback: entries made on the other phone did not show up until the owner logged something (refresh was only a 60 s timer plus
+  foreground events). Now: server data revision (`REV`, `poll` action, API version 0.2.0), app polls every 10 s while visible and
+  refetches only on change, full refresh every 60 s, immediate refresh on resume/focus/pageshow/online, stale-refresh guard.
+  Tests: unit (revision rules, `pollOnce`, stuck refresh, old servers) and `e2e/autosync.spec.ts` (two phones with no manual trigger,
+  cheap polling, silence while hidden, catch-up after offline). Mutation-checked: a slow poll interval fails the first test.
+  The server must be redeployed for `poll` to exist; clients fall back to full refreshes against an older server.
 - Real bug found through a flaky CI check: `KindButton` was a component defined INSIDE `Home`, so every re-render rebuilt all
   buttons (a tap straddling a re-render could be lost). Now a plain function (`kindButton`). Regression test marks the DOM nodes and
   checks they survive re-renders; it fails on the old code. Rule: never define components inside components in this app.

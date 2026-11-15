@@ -22,9 +22,18 @@ tools). Sleep is one row with start and end. Deletes are soft. Times are Israel 
 sheet dates. Requests carry a client-generated `id`, which makes retries idempotent.
 
 ## Sync engine
-Operations queue in `localStorage`; the view is `server copy + queue replayed`. Refresh happens on open,
-every minute, and when the connection returns; a refresh answer that raced with a send is discarded.
-Refused operations are dropped with a visible message; connection problems retry with back-off.
+Operations queue in `localStorage`; the view is `server copy + queue replayed`. Refused operations are dropped with a
+visible message; connection problems retry with back-off.
+
+Staying current (the other parent's entries must show up by themselves):
+- The server keeps a **data revision** (a script property `REV`, bumped under the lock on every real write; not by reads,
+  duplicates, no-ops or rejected writes). `poll` returns only that number, `list` returns the revision it was read at.
+- While the app is open and visible it sends a `poll` every 10 s and downloads the list only when the revision differs from
+  the one it holds; a full refresh still runs every 60 s (catches edits made by hand in the sheet).
+- Coming back to the foreground (visibilitychange, focus, pageshow) or regaining the network triggers an immediate refresh.
+- Nothing is sent while the app is hidden (saves battery and Apps Script quota).
+- A refresh older than 30 s is declared dead (iOS can freeze requests while a phone sleeps) and stops blocking new ones;
+  its late answer is ignored (sequence token). A refresh answer that raced with a send is discarded.
 
 ## Security
 Every request carries a secret key (a script property). The web app is anonymous-accessible (Siri cannot sign

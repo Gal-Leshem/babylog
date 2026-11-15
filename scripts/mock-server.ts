@@ -33,6 +33,9 @@ export function startMockServer(port = 8787, key = 'test-key') {
       }
       return void res.writeHead(200).end('ok');
     }
+    if (req.url?.startsWith('/__calls')) {
+      return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify((calls as { action?: string }[]).map((c) => c?.action ?? '?')));
+    }
     if (req.method === 'POST' && req.url?.startsWith('/__seed')) {
       let raw = '';
       req.on('data', (c) => (raw += c));

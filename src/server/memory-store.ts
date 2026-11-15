@@ -5,6 +5,7 @@ import type { Store } from './core';
 export class MemoryStore implements Store {
   private rows: BabyEvent[];
   private settings: Settings;
+  private rev = 0;
 
   constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS) {
     this.rows = rows.map((r) => ({ ...r }));
@@ -38,5 +39,11 @@ export class MemoryStore implements Store {
   }
   sheetUrl(): string {
     return '';
+  }
+  revision(): string {
+    return String(this.rev);
+  }
+  bump(): void {
+    this.rev += 1;
   }
 }

@@ -118,6 +118,12 @@ class SheetStore implements Store {
   sheetUrl(): string {
     return this.ss.getUrl();
   }
+  revision(): string {
+    return props().getProperty('REV') ?? '0';
+  }
+  bump(): void {
+    props().setProperty('REV', String(Number(props().getProperty('REV') ?? '0') + 1));
+  }
 }
 
 function fatal(msg: string): never {

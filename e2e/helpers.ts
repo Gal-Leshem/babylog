@@ -79,3 +79,8 @@ export async function installExisting(page: Page, who: 1 | 2 = 2): Promise<void>
   await page.getByTestId('finish').click();
   await expect(page.getByTestId('home')).toBeVisible();
 }
+
+/** The API actions the mock server received since the last reset, in order. */
+export async function actionsSeen(request: APIRequestContext): Promise<string[]> {
+  return (await (await request.get(`${MOCK}/__calls`)).json()) as string[];
+}

@@ -1,6 +1,6 @@
 import type { BabyEvent, EventType, Settings, Source } from './types';
 
-export const API_VERSION = '0.1.0';
+export const API_VERSION = '0.2.0';
 
 export interface EventPatch {
   type?: EventType;
@@ -12,6 +12,8 @@ export interface EventPatch {
 
 export type ApiRequest =
   | { action: 'ping' }
+  /** Cheap check: returns only the data revision, so clients can tell whether anything changed. */
+  | { action: 'poll' }
   | {
       action: 'log';
       id: string;
@@ -63,6 +65,8 @@ export interface ApiOk {
   events?: BabyEvent[];
   settings?: Settings;
   serverNow?: string;
+  /** Data revision: changes whenever an event or a setting is written through the API. */
+  rev?: string;
   sheetUrl?: string;
   version?: string;
 }

@@ -359,3 +359,110 @@ describe('robustness', () => {
     off();
   });
 });
+
+describe('polling for changes made on the other phone', () => {
+  const listCalls = () => seen.filter((x) => x.action === 'list').length;
+  const pollCalls = () => seen.filter((x) => x.action === 'poll').length;
+  const theirFeed = (id: string) => server.append(ev({ id, type: 'feed', detail: 'right', start: '2026-11-14 11:00', user: 'P2' }));
+  const bumped = () => server.bump(); // the real server bumps on every API write; here we write behind its back
+
+  it('fetches the list only when the server revision changed', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    seen = [];
+    expect(await e.pollOnce()).toBe(false);
+    expect(await e.pollOnce()).toBe(false);
+    expect([pollCalls(), listCalls()]).toEqual([2, 0]); // two tiny checks, no list
+
+    theirFeed('x');
+    bumped();
+    expect(await e.pollOnce()).toBe(true);
+    expect(listCalls()).toBe(1);
+    expect(e.getState().events.map((v) => v.id)).toEqual(['x']);
+
+    seen = [];
+    expect(await e.pollOnce()).toBe(false); // caught up again
+    expect(listCalls()).toBe(0);
+  });
+
+  it('picks up a change that arrives between the check and the fetch on the next check', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    theirFeed('a');
+    bumped();
+    await e.pollOnce();
+    theirFeed('b'); // lands after we fetched
+    bumped();
+    expect(await e.pollOnce()).toBe(true);
+    expect(e.getState().events.map((v) => v.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('flushes the queue instead of polling when there is something to send', async () => {
+    offline = true;
+    const e = makeEngine();
+    e.dispatch(feed('mine'));
+    await idle();
+    offline = false;
+    seen = [];
+    await e.pollOnce();
+    expect(seen.map((x) => x.action)[0]).toBe('log');
+    expect(server.all().map((x) => x.id)).toContain('mine');
+  });
+
+  it('clears the offline state as soon as a check succeeds', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    offline = true;
+    await e.pollOnce();
+    expect(e.getState().status).toBe('offline');
+    offline = false;
+    await e.pollOnce();
+    expect(e.getState().status).toBe('idle');
+  });
+
+  it('works against an older server that does not know "poll" by refreshing fully', async () => {
+    const e = makeEngine();
+    theirFeed('old');
+    // an older server answers "unknown_action" to poll
+    const oldFetch = ((url: string, init: { body: string }) => {
+      const body = JSON.parse(init.body);
+      if (body.action === 'poll') return Promise.resolve(new Response(JSON.stringify({ ok: false, error: 'unknown_action', detail: 'poll' })));
+      return fetchImpl(url as never, init as never);
+    }) as unknown as typeof fetch;
+    const legacy = new Engine({ storage: memoryStorage(), fetchImpl: oldFetch, now: () => clock, newId: () => `op${++n}` });
+    legacy.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    expect(await legacy.pollOnce()).toBe(true);
+    expect(legacy.getState().events.map((v) => v.id)).toEqual(['old']);
+    expect(e.getState().events).toEqual([]);
+  });
+
+  it('stops and reports a wrong key', async () => {
+    const e = makeEngine('wrong-key-xxxxxx');
+    await e.pollOnce();
+    expect(e.getState().status).toBe('auth');
+  });
+
+  it('a refresh stuck on a dead connection does not block later ones', async () => {
+    const e = makeEngine();
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    const stuck = e.refresh(); // never answers (the phone was asleep)
+    await idle();
+    gate = null;
+    expect(await e.refresh()).toBe(false); // still considered running: not started twice
+    clock += 31_000; // half a minute later it is declared dead
+    theirFeed('fresh');
+    expect(await e.refresh()).toBe(true);
+    expect(e.getState().events.map((v) => v.id)).toEqual(['fresh']);
+    release(); // the old answer finally arrives and is ignored
+    expect(await stuck).toBe(false);
+    expect(e.getState().events.map((v) => v.id)).toEqual(['fresh']);
+  });
+
+  it('resume() sends the queue first, otherwise refreshes', async () => {
+    const e = makeEngine();
+    theirFeed('r');
+    await e.resume();
+    expect(e.getState().events.map((v) => v.id)).toEqual(['r']);
+  });
+});

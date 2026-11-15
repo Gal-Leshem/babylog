@@ -31,6 +31,9 @@ export interface Store {
   getSettings(): Settings;
   setSettings(s: Settings): void;
   sheetUrl(): string;
+  /** Changes whenever data is written through the API; lets clients poll cheaply. */
+  revision(): string;
+  bump(): void;
 }
 
 export interface Deps {
@@ -160,9 +163,14 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
 
   switch (o.action) {
     case 'ping':
-      return { ok: true, version: API_VERSION, serverNow: stamp(now) };
+      return { ok: true, version: API_VERSION, serverNow: stamp(now), rev: store.revision() };
+
+    case 'poll':
+      return { ok: true, rev: store.revision() };
 
     case 'list': {
+      // Read the revision first: a write that lands while we read bumps it, so the next poll still notices.
+      const rev = store.revision();
       const from = str(o.from);
       const to = str(o.to);
       if (!isDateString(from) || !isDateString(to) || to < from) return fail('bad_request', 'from/to must be dates');
@@ -180,6 +188,7 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       });
       return {
         ok: true,
+        rev,
         events: events.sort(byTimeAsc),
         settings: store.getSettings(),
         serverNow: stamp(now),
@@ -198,24 +207,34 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       return deps.withLock(() => {
         const merged: Settings = { ...store.getSettings(), ...patch };
         store.setSettings(merged);
+        store.bump();
         return { ok: true, settings: merged, sheetUrl: store.sheetUrl() } as const;
       });
     }
 
     case 'log':
-      return deps.withLock(() => logEvent(o, deps, now));
+      return write(deps, () => logEvent(o, deps, now));
     case 'asleep':
-      return deps.withLock(() => asleep(o, deps, now));
+      return write(deps, () => asleep(o, deps, now));
     case 'awake':
-      return deps.withLock(() => awake(o, deps, now));
+      return write(deps, () => awake(o, deps, now));
     case 'update':
-      return deps.withLock(() => update(o, deps, now));
+      return write(deps, () => update(o, deps, now));
     case 'delete':
     case 'restore':
-      return deps.withLock(() => setDeleted(str(o.id), o.action === 'delete', deps, now));
+      return write(deps, () => setDeleted(str(o.id), o.action === 'delete', deps, now));
     default:
       return fail('unknown_action', typeof o.action === 'string' ? o.action : undefined);
   }
+}
+
+/** Runs a write under the lock and bumps the revision only when something actually changed. */
+function write(deps: Deps, fn: () => ApiResponse): ApiResponse {
+  return deps.withLock(() => {
+    const r = fn();
+    if (r.ok && !r.duplicate && !r.noop) deps.store.bump();
+    return r;
+  });
 }
 
 function newEvent(o: Obj, type: BabyEvent['type'], detail: string, start: string, end: string, now: number): BabyEvent {

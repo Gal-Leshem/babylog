@@ -54,6 +54,12 @@ export interface EngineOptions {
 const STATE_KEY = 'bl.state.v1';
 const CONFIG_KEY = 'bl.config.v1';
 const RETRY_MS = [3_000, 6_000, 12_000, 30_000, 60_000];
+/** How often an open app asks the server "did anything change?" (a very small request). */
+export const POLL_MS = 10_000;
+/** Full refresh even without a reported change, to catch edits made directly in the sheet. */
+export const FULL_REFRESH_MS = 60_000;
+/** A refresh that has been running this long is considered dead and no longer blocks new ones. */
+const REFRESH_STALE_MS = 30_000;
 export const HISTORY_DAYS = 14;
 
 const defaultId = () =>
@@ -84,6 +90,10 @@ export class Engine {
   private tombstones = new Map<string, BabyEvent>();
   private flushing = false;
   private refreshing = false;
+  private refreshStartedAt = 0;
+  private refreshSeq = 0;
+  /** The server data revision our local copy corresponds to. */
+  private lastRev: string | null = null;
   private inFlight: string | null = null;
   private epoch = 0;
   private retryTimer: unknown = null;
@@ -316,8 +326,12 @@ export class Engine {
   /** Fetches a date range from the server and merges it into the local copy. */
   async refresh(range = this.defaultRange()): Promise<boolean> {
     const ep = this.endpoint();
-    if (!ep || this.refreshing || this.flushing || this.p.queue.length > 0) return false;
+    if (!ep || this.flushing || this.p.queue.length > 0) return false;
+    // A refresh stuck on a dead connection (e.g. after the phone slept) must not block new ones forever.
+    if (this.refreshing && this.now() - this.refreshStartedAt < REFRESH_STALE_MS) return false;
     this.refreshing = true;
+    this.refreshStartedAt = this.now();
+    const seq = ++this.refreshSeq;
     const startEpoch = this.epoch;
     try {
       const res = await callApi(ep, { action: 'list', from: range.from, to: range.to }, this.fetchImpl);
@@ -326,10 +340,12 @@ export class Engine {
         else this.setStatus('error');
         return false;
       }
+      if (seq !== this.refreshSeq) return false; // a newer refresh started while this one was stuck
       if (startEpoch !== this.epoch || this.p.queue.length > 0) return false; // something changed meanwhile: that answer is stale
       this.merge(range, res.events ?? []);
       if (res.settings) this.p.settings = res.settings;
       if (res.sheetUrl) this.p.sheetUrl = res.sheetUrl;
+      if (res.rev !== undefined) this.lastRev = res.rev;
       this.p.lastSync = this.now();
       this.status = 'idle';
       this.persist();
@@ -340,7 +356,7 @@ export class Engine {
       this.setStatus('offline');
       return false;
     } finally {
-      this.refreshing = false;
+      if (seq === this.refreshSeq) this.refreshing = false;
     }
   }
 
@@ -361,26 +377,74 @@ export class Engine {
     this.p.serverEvents = [...kept, ...fetched];
   }
 
-  /** Starts background triggers: periodic refresh and refresh on return/online. Returns a stop function. */
+  /**
+   * Asks the server only for its data revision. Fetches the full list when it differs from the one we have.
+   * Servers without `poll` answer "unknown_action": then every call falls back to a full refresh.
+   * Returns true when new data was fetched.
+   */
+  async pollOnce(): Promise<boolean> {
+    const ep = this.endpoint();
+    if (!ep) return false;
+    if (this.p.queue.length) {
+      await this.flush();
+      return true;
+    }
+    try {
+      const res = await callApi(ep, { action: 'poll' }, this.fetchImpl, 8_000);
+      if (!res.ok) {
+        if (res.error === 'unauthorized') {
+          this.setStatus('auth');
+          return false;
+        }
+        return await this.refresh();
+      }
+      if (res.rev !== undefined && res.rev === this.lastRev) {
+        if (this.status === 'offline' || this.status === 'error') this.setStatus('idle');
+        return false;
+      }
+      return await this.refresh();
+    } catch (e) {
+      if (!(e instanceof NetworkError)) throw e;
+      this.setStatus('offline');
+      return false;
+    }
+  }
+
+  /** Sends anything waiting, otherwise fetches fresh data. Used on every return to the app. */
+  async resume(): Promise<void> {
+    if (!this.config) return;
+    if (this.p.queue.length) await this.flush();
+    else await this.refresh();
+  }
+
+  /**
+   * Keeps the app current while it is open and visible: a cheap check every POLL_MS, a full refresh every
+   * FULL_REFRESH_MS, and an immediate refresh whenever the app comes back to the foreground or the network returns.
+   * Nothing runs while the app is hidden. Returns a stop function.
+   */
   start(): () => void {
-    const tick = () => {
-      if (!this.config) return;
-      if (this.p.queue.length) void this.flush();
-      else void this.refresh();
+    const visible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
+    const resume = () => {
+      if (visible()) void this.resume();
     };
-    const onVisible = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') tick();
-    };
-    const interval = setInterval(() => {
-      if (typeof document === 'undefined' || document.visibilityState === 'visible') tick();
-    }, 60_000);
-    window.addEventListener('online', tick);
-    document.addEventListener('visibilitychange', onVisible);
-    tick();
+    const poll = setInterval(() => {
+      if (visible() && this.config) void this.pollOnce();
+    }, POLL_MS);
+    const full = setInterval(() => {
+      if (visible()) void this.resume();
+    }, FULL_REFRESH_MS);
+    window.addEventListener('online', resume);
+    window.addEventListener('focus', resume);
+    window.addEventListener('pageshow', resume);
+    document.addEventListener('visibilitychange', resume);
+    resume();
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('online', tick);
-      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(poll);
+      clearInterval(full);
+      window.removeEventListener('online', resume);
+      window.removeEventListener('focus', resume);
+      window.removeEventListener('pageshow', resume);
+      document.removeEventListener('visibilitychange', resume);
     };
   }
 }

@@ -264,3 +264,69 @@ describe('concurrent-looking sequences stay consistent', () => {
     expect(store.all().map((e) => [e.user, e.source])).toEqual([['Parent 1', 'app'], ['Parent 2', 'siri']]);
   });
 });
+
+describe('data revision and polling', () => {
+  const rev = () => ok(call({ action: 'poll' })).rev!;
+
+  it('poll answers with a revision and ping includes it', () => {
+    expect(rev()).toBe('0');
+    expect(ok(call({ action: 'ping' })).rev).toBe('0');
+  });
+
+  it('every real write changes the revision, reads do not', () => {
+    const r0 = rev();
+    ok(call({ action: 'list', from: '2026-11-14', to: '2026-11-14' }));
+    ok(call({ action: 'status' }));
+    ok(call({ action: 'settings' }));
+    expect(rev()).toBe(r0);
+
+    const e = ok(log('feed', 'left', '2026-11-14 11:00')).event!;
+    const r1 = rev();
+    expect(r1).not.toBe(r0);
+    ok(call({ action: 'update', id: e.id, patch: { note: 'x' } }));
+    const r2 = rev();
+    expect(r2).not.toBe(r1);
+    ok(call({ action: 'delete', id: e.id }));
+    const r3 = rev();
+    expect(r3).not.toBe(r2);
+    ok(call({ action: 'restore', id: e.id }));
+    const r4 = rev();
+    expect(r4).not.toBe(r3);
+    ok(call({ action: 'settings', set: { babyName: 'B' } }));
+    expect(rev()).not.toBe(r4);
+  });
+
+  it('writes that change nothing leave the revision alone', () => {
+    const e = ok(log('feed', 'left', '2026-11-14 11:00')).event!;
+    const after = rev();
+    // duplicate request id
+    ok(call({ action: 'log', id: e.id, type: 'feed', detail: 'left', start: '2026-11-14 11:00', user: 'P', source: 'app' }));
+    // deleting twice, asleep while asleep
+    ok(call({ action: 'delete', id: e.id }));
+    const afterDelete = rev();
+    ok(call({ action: 'delete', id: e.id }));
+    ok(call({ action: 'asleep', id: 'sl1', user: 'P', source: 'app', start: '2026-11-14 10:00' }));
+    const afterSleep = rev();
+    ok(call({ action: 'asleep', id: 'sl2', user: 'P', source: 'app', start: '2026-11-14 10:30' }));
+    expect(rev()).toBe(afterSleep);
+    expect(afterDelete).not.toBe(after);
+    expect(afterSleep).not.toBe(afterDelete);
+  });
+
+  it('rejected writes do not change the revision', () => {
+    const r0 = rev();
+    expect(log('feed', 'up', '2026-11-14 11:00')).toMatchObject({ ok: false });
+    expect(call({ action: 'delete', id: 'ghost' })).toMatchObject({ ok: false });
+    expect(rev()).toBe(r0);
+  });
+
+  it('list reports the revision it was read at', () => {
+    log('feed', 'left', '2026-11-14 11:00');
+    const l = ok(call({ action: 'list', from: '2026-11-14', to: '2026-11-14' }));
+    expect(l.rev).toBe(rev());
+  });
+
+  it('poll needs the key like everything else', () => {
+    expect(call({ action: 'poll' }, 'bad')).toEqual({ ok: false, error: 'unauthorized' });
+  });
+});

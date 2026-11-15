@@ -75,8 +75,11 @@ const base = { user: 'LiveTest', source: 'app' };
 check('wrong key rejected', (await call({ action: 'ping' }, 'wrong-key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).json?.error === 'unauthorized');
 check('settings readable', (await call({ action: 'settings' })).json?.settings?.mergeWindowMin >= 0);
 
+const rev0 = (await call({ action: 'poll' })).json?.rev;
+check('poll returns a data revision', typeof rev0 === 'string', JSON.stringify(rev0));
 const feed = await call({ action: 'log', id: id('feed'), type: 'feed', detail: 'left', start: now(), ...base });
 check('feed logged with speech', feed.json?.ok === true && /^Logged left, \d{1,2}:\d{2}\./.test(feed.json?.speech ?? ''), JSON.stringify(feed.json));
+check('the revision changed after a write', (await call({ action: 'poll' })).json?.rev !== rev0);
 check('duplicate id is not written twice', (await call({ action: 'log', id: id('feed'), type: 'feed', detail: 'left', start: now(), ...base })).json?.duplicate === true);
 
 const today = now().slice(0, 10);
