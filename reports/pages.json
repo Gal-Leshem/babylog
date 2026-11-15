@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "db45be9",
+  "sha": "7fd0ebd",
   "ref": "main",
-  "at": "2026-11-15T10:53:23.150Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43705889840",
+  "at": "2026-11-15T13:20:54.190Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43717928591",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,13 +21,13 @@
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  0.98 kB │ gzip:  0.44 kB",
       "dist/assets/index-BHt3Wopi.css   7.34 kB │ gzip:  2.19 kB",
-      "dist/assets/index-CeD1VNPi.js   61.74 kB │ gzip: 22.10 kB",
+      "dist/assets/index-DWuCBGxt.js   62.92 kB │ gzip: 22.45 kB",
       "",
-      "✓ built in 56ms",
+      "✓ built in 48ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (68.56 KiB)",
+      "precache  10 entries (69.71 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -69,13 +69,13 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published db45be9 to gh-pages"
+      "published 7fd0ebd to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 711af12, waiting for db45be9",
-      "attempt 2: serves 711af12, waiting for db45be9",
-      "site is live and serves db45be9"
+      "attempt 1: serves db45be9, waiting for 7fd0ebd",
+      "attempt 2: serves db45be9, waiting for 7fd0ebd",
+      "site is live and serves 7fd0ebd"
     ]
   }
 }
