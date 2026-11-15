@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "ea40194",
+  "sha": "ae26aea",
   "ref": "main",
-  "at": "2026-11-15T08:14:47.765Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43693304820",
+  "at": "2026-11-15T08:46:43.206Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43695818801",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,13 +21,13 @@
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  0.98 kB │ gzip:  0.44 kB",
       "dist/assets/index-B_dnf-4-.css   6.92 kB │ gzip:  2.10 kB",
-      "dist/assets/index-v3VAmLMz.js   60.95 kB │ gzip: 21.77 kB",
+      "dist/assets/index-B0uyYzWU.js   61.77 kB │ gzip: 22.11 kB",
       "",
-      "✓ built in 71ms",
+      "✓ built in 63ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (67.38 KiB)",
+      "precache  10 entries (68.18 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -44,7 +44,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 8s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -69,14 +69,13 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published ea40194 to gh-pages"
+      "published ae26aea to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves c6f0f6f, waiting for ea40194",
-      "attempt 2: serves c6f0f6f, waiting for ea40194",
-      "attempt 3: serves c6f0f6f, waiting for ea40194",
-      "site is live and serves ea40194"
+      "attempt 1: serves ea40194, waiting for ae26aea",
+      "attempt 2: serves ea40194, waiting for ae26aea",
+      "site is live and serves ae26aea"
     ]
   }
 }
