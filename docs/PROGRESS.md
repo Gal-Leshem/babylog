@@ -86,6 +86,12 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   (`EXEC_URL` -> `__EXEC_URL__`, private to the Apps Script project, never in the repo); on the very first deploy it creates the
   deployment, rebuilds and redeploys. The app and `sign.sh` refuse `/dev` addresses with an explanation and accept an `/exec` override.
   Owner must run `rotateKey` once after this version is deployed to get a corrected code (also retires the key pasted in chat).
+- Owner decisions (Sunday): no Siri shortcuts via the Mac signing script for now (leave `scripts/shortcuts` in place, unused).
+  If Siri is wanted later, a single manual shortcut on the phone is the fallback (see INSTALL.he.md, "אם משהו לא עובד").
+- Owner reported a scrolling problem on the home screen on a real iPhone (list at the bottom not scrollable). Not reproducible in
+  Chromium at heights 560-852. Hardened the layout: `#app` is `position: fixed; inset: 0` (no vh/dvh), `.main` scrolls with
+  touch momentum, the button grid has a minimum height so small screens scroll instead of squashing (`e2e/scroll.spec.ts`).
+  If it persists, ask for a screenshot from the phone; suspects: standalone-mode viewport height, status bar style.
 - Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
   Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
   owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.
