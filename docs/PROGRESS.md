@@ -102,6 +102,9 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   on top of the safe-area inset) because iOS fades content right under the status bar; history gets the same scroll container as
   settings (test drags starting on a row, bottom padding so the last row clears the tab bar). Vitamin D row got more weight (0.8fr)
   so every button stays at least 56px tall even at a 560px-high screen.
+- Real bug found through a flaky CI check: `KindButton` was a component defined INSIDE `Home`, so every re-render rebuilt all
+  buttons (a tap straddling a re-render could be lost). Now a plain function (`kindButton`). Regression test marks the DOM nodes and
+  checks they survive re-renders; it fails on the old code. Rule: never define components inside components in this app.
 - Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
   Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
   owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.

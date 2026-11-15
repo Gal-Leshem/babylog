@@ -34,8 +34,11 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
   const sleepValue =
     sleep.state === 'asleep' ? `ישן כבר ${elapsedHM(now - sleep.since)}` : sleep.since !== null ? `ער כבר ${elapsedHM(now - sleep.since)}` : '—';
 
-  const KindButton = ({ kind, extra = '' }: { kind: Kind; extra?: string }) => (
+  // A plain function (not a component defined here): a component type created on every render would make Preact
+  // rebuild all the buttons each time, and a tap that straddles a re-render could be lost.
+  const kindButton = (kind: Kind, extra = '') => (
     <button
+      key={kind}
       type="button"
       class={`big ${extra} ${flash === kind ? 'flash' : ''} ${(kind === 'feed_left' && next === 'left') || (kind === 'feed_right' && next === 'right') ? 'next' : ''}`}
       data-testid={`btn-${kind}`}
@@ -71,15 +74,15 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
       <div class="grid">
         {/* feed buttons keep their physical side: left on the left */}
         <div class="feedrow">
-          <KindButton kind="feed_left" />
-          <KindButton kind="feed_right" />
+          {kindButton('feed_left')}
+          {kindButton('feed_right')}
         </div>
         <div class="row2">
-          <KindButton kind="wet" />
-          <KindButton kind="poop" />
+          {kindButton('wet')}
+          {kindButton('poop')}
         </div>
         <div class="row2">
-          <KindButton kind="both" />
+          {kindButton('both')}
           <button
             type="button"
             class={`big sleep ${asleep ? 'asleep' : ''} ${flash === 'sleep' ? 'flash' : ''}`}
@@ -92,7 +95,7 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
           </button>
         </div>
         <div class="row1">
-          <KindButton kind="vitamin_d" />
+          {kindButton('vitamin_d')}
         </div>
       </div>
 

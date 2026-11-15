@@ -78,6 +78,17 @@ test('the three diaper buttons record the right detail', async ({ page, request 
   await expect.poll(async () => (await serverEvents(request)).map((e) => e.detail).sort()).toEqual(['both', 'poop', 'wet']);
 });
 
+test('re-rendering the home screen does not rebuild the buttons (a tap in that moment would be lost)', async ({ page }) => {
+  await install(page);
+  await page.evaluate(() => document.querySelectorAll('[data-testid^="btn-"]').forEach((b) => ((b as HTMLElement).dataset.mark = 'same-node')));
+  await page.getByTestId('btn-wet').click(); // re-renders Home several times: lock, flash, optimistic update, sync
+  await expect(page.getByTestId('btn-poop')).toBeEnabled({ timeout: 3000 });
+  await page.waitForTimeout(400);
+  const marks = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="btn-"]')].map((b) => (b as HTMLElement).dataset.mark));
+  expect(marks).toHaveLength(7);
+  expect(marks.every((m) => m === 'same-node'), 'some button was replaced by a new element').toBe(true);
+});
+
 test('undo within the toast takes the entry back', async ({ page, request }) => {
   await install(page);
   await page.getByTestId('btn-wet').click();
