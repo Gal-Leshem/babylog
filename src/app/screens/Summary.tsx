@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type DailySummary, dailySummary } from '../../shared/domain';
 import { addDays, localDate } from '../../shared/tz';
-import { dayName, hm } from '../labels';
+import { KIND_LABEL, dayName, hm } from '../labels';
 import { engine, useEngine, useNow } from '../state';
 import { DayNav } from './DayNav';
 
@@ -11,9 +11,9 @@ const ROWS: Row[] = [
   ['הנקות (האכלות)', (s) => String(s.feeds.count)],
   ['רווח ממוצע בין האכלות', (s) => (s.feeds.avgGapMin === null ? '—' : hm(s.feeds.avgGapMin))],
   ['שמאל / ימין', (s) => `${s.feeds.left} / ${s.feeds.right}`],
-  ['חיתול רטוב', (s) => String(s.diapers.wet)],
-  ['צואה', (s) => String(s.diapers.poop)],
-  ['רטוב + צואה', (s) => String(s.diapers.both)],
+  [KIND_LABEL.wet, (s) => String(s.diapers.wet)],
+  [KIND_LABEL.poop, (s) => String(s.diapers.poop)],
+  [KIND_LABEL.both, (s) => String(s.diapers.both)],
   ['שינה סה״כ', (s) => (s.sleep.totalMin ? hm(s.sleep.totalMin) : '—')],
   ['הרצף הארוך ביותר', (s) => (s.sleep.longestMin ? hm(s.sleep.longestMin) : '—')],
   ['ויטמין D', (s) => (s.vitaminD ? 'ניתן' : 'לא ניתן')],

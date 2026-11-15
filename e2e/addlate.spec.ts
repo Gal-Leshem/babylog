@@ -12,7 +12,7 @@ test('add after the fact: "an hour ago" chip records the earlier time', async ({
   await page.getByTestId('kind-both').click();
   await page.getByTestId('back-60').click();
   await page.getByTestId('save').click();
-  await expect(page.getByTestId('toast-text')).toContainText('נוסף: רטוב + צואה');
+  await expect(page.getByTestId('toast-text')).toContainText('נוסף: פיפי + קקי');
   await expect.poll(async () => (await allServerRows(request)).length).toBe(1);
   const e = (await allServerRows(request))[0]!;
   expect([e.type, e.detail]).toEqual(['diaper', 'both']);
@@ -124,48 +124,73 @@ test('the quick-time buttons light up when chosen, and stop when the time is set
 });
 
 test.describe('the date is in Hebrew', () => {
-  test('label, month title and weekdays are Hebrew; future days cannot be chosen', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z')); // 14 November 2026 in Israel
-    await install(page);
-    await page.getByTestId('add-late').click();
-    await expect(page.getByTestId('start-date')).toContainText('14 בנובמבר 2026');
-    await page.getByTestId('start-date').click();
-    await expect(page.getByTestId('start-date-month')).toHaveText('נובמבר 2026');
-    for (const w of ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳']) await expect(page.getByTestId('start-date-cal').getByText(w, { exact: true })).toBeVisible();
-    await expect(page.getByTestId('start-date-day-2026-11-14')).toBeEnabled();
-    await expect(page.getByTestId('start-date-day-2026-11-15')).toBeDisabled();
-    await expect(page.getByTestId('start-date-next')).toBeDisabled(); // cannot go beyond the current month
-    // 1 November 2026 is a Sunday: it sits in the first column, which is the right-hand one in a right-to-left grid
-    const first = await page.getByTestId('start-date-day-2026-11-01').boundingBox();
-    const sunday = await page.getByTestId('start-date-cal').getByText('א׳', { exact: true }).boundingBox();
-    expect(Math.abs(first!.x + first!.width / 2 - (sunday!.x + sunday!.width / 2))).toBeLessThan(4);
   });
 
-  test('choosing an earlier day and month is saved with that date', async ({ page, request }) => {
-    await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z'));
+  test('the date is written in Hebrew and no calendar is drawn by the app', async ({ page }) => {
+    await install(page);
+    await page.getByTestId('add-late').click();
+    await expect(page.getByTestId('start-date-label')).toHaveText('14 בנובמבר 2026');
+    await expect(page.getByTestId('start-date')).toHaveAttribute('type', 'date'); // the phone's own picker
+    await expect(page.getByTestId('start-date')).toHaveAttribute('max', '2026-11-14'); // no future days
+    await expect(page.locator('.cal')).toHaveCount(0);
+    // the control is laid over the label, so a tap on the date reaches it directly
+    const label = (await page.locator('.datebtn').boundingBox())!;
+    const input = (await page.getByTestId('start-date').boundingBox())!;
+    expect(Math.abs(label.x - input.x)).toBeLessThan(2);
+    expect(Math.abs(label.y - input.y)).toBeLessThan(2);
+    expect(Math.abs(label.width - input.width)).toBeLessThan(2);
+    expect(Math.abs(label.height - input.height)).toBeLessThan(2);
+  });
+
+  test('choosing another day updates the Hebrew label and is saved with that date', async ({ page, request }) => {
     await install(page);
     await page.getByTestId('add-late').click();
     await page.getByTestId('kind-wet').click();
-    await page.getByTestId('start-date').click();
-    await page.getByTestId('start-date-prev').click();
-    await expect(page.getByTestId('start-date-month')).toHaveText('אוקטובר 2026');
-    await page.getByTestId('start-date-day-2026-10-31').click();
-    await expect(page.getByTestId('start-date')).toContainText('31 באוקטובר 2026');
-    await expect(page.getByTestId('start-date-cal')).toBeHidden(); // closes after choosing
+    await pickDate(page, 'start-date', '2026-10-31');
+    await expect(page.getByTestId('start-date-label')).toHaveText('31 באוקטובר 2026');
     await page.getByTestId('start-time').fill('23:30');
     await page.getByTestId('save').click();
     await expect(page.getByTestId('event-form')).toBeHidden();
     await expect.poll(async () => (await api(request, { action: 'list', from: '2026-10-31', to: '2026-10-31' })).events.map((e: { start: string }) => e.start)).toEqual(['2026-10-31 23:30']);
   });
 
-  test('editing an event shows its own date, in Hebrew', async ({ page, request }) => {
-    await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z'));
+  test('a future day or an empty value is ignored', async ({ page }) => {
+    await install(page);
+    await page.getByTestId('add-late').click();
+    await page.getByTestId('start-date').evaluate((el: HTMLInputElement) => {
+      for (const v of ['2026-12-25', '']) {
+        el.value = v;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await expect(page.getByTestId('start-date-label')).toHaveText('14 בנובמבר 2026');
+  });
+
+  test('"yesterday" shows yesterday in Hebrew, and editing an event shows its own date', async ({ page, request }) => {
     await seed(request, [{ id: 'old1', type: 'diaper', detail: 'wet', start: '2026-11-13 08:15' }]);
     await install(page);
+    await page.getByTestId('add-late').click();
+    await page.getByTestId('chip-yesterday').click();
+    await expect(page.getByTestId('start-date-label')).toHaveText('13 בנובמבר 2026');
+    await page.getByRole('button', { name: 'ביטול' }).click();
     await page.getByTestId('tab-history').click();
     await page.getByTestId('day-prev').click();
     await page.getByTestId('history-row').click();
-    await expect(page.getByTestId('start-date')).toContainText('13 בנובמבר 2026');
+    await expect(page.getByTestId('start-date-label')).toHaveText('13 בנובמבר 2026');
     await expect(page.getByTestId('start-time')).toHaveValue('08:15');
   });
+});
+
+test('the diaper buttons use the everyday words', async ({ page }) => {
+  await install(page);
+  await expect(page.getByTestId('btn-wet')).toContainText('חיתול פיפי');
+  await expect(page.getByTestId('btn-poop')).toContainText('קקי');
+  await expect(page.getByTestId('btn-both')).toContainText('פיפי + קקי');
+  await page.getByTestId('add-late').click();
+  await expect(page.getByTestId('kind-wet')).toContainText('חיתול פיפי');
+  await expect(page.getByTestId('kind-poop')).toContainText('קקי');
+  await expect(page.getByTestId('kind-both')).toContainText('פיפי + קקי');
+  expect(await page.locator('body').innerText()).not.toMatch(/רטוב|צואה/);
 });

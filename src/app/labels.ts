@@ -8,9 +8,9 @@ export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep
 export const KIND_LABEL: Record<Kind, string> = {
   feed_left: 'הנקה שמאל',
   feed_right: 'הנקה ימין',
-  wet: 'חיתול רטוב',
-  poop: 'צואה',
-  both: 'רטוב + צואה',
+  wet: 'חיתול פיפי',
+  poop: 'קקי',
+  both: 'פיפי + קקי',
   sleep: 'שינה',
   vitamin_d: 'ויטמין D',
 };
@@ -63,10 +63,8 @@ export const FILTERS: { id: 'all' | EventType; label: string }[] = [
   { id: 'vitamin_d', label: 'ויטמין D' },
 ];
 
-export const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-export const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-
-export const WEEKDAYS_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
 
 /** 'YYYY-MM-DD' -> '14 בנובמבר 2026' */
 export function dateLabel(date: string): string {

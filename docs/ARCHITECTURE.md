@@ -63,8 +63,11 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **Buttons:** at least 56px tall at any supported screen height; a tap locks all buttons for 1.5 s (double-tap protection) and shows a
   5 s undo toast.
 - **Add-after-the-fact form:** quick buttons are "today", "yesterday", "10/15/30 minutes ago", "an hour ago", "two hours ago". The chosen
-  "X minutes ago" button stays lit until the time or date is changed by hand. The date uses the app's own Hebrew calendar
-  (`DateField.tsx`): the system date control follows the phone's language (English months). The time field is still the system one.
+  "X minutes ago" button stays lit until the time or date is changed by hand. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
+  with the phone's own date input laid invisibly over it, so the system picker opens only when the date is tapped; the app draws no calendar of
+  its own (the owner did not want one). The system picker itself uses the phone's language. The time field is the system one.
+- **Wording:** diaper kinds are "חיתול פיפי", "קקי", "פיפי + קקי" (`KIND_LABEL` in `labels.ts` is the single source, also used by the summary
+  table). The sheet values stay `wet` / `poop` / `both`; Siri phrases are English and unchanged.
 - **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
 
 ## Server deployment details

@@ -41,7 +41,7 @@ test('filters by event type', async ({ page, request }) => {
   await openHistory(page);
   await page.getByTestId('filter-diaper').click();
   await expect(page.getByTestId('history-row')).toHaveCount(1);
-  await expect(page.getByTestId('history-row')).toContainText('חיתול רטוב');
+  await expect(page.getByTestId('history-row')).toContainText('חיתול פיפי');
   await page.getByTestId('filter-all').click();
   await expect(page.getByTestId('history-row')).toHaveCount(3);
 });
@@ -54,7 +54,7 @@ test('navigates between days', async ({ page, request }) => {
   await page.getByTestId('day-prev').click();
   await expect(page.getByTestId('day-title')).toHaveText('אתמול');
   await expect(page.getByTestId('history-row')).toHaveCount(1);
-  await expect(page.getByTestId('history-row')).toContainText('צואה');
+  await expect(page.getByTestId('history-row')).toContainText('קקי');
   await page.getByTestId('day-prev').click();
   await expect(page.getByText('אין אירועים ביום הזה')).toBeVisible();
   await page.getByTestId('day-today').click();
@@ -72,7 +72,7 @@ test('editing an event changes it everywhere and keeps its creation time', async
   await page.getByTestId('note').fill('בדיקה');
   await page.getByTestId('save').click();
   await expect(page.getByTestId('event-form')).toBeHidden();
-  await expect(page.getByTestId('history-row')).toContainText('צואה');
+  await expect(page.getByTestId('history-row')).toContainText('קקי');
   await expect(page.getByTestId('history-row')).toContainText('בדיקה');
   await expect(page.getByTestId('history-row')).toContainText('נערך');
   await expect.poll(async () => (await allServerRows(request)).find((e) => e.id === 'h-diaper')?.detail).toBe('poop');

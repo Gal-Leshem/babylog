@@ -112,6 +112,8 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - Owner feedback (Mon): quick-time buttons did not light up; date showed English months. Now the active "X minutes ago" button is lit
   (cleared by manual time/date edits), and the form uses the in-app Hebrew calendar `DateField` (tests: `pickDate` helper in `e2e/helpers.ts`).
   `docs/ARCHITECTURE.md` was extended with the UI rules, deployment details and test strategy; keep it in step with every change.
+- Owner decisions (Mon, later): no custom calendar (removed `DateField` calendar; the Hebrew label opens the system date picker on tap);
+  diaper wording is "פיפי" / "קקי" instead of "רטוב" / "צואה" everywhere in the app and the guide.
 - CI caught a gap in the new sync code: a refresh requested while another was running (focus / back online) was dropped until the next
   10 s poll. `refresh()` now remembers it (`refreshQueued`) and runs again right after (unit test with an answer produced before the new
   event appeared; it failed before the fix). General lesson: when a trigger can arrive during work in progress, queue it, do not drop it.

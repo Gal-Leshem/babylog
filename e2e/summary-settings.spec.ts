@@ -34,9 +34,9 @@ test('daily summary compares today with yesterday', async ({ page, request }) =>
   await expect(cell('רווח ממוצע בין האכלות', 0)).toHaveText('3:00');
   await expect(cell('רווח ממוצע בין האכלות', 1)).toHaveText('—');
   await expect(cell('שמאל / ימין', 0)).toHaveText('2 / 1');
-  await expect(cell('חיתול רטוב', 0)).toHaveText('2');
-  await expect(cell('צואה', 0)).toHaveText('1');
-  await expect(cell('רטוב + צואה', 1)).toHaveText('1');
+  await expect(cell('חיתול פיפי', 0)).toHaveText('2');
+  await expect(cell('קקי', 0)).toHaveText('1');
+  await expect(cell('פיפי + קקי', 1)).toHaveText('1');
   await expect(cell('שינה סה״כ', 0)).toHaveText('1:30');
   await expect(cell('הרצף הארוך ביותר', 0)).toHaveText('1:30');
   await expect(cell('ויטמין D', 0)).toHaveText('ניתן');
@@ -60,7 +60,7 @@ test('summary can look at an earlier day', async ({ page, request }) => {
   await page.getByTestId('tab-summary').click();
   await page.getByTestId('day-prev').click();
   await expect(page.getByTestId('day-title')).toHaveText('אתמול');
-  await expect(page.getByTestId('sum-חיתול רטוב').locator('td').nth(0)).toHaveText('1');
+  await expect(page.getByTestId('sum-חיתול פיפי').locator('td').nth(0)).toHaveText('1');
 });
 
 test('settings: names, baby name and merge window are saved to the sheet', async ({ page, request }) => {
