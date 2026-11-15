@@ -40,6 +40,7 @@ test('a hidden app does not talk to the server; coming back refreshes at once', 
     }, state);
 
   await setVisibility('hidden');
+  await page.waitForTimeout(1_500); // let a request that was already on its way finish before counting
   await resetServer(request);
   await api(request, { action: 'log', id: 'away-1', type: 'diaper', detail: 'wet', start: nowLocal(), user: 'Parent Two', source: 'siri' });
   await page.waitForTimeout(12_000);
