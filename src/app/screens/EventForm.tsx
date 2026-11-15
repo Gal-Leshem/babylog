@@ -7,7 +7,7 @@ import { engine, showToast } from '../state';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 const BACK: [string, number][] = [
-  ['עכשיו', 0],
+  ['לפני 10 דק׳', 10],
   ['לפני 15 דק׳', 15],
   ['לפני 30 דק׳', 30],
   ['לפני שעה', 60],

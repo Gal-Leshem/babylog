@@ -21,6 +21,22 @@ test('add after the fact: "an hour ago" chip records the earlier time', async ({
   expect(gapMin).toBeLessThanOrEqual(61);
 });
 
+test('the quick buttons offer "10 minutes ago" and no "now" button', async ({ page, request }) => {
+  await install(page);
+  await page.getByTestId('add-late').click();
+  await expect(page.getByTestId('back-10')).toHaveText('לפני 10 דק׳');
+  await expect(page.getByTestId('back-0')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'עכשיו', exact: true })).toHaveCount(0);
+  await page.getByTestId('kind-wet').click();
+  await page.getByTestId('back-10').click();
+  await page.getByTestId('save').click();
+  await expect.poll(async () => (await allServerRows(request)).length).toBe(1);
+  const e = (await allServerRows(request))[0]!;
+  const gapMin = (parseLocal(e.created) - parseLocal(e.start)) / 60_000;
+  expect(gapMin).toBeGreaterThanOrEqual(9);
+  expect(gapMin).toBeLessThanOrEqual(11);
+});
+
 test('add a finished sleep with start and end', async ({ page, request }) => {
   await install(page);
   const yesterday = addDaysLocal(todayLocal(), -1);
