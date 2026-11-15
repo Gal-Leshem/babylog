@@ -98,6 +98,10 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   the last 10 events in its own scrollable box (about 3.5 rows visible). Tests drag with raw CDP touch events (`e2e/scroll.spec.ts`;
   `Input.synthesizeScrollGesture` with touch does nothing in headless Chromium, mouse wheel and `dispatchTouchEvent` work).
   Mutation-checked: the old scrollable home layout fails the short-screen test.
+- Owner feedback after that fix: home scrolls fine on the phone. Content now starts lower on every screen (`--top-gap: 22px` on `.main`,
+  on top of the safe-area inset) because iOS fades content right under the status bar; history gets the same scroll container as
+  settings (test drags starting on a row, bottom padding so the last row clears the tab bar). Vitamin D row got more weight (0.8fr)
+  so every button stays at least 56px tall even at a 560px-high screen.
 - Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
   Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
   owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.

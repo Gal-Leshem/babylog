@@ -127,6 +127,36 @@ test('history: a long list scrolls to its last row', async ({ page, request }) =
   expect((await state(page)).docScrolls).toBe(false);
 });
 
+test('history: a drag that starts on a row scrolls, like in settings', async ({ page, request }) => {
+  await seed(request, events(40));
+  await install(page);
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('history-row')).toHaveCount(40);
+  const row = (await page.getByTestId('history-row').nth(3).boundingBox())!;
+  await drag(page, 200, row.y + row.height / 2, -400); // starts exactly on a tappable row
+  const down = (await state(page)).mainScrollTop;
+  expect(down).toBeGreaterThan(150);
+  await drag(page, 200, 300, 250); // and back up
+  expect((await state(page)).mainScrollTop).toBeLessThan(down);
+  // a plain tap on a row still opens it
+  await page.getByTestId('history-row').first().scrollIntoViewIfNeeded();
+  await page.getByTestId('history-row').first().click();
+  await expect(page.getByTestId('event-form')).toBeVisible();
+});
+
+test('every screen starts a little below the top edge', async ({ page }) => {
+  await install(page);
+  for (const tab of ['home', 'history', 'summary', 'settings']) {
+    await page.getByTestId(`tab-${tab}`).click();
+    const top = await page.evaluate(() => {
+      const main = document.querySelector('.main') as HTMLElement;
+      const first = main.firstElementChild!.getBoundingClientRect();
+      return first.top - main.getBoundingClientRect().top;
+    });
+    expect(top, tab).toBeGreaterThanOrEqual(20);
+  }
+});
+
 test('scrolling the form does not move the page behind it', async ({ page }) => {
   await install(page);
   await page.getByTestId('add-late').click();
