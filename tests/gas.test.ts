@@ -60,6 +60,19 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(rt.logs.some((l) => l.startsWith('BL1.'))).toBe(false);
   });
 
+  it('warns when only the editor test address (/dev) is available, but still prints a code', () => {
+    const { rt, g } = boot({ url: 'https://script.google.com/macros/s/FAKE/dev' });
+    g.setup!();
+    expect(rt.logs.some((l) => l.startsWith('WARNING') && l.includes('/dev'))).toBe(true);
+    expect(rt.logs.some((l) => l.startsWith('BL1.'))).toBe(true);
+  });
+
+  it('does not warn for a proper /exec address', () => {
+    const { rt, g } = boot();
+    g.setup!();
+    expect(rt.logs.some((l) => l.startsWith('WARNING'))).toBe(false);
+  });
+
   it('rejects calls without the right key and bad JSON', () => {
     const { g, post } = boot();
     g.setup!();

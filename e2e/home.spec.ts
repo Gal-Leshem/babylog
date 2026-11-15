@@ -31,6 +31,23 @@ test('install rejects a malformed code and a wrong key, and survives a reload', 
   await expect(page.getByTestId('home')).toBeVisible(); // configuration persisted
 });
 
+test('a setup code carrying the private /dev address is refused, and a real address can be supplied', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('setup-code').fill(encodeSetupCode(`${MOCK}/dev`, 'test-key'));
+  await page.getByTestId('connect').click();
+  await expect(page.getByTestId('install-error')).toContainText('/dev');
+  await expect(page.getByTestId('exec-url')).toBeVisible();
+  await page.getByTestId('exec-url').fill('http://example.test/exec'); // not https
+  await page.getByTestId('connect').click();
+  await expect(page.getByTestId('install-error')).toContainText('https://');
+  await page.getByTestId('exec-url').fill(`${MOCK}/dev`); // still the test address
+  await page.getByTestId('connect').click();
+  await expect(page.getByTestId('install-error')).toContainText('/exec');
+  await page.getByTestId('exec-url').fill(`${MOCK}/`);
+  await page.getByTestId('connect').click();
+  await expect(page.getByTestId('install-step2')).toBeVisible();
+});
+
 test('one tap on a feed button records it, shows it, and recommends the other side', async ({ page, request }) => {
   await install(page);
   await page.getByTestId('btn-feed_left').click();

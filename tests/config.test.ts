@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSetupCode, encodeSetupCode } from '../src/app/config';
+import { decodeSetupCode, encodeSetupCode, isEditorTestUrl, isServerUrl } from '../src/app/config';
 import { encodeInstallCode } from '../src/server/auth';
 
 describe('setup code', () => {
@@ -31,5 +31,20 @@ describe('setup code', () => {
 
   it('allows a local address for development only', () => {
     expect(decodeSetupCode(encodeSetupCode('http://127.0.0.1:8787/', 'k'.repeat(40)))).not.toBeNull();
+  });
+});
+
+describe('server addresses', () => {
+  it('recognises the editor-only test address', () => {
+    expect(isEditorTestUrl('https://script.google.com/macros/s/ABC_1-x/dev')).toBe(true);
+    expect(isEditorTestUrl('https://script.google.com/macros/s/ABC_1-x/dev/')).toBe(true);
+    expect(isEditorTestUrl('https://script.google.com/macros/s/ABC_1-x/exec')).toBe(false);
+    expect(isEditorTestUrl('https://example.test/device')).toBe(false);
+  });
+  it('accepts only https (or local http)', () => {
+    expect(isServerUrl('https://script.google.com/macros/s/x/exec')).toBe(true);
+    expect(isServerUrl('http://127.0.0.1:8787/')).toBe(true);
+    expect(isServerUrl('http://example.test/exec')).toBe(false);
+    expect(isServerUrl('javascript:alert(1)')).toBe(false);
   });
 });

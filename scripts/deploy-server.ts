@@ -76,26 +76,37 @@ if (!scriptId) {
 }
 rmSync('.clasp.json', { force: true });
 
-// 2. Build (after create, which pulls a default file into the output folder) and push
-execFileSync('npx', ['tsx', 'scripts/build-server.ts', ...(env === 'test' ? ['--test'] : [])], { stdio: 'inherit', env: process.env });
-writeFileSync('.clasp.json', JSON.stringify({ scriptId, rootDir: 'apps-script/dist' }) + '\n');
-console.log(clasp('push', '-f').trim().split('\n').slice(-3).join('\n'));
+// 2. Build and push. The web app address (/exec) is embedded in the bundle so that printInstallCode()
+// prints a working address; the first run has to create the deployment before the address exists.
+const build = (execUrl: string) =>
+  execFileSync('npx', ['tsx', 'scripts/build-server.ts', ...(env === 'test' ? ['--test'] : [])], { stdio: 'inherit', env: { ...process.env, EXEC_URL: execUrl } });
+const execUrlOf = (id: string) => `https://script.google.com/macros/s/${id}/exec`;
+const push = () => console.log(clasp('push', '-f').trim().split('\n').slice(-3).join('\n'));
+const redeploy = (id: string): Deployment => json<Deployment>(clasp('--json', 'create-deployment', '--deploymentId', id, '--description', `babylog ${sha}`));
 
-// 3. Deploy: update the existing web app deployment, or create it once
+writeFileSync('.clasp.json', JSON.stringify({ scriptId, rootDir: 'apps-script/dist' }) + '\n');
 const webApps = listDeployments().filter((d) => d.versionNumber !== undefined && d.versionNumber !== null);
 let deploymentId: string;
 if (webApps.length > 0) {
   const current = webApps.sort((a, b) => (b.versionNumber ?? 0) - (a.versionNumber ?? 0))[0]!;
-  const out = clasp('--json', 'create-deployment', '--deploymentId', current.deploymentId, '--description', `babylog ${sha}`);
-  const d = json<Deployment>(out);
+  build(execUrlOf(current.deploymentId));
+  push();
+  const d = redeploy(current.deploymentId);
   deploymentId = d.deploymentId || current.deploymentId;
   console.log(`redeployed existing web app deployment (version ${d.versionNumber ?? '?'})`);
 } else {
+  build('');
+  push();
   const out = clasp('--json', 'create-deployment', '--description', `babylog ${sha}`);
-  const d = json<Deployment>(out);
-  if (!d.deploymentId) throw new Error(`create-deployment returned no deploymentId: ${shape(d)}`);
-  deploymentId = d.deploymentId;
-  console.log(`created web app deployment (version ${d.versionNumber ?? '?'})`);
+  const created = json<Deployment>(out);
+  if (!created.deploymentId) throw new Error(`create-deployment returned no deploymentId: ${shape(created)}`);
+  deploymentId = created.deploymentId;
+  mask(deploymentId);
+  console.log(`created web app deployment (version ${created.versionNumber ?? '?'}); embedding its address`);
+  build(execUrlOf(deploymentId));
+  push();
+  const d = redeploy(deploymentId);
+  console.log(`redeployed with the embedded address (version ${d.versionNumber ?? '?'})`);
 }
 mask(deploymentId);
 

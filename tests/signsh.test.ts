@@ -82,6 +82,20 @@ describe('Mac signing script', () => {
     expect(readFileSync(join(r.out, 'Ann <B>', 'Left feed.shortcut'), 'utf8')).toContain('Ann &lt;B&gt;');
   });
 
+  it('refuses the private /dev address unless a real address is supplied', async () => {
+    const devCode = encodeSetupCode(`${mockUrl}dev`, 'test-key');
+    const none = await sign({ BABYLOG_CODE: devCode }, 'dev1');
+    expect(none.status).not.toBe(0);
+    expect(none.stderr).toMatch(/No address given|private test address/);
+    const bad = await sign({ BABYLOG_CODE: devCode, BABYLOG_EXEC_URL: 'http://example.test/exec' }, 'dev2');
+    expect(bad.stderr).toMatch(/must start with https/);
+    const good = await sign({ BABYLOG_CODE: devCode, BABYLOG_EXEC_URL: mockUrl }, 'dev3');
+    expect(good.status, good.stderr).toBe(0);
+    const text = readFileSync(join(good.out, 'Tom & Jerry', 'Left feed.shortcut'), 'utf8');
+    expect(text).toContain(mockUrl);
+    expect(text).not.toContain(`${mockUrl}dev`);
+  });
+
   it('refuses a wrong key without writing anything', async () => {
     const r = await sign({ BABYLOG_CODE: encodeSetupCode(mockUrl, 'not-the-key-123') }, 'bad');
     expect(r.status).not.toBe(0);

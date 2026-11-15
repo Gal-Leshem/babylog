@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { NetworkError, callApi } from '../api';
-import { decodeSetupCode } from '../config';
+import { decodeSetupCode, isEditorTestUrl, isServerUrl } from '../config';
 import type { Settings } from '../../shared/types';
 import { engine } from '../state';
 
@@ -8,6 +8,8 @@ export function Install() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [needExec, setNeedExec] = useState(false);
+  const [execUrl, setExecUrl] = useState('');
   const [conn, setConn] = useState<{ url: string; key: string; settings: Settings } | null>(null);
   const [me, setMe] = useState('');
   const [names, setNames] = useState<[string, string]>(['', '']);
@@ -15,8 +17,17 @@ export function Install() {
 
   const connect = async () => {
     setError('');
-    const parsed = decodeSetupCode(code);
-    if (!parsed) return setError('הקוד לא תקין. העתיקו אותו שוב במלואו, כולל BL1 בהתחלה.');
+    const decoded = decodeSetupCode(code);
+    if (!decoded) return setError('הקוד לא תקין. העתיקו אותו שוב במלואו, כולל BL1 בהתחלה.');
+    let parsed = decoded;
+    const override = execUrl.trim();
+    if (override) {
+      if (!isServerUrl(override) || isEditorTestUrl(override)) return setError('הכתובת צריכה להתחיל ב-https:// ולהסתיים ב-/exec');
+      parsed = { ...decoded, url: override };
+    } else if (isEditorTestUrl(decoded.url)) {
+      setNeedExec(true);
+      return setError('הקוד מכיל כתובת בדיקה (שמסתיימת ב-/dev) שעובדת רק בתוך עורך הסקריפט ולא מהטלפון. הריצו שוב את rotateKey אחרי שהגרסה החדשה נפרסה, או הדביקו למטה את כתובת ה-Web app (שמסתיימת ב-/exec) מתוך Deploy ← Manage deployments.');
+    }
     setBusy(true);
     try {
       const res = await callApi(parsed, { action: 'settings' });
@@ -53,6 +64,12 @@ export function Install() {
         <h1>BabyLog</h1>
         <p>הדביקו כאן את קוד ההתקנה שהודפס בסיום ה-Setup של השרת (מתחיל ב-BL1).</p>
         <textarea data-testid="setup-code" rows={5} value={code} placeholder="BL1...." onInput={(e) => setCode((e.target as HTMLTextAreaElement).value)} />
+        {needExec && (
+          <>
+            <label class="fl">כתובת ה-Web app (מסתיימת ב-/exec)</label>
+            <input data-testid="exec-url" dir="ltr" value={execUrl} placeholder="https://script.google.com/macros/s/…/exec" onInput={(e) => setExecUrl((e.target as HTMLInputElement).value)} />
+          </>
+        )}
         {error && (
           <p class="err" role="alert" data-testid="install-error">
             {error}

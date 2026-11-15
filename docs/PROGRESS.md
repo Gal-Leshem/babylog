@@ -80,6 +80,11 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - Bug found by the owner on first contact: the Apps Script editor showed "No function" because the entry points were attached to
   `globalThis` at run time. The editor only lists top-level `function` declarations, so `build-server.ts` now appends them
   (tested in `tests/gas.test.ts`). Lesson: the fake Google runtime cannot catch editor-level behaviour, only runtime behaviour.
+- Bug found by the owner (second contact): `setup()` printed a setup code with the editor's private `/dev` address, which cannot work
+  from phones. Fix: `deploy-server.ts` now looks up the web app deployment first and embeds its `/exec` address into the bundle
+  (`EXEC_URL` -> `__EXEC_URL__`, private to the Apps Script project, never in the repo); on the very first deploy it creates the
+  deployment, rebuilds and redeploys. The app and `sign.sh` refuse `/dev` addresses with an explanation and accept an `/exec` override.
+  Owner must run `rotateKey` once after this version is deployed to get a corrected code (also retires the key pasted in chat).
 - Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
   Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
   owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.

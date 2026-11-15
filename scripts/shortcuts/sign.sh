@@ -43,6 +43,22 @@ json="$(printf '%s' "$b64" | { base64 -D 2>/dev/null || base64 -d; })" || die 'C
 URL="$(printf '%s' "$json" | sed -n 's/.*"u":"\([^"]*\)".*/\1/p')"
 KEY="$(printf '%s' "$json" | sed -n 's/.*"k":"\([^"]*\)".*/\1/p')"
 [ -n "$URL" ] && [ -n "$KEY" ] || die 'The code is malformed. Copy it again in full.'
+case "$URL" in
+  */dev|*/dev/)
+    # The editor's private test address: it cannot work from phones. A real web app address is needed.
+    EXEC="${BABYLOG_EXEC_URL:-}"
+    if [ -z "$EXEC" ]; then
+      printf 'The code contains the private test address (ends in /dev), which cannot work from a phone.\n'
+      printf 'Paste the Web app address (Deploy > Manage deployments, ends in /exec) and press Enter: '
+      read -r EXEC < /dev/tty || die 'No address given. Run rotateKey in the script editor to get a corrected code, or set BABYLOG_EXEC_URL.'
+    fi
+    EXEC="$(printf '%s' "$EXEC" | tr -d ' \t\r\n')"
+    case "$EXEC" in
+      https://*/exec|http://127.0.0.1*) URL="$EXEC" ;;
+      *) die 'The address must start with https:// and end with /exec.' ;;
+    esac
+    ;;
+esac
 
 # 2. ask the server for the two parent names (this also proves that the code works)
 reply="$(curl -fsS -L -X POST -H 'Content-Type: text/plain' --data "{\"key\":\"$KEY\",\"action\":\"settings\"}" "$URL")" \

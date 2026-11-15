@@ -13,6 +13,12 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = { nightMode: 'auto' };
 
+/** An address the app may talk to: https, or plain http only for local development. */
+export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^http:\/\/(127\.0\.0\.1|localhost)/.test(u);
+
+/** The editor's private test address of a script. It only works for the owner inside the browser, never from a phone. */
+export const isEditorTestUrl = (u: string): boolean => /\/dev\/?$/.test(u);
+
 /** Setup code: "BL1." + base64url(JSON {u: web app url, k: key}). */
 export function decodeSetupCode(code: string): { url: string; key: string } | null {
   const trimmed = code.trim().replace(/\s+/g, '');
@@ -23,7 +29,7 @@ export function decodeSetupCode(code: string): { url: string; key: string } | nu
     const bin = atob(padded);
     const json = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
     const o = JSON.parse(json) as { u?: unknown; k?: unknown };
-    if (typeof o.u !== 'string' || typeof o.k !== 'string' || !/^https:\/\//.test(o.u) && !/^http:\/\/(127\.0\.0\.1|localhost)/.test(o.u) || o.k.length < 8) return null;
+    if (typeof o.u !== 'string' || typeof o.k !== 'string' || !isServerUrl(o.u) || o.k.length < 8) return null;
     return { url: o.u, key: o.k };
   } catch {
     return null;

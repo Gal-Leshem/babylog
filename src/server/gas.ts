@@ -8,6 +8,11 @@ import { README_ROWS } from './readme';
 
 /** Replaced at build time. Non-empty only in the TEST build. */
 declare const __FIXED_KEY__: string;
+/**
+ * The deployed web app address (ends in /exec), embedded by the deploy pipeline. Needed because
+ * ScriptApp.getService().getUrl() returns the editor's private /dev address when run from the editor.
+ */
+declare const __EXEC_URL__: string;
 
 const EVENTS = 'Events';
 const SETTINGS = 'Settings';
@@ -170,16 +175,22 @@ export function printInstallCode(): void {
     console.log('No key yet. Run setup() first.');
     return;
   }
-  let url = '';
-  try {
-    url = ScriptApp.getService().getUrl() ?? '';
-  } catch (err) {
-    console.log(`Could not read the web app URL automatically (${String(err)}).`);
+  let url = __EXEC_URL__;
+  if (!url) {
+    try {
+      url = ScriptApp.getService().getUrl() ?? '';
+    } catch (err) {
+      console.log(`Could not read the web app URL automatically (${String(err)}).`);
+    }
   }
   if (!url) {
     console.log('The web app URL is not available here. Copy it from Deploy > Manage deployments (the one ending in /exec), then build the code as BL1. + base64url({"u":"<url>","k":"<key>"}).');
     console.log(`KEY: ${key}`);
     return;
+  }
+  if (!/\/exec$/.test(url)) {
+    console.log('WARNING: this address (ending in /dev) only works for you inside this browser, not from phones or Siri.');
+    console.log('Fix: Deploy > Manage deployments > copy the Web app URL (ends in /exec) and paste it in the app next to this code.');
   }
   console.log('Paste this setup code into the app (Settings screen on first launch):');
   console.log(encodeInstallCode(url, key, b64url));
