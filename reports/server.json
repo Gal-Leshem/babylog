@@ -1,25 +1,11 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "666fabe",
-  "ref": "main",
-  "at": "2026-11-15T08:50:48.301Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43696131622",
+  "sha": "9bb4b4b",
+  "ref": "dev",
+  "at": "2026-11-15T10:07:35.244Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43702258937",
   "logs": {
-    "deploy-prod": [
-      "+ npx tsx scripts/deploy-server.ts prod",
-      "::add-mask::[token]",
-      "using existing prod script",
-      "::add-mask::[deployment]",
-      "::add-mask::[deployment]",
-      "server bundle ready (production, 28 KB)",
-      "Script is already up to date.",
-      "redeployed existing web app deployment (version 6)",
-      "::add-mask::[deployment]",
-      "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=5 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "prod server deployed"
-    ],
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
       "::add-mask::[token]",
@@ -28,10 +14,10 @@
       "::add-mask::[deployment]",
       "server bundle ready (test, 28 KB)",
       "Script is already up to date.",
-      "redeployed existing web app deployment (version 17)",
+      "redeployed existing web app deployment (version 19)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=17 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=19 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "test server deployed"
     ],
     "install": [
@@ -40,7 +26,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 4s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
