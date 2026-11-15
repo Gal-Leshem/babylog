@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "c6f0f6f",
+  "sha": "ea40194",
   "ref": "main",
-  "at": "2026-11-15T08:06:14.906Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43692639954",
+  "at": "2026-11-15T08:14:47.765Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43693304820",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,9 +21,9 @@
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  0.98 kB │ gzip:  0.44 kB",
       "dist/assets/index-B_dnf-4-.css   6.92 kB │ gzip:  2.10 kB",
-      "dist/assets/index-DAhvBBQA.js   60.95 kB │ gzip: 21.77 kB",
+      "dist/assets/index-v3VAmLMz.js   60.95 kB │ gzip: 21.77 kB",
       "",
-      "✓ built in 70ms",
+      "✓ built in 71ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -69,14 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published c6f0f6f to gh-pages"
+      "published ea40194 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 4345275, waiting for c6f0f6f",
-      "attempt 2: serves 4345275, waiting for c6f0f6f",
-      "attempt 3: serves 4345275, waiting for c6f0f6f",
-      "site is live and serves c6f0f6f"
+      "attempt 1: serves c6f0f6f, waiting for ea40194",
+      "attempt 2: serves c6f0f6f, waiting for ea40194",
+      "attempt 3: serves c6f0f6f, waiting for ea40194",
+      "site is live and serves ea40194"
     ]
   }
 }
