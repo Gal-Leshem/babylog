@@ -10,8 +10,13 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 3. `npm test` and `npm run typecheck` must pass before every push.
 4. Push to `dev` first; fast-forward `main` only when the stage is green.
 5. CI results cannot be read through the cloud sandbox proxy (GitHub Actions API is blocked).
-   The pipeline publishes a sanitized status file to the `ci-status` branch; read that instead:
-   `git fetch origin ci-status && git show origin/ci-status:status.json`.
+   The pipeline publishes sanitized per-job reports to the `ci-status` branch. Read them with
+   `scripts/read-ci.sh [test|server|pages]` (set `VERBOSE=1` for every log section).
+   A report's `sha` must equal `git rev-parse --short=7 HEAD` before you trust it (reports lag the push by 1-3 minutes).
+6. Waiting: poll with a loop of short `sleep 5` steps (foreground command limit is 5 minutes; a single long sleep is blocked).
+7. Local e2e: `npm run build && npx playwright test --trace off`. Also run once with `MOCK_DELAY=200` on a manually started
+   mock server (`MOCK_DELAY=200 PORT=8787 npx tsx scripts/mock-server.ts`) to catch timing bugs; CI does this too.
+8. Commit trailer: `Co-Authored-By` + `Claude-Session` lines as requested by the session reminder; git identity stays generic.
 
 ## Environment constraints (cloud sandbox)
 - Outbound network works for Google and GitHub Pages hosts; GitHub Actions API paths do not.
@@ -20,6 +25,16 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   deployment therefore happens inside GitHub Actions.
 - Git identity: generic (`BabyLog Dev`, noreply address). Commits end with the attribution
   trailer requested by the session.
+
+## Current state (snapshot, update at every stage)
+- Branches `dev` and `main` are identical; last commit: "Fix settings form races found under slow connections".
+- Tests: 144 unit (Vitest) + 45 browser (Playwright), also run against a slow server in CI. All green in CI on `dev`.
+- `main` pipeline: tests OK, production server deployed (its script id is in `ci-status:envs/prod.json`), test server deployed.
+- Pages job on `main` reports FAILURE only at the last step ("verify live site"): the `gh-pages` branch is published, but GitHub
+  Pages is not enabled. The pipeline's own attempt to enable it is refused (`Resource not accessible by integration`), and the
+  sandbox API proxy refuses the Pages endpoints too. Only the owner can enable it (see Owner actions). Nothing else is wrong.
+- Live test against the test server reports PENDING (HTTP 403 "Access Denied") until the owner runs `setup` once.
+- Nothing is left to build for the agreed MVP. Remaining work is verification with the owner and polish (see Ideas).
 
 ## Stage checklist (see ARCHITECTURE.md for the design)
 - [x] Stage 0: repo connected, push access verified, secrets stored by the owner
@@ -57,6 +72,9 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   still get HTTP 403 "Access Denied" until the owner runs `setup` once (assumed cause, unconfirmed). The live test
   reports PENDING until then; after approval it must report LIVE TEST PASSED.
 - Pages: publishing to `gh-pages` works; the site stays 404 until the owner enables Pages (Settings > Pages > gh-pages).
+  The workflow's enable attempt is refused with the default Actions token, so this cannot be automated without a personal token.
+- npm audit: 0 vulnerabilities in shipped (production) dependencies. The 2 "high" findings are in dev tooling (clasp -> zod) that runs only in CI.
+- Mock server: `MOCK_DELAY` env var adds latency; `/__control?reset=1|offline=1|delay=ms` and `POST /__seed` exist for tests.
 
 ## Open risks to verify with the owner (cannot be tested in the cloud sandbox)
 1. Live test after the owner ran `setup`: expect "LIVE TEST PASSED" (else follow the troubleshooting list in INSTALL.he.md).
@@ -65,3 +83,15 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 3. Whether a network shortcut runs while the phone is locked (may ask for Face ID).
 4. Gemini reading a sheet shared from another account.
 5. First real use of the app on iPhone Safari/PWA: install flow, safe areas, status bar, date/time pickers.
+
+## Ideas if time remains (none required for the MVP)
+- After the owner confirms the live test passes: add a scheduled weekly backup of the sheet (a copy in Drive, keep 8).
+- Shortcut import failures on a real device would need a fix in `scripts/shortcuts/builder.ts`; keep `tests/shortcut-interp.ts` in step.
+- Optional: a "last 7 days" chart on the summary screen (phase 2 in the spec; not part of the MVP).
+
+## Resume prompt (paste into a new session with the babylog repository attached)
+> Continue the BabyLog project. Read `docs/PROGRESS.md` and `docs/ARCHITECTURE.md` in the repository first. Follow "How to resume".
+> The owner approved, for the overnight run: pushing to `dev` and `main`, deploying to GitHub Pages, creating the sheets and
+> deploying the Apps Script server through GitHub Actions with the stored credential. Never put names, e-mail addresses,
+> device models, secrets or live addresses into the repository, commit messages or logs. Check the latest CI reports with
+> `scripts/read-ci.sh`, fix anything red, and report to the owner in Hebrew what changed and what is left for them.
