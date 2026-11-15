@@ -92,6 +92,12 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   Chromium at heights 560-852. Hardened the layout: `#app` is `position: fixed; inset: 0` (no vh/dvh), `.main` scrolls with
   touch momentum, the button grid has a minimum height so small screens scroll instead of squashing (`e2e/scroll.spec.ts`).
   If it persists, ask for a screenshot from the phone; suspects: standalone-mode viewport height, status bar style.
+- Second report with a screen recording (iPhone): Home content got dragged up and stayed stuck (iOS elastic overscroll on a container
+  that should not scroll); Settings scrolled fine. Fix: Home is a FIXED screen (`.main.fixed`: overflow hidden, no overscroll, grid shrinks
+  instead of scrolling); each tab has its own scroll container (`key={tab}`, no shared scroll offset); the recent list on Home shows
+  the last 10 events in its own scrollable box (about 3.5 rows visible). Tests drag with raw CDP touch events (`e2e/scroll.spec.ts`;
+  `Input.synthesizeScrollGesture` with touch does nothing in headless Chromium, mouse wheel and `dispatchTouchEvent` work).
+  Mutation-checked: the old scrollable home layout fails the short-screen test.
 - Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
   Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
   owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.

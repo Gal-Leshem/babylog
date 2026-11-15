@@ -93,7 +93,8 @@ export function App() {
   return (
     <>
       <Banner />
-      <main class="main">
+      {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
+      <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={tab}>
         {tab === 'home' && <Home onEdit={(event) => setForm({ mode: 'edit', event })} onAddLate={() => setForm({ mode: 'add' })} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event })} />}
         {tab === 'summary' && <Summary />}

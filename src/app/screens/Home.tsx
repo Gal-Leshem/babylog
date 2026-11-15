@@ -28,7 +28,7 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
   const next = nextSide(events);
   const sleep = sleepState(events);
   const vit = vitaminDOnDate(events, today);
-  const recent = [...events].sort(byTimeDesc).slice(0, 3);
+  const recent = [...events].sort(byTimeDesc).slice(0, 10);
 
   const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
   const sleepValue =

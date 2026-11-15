@@ -76,7 +76,8 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .banner button { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 2px 8px; }
 
 /* ---- home ---- */
-.home { min-height: 100%; display: flex; flex-direction: column; gap: 8px; }
+.main.fixed { overflow: hidden; overscroll-behavior: none; touch-action: none; }
+.home { height: 100%; display: flex; flex-direction: column; gap: 8px; }
 .status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tile {
   background: var(--surface);
@@ -91,7 +92,7 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .tv { font-size: 14px; font-weight: 700; line-height: 1.25; }
 .ts { font-size: 11px; color: var(--muted); min-height: 14px; }
 
-.grid { flex: 1; min-height: 340px; display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.7fr); gap: 8px; }
+.grid { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.7fr); gap: 8px; }
 .feedrow, .row2, .row1 { display: grid; gap: 8px; min-height: 0; }
 .feedrow { direction: ltr; grid-template-columns: 1fr 1fr; }
 .row2 { grid-template-columns: 1fr 1fr; }
@@ -119,7 +120,19 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .big.flash { background: var(--accent); color: var(--accent-fg); }
 
 .link { background: none; border: none; color: var(--accent); padding: 4px; font-size: 15px; align-self: center; }
-.recent { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+  flex: 0 0 auto;
+  /* about three and a half rows: the half row hints that the list scrolls */
+  max-height: 128px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
 .rrow {
   width: 100%;
   display: grid;
