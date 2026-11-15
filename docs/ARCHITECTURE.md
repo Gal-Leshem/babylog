@@ -32,6 +32,7 @@ Staying current (the other parent's entries must show up by themselves):
   the one it holds; a full refresh still runs every 60 s (catches edits made by hand in the sheet).
 - Coming back to the foreground (visibilitychange, focus, pageshow) or regaining the network triggers an immediate refresh.
 - Nothing is sent while the app is hidden (saves battery and Apps Script quota).
+- A refresh requested while another is running is remembered and runs right after it (never dropped).
 - A refresh older than 30 s is declared dead (iOS can freeze requests while a phone sleeps) and stops blocking new ones;
   its late answer is ignored (sequence token). A refresh answer that raced with a send is discarded.
 

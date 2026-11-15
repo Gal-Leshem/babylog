@@ -16,6 +16,7 @@ let offline: boolean;
 let garbage: boolean;
 let timers: { fn: () => void; ms: number }[];
 let gate: Promise<void> | null;
+let answerEarly: boolean; // compute a held list answer BEFORE the gate opens (a real server answers at request time)
 let seen: Array<Record<string, any>>;
 let n: number;
 
@@ -25,7 +26,14 @@ const fetchImpl = (async (_url: string, init: { body: string }) => {
   if (offline) throw new TypeError('Failed to fetch');
   const body = JSON.parse(init.body);
   seen.push(body);
-  if (gate && body.action === 'list') await gate;
+  if (gate && body.action === 'list') {
+    if (answerEarly) {
+      const early = JSON.stringify(handle(body, deps()));
+      await gate;
+      return new Response(early, { status: 200 });
+    }
+    await gate;
+  }
   if (garbage) return new Response('<html>Sign in</html>', { status: 200 });
   return new Response(JSON.stringify(handle(body, deps())), { status: 200 });
 }) as unknown as typeof fetch;
@@ -59,6 +67,7 @@ beforeEach(() => {
   garbage = false;
   timers = [];
   gate = null;
+  answerEarly = false;
   seen = [];
   n = 0;
 });
@@ -457,6 +466,25 @@ describe('polling for changes made on the other phone', () => {
     release(); // the old answer finally arrives and is ignored
     expect(await stuck).toBe(false);
     expect(e.getState().events.map((v) => v.id)).toEqual(['fresh']);
+  });
+
+  it('a refresh requested while one is running is not lost: it runs right after', async () => {
+    const e = makeEngine();
+    answerEarly = true;
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    const first = e.refresh(); // in flight; the server already answered "nothing yet" and the answer is on its way
+    await idle();
+    gate = null;
+    answerEarly = false;
+    theirFeed('late'); // something new appears on the server after that answer was produced
+    expect(await e.refresh()).toBe(false); // refused now (already running) ...
+    release();
+    await first;
+    await idle();
+    await idle();
+    expect(listCalls(), 'the remembered request must produce a second list request').toBe(2);
+    expect(e.getState().events.map((v) => v.id)).toEqual(['late']); // ... but not forgotten: the new event arrives at once
   });
 
   it('resume() sends the queue first, otherwise refreshes', async () => {

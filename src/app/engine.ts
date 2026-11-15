@@ -92,6 +92,8 @@ export class Engine {
   private refreshing = false;
   private refreshStartedAt = 0;
   private refreshSeq = 0;
+  /** A refresh was requested while one was running: run another one as soon as that one ends. */
+  private refreshQueued = false;
   /** The server data revision our local copy corresponds to. */
   private lastRev: string | null = null;
   private inFlight: string | null = null;
@@ -328,7 +330,10 @@ export class Engine {
     const ep = this.endpoint();
     if (!ep || this.flushing || this.p.queue.length > 0) return false;
     // A refresh stuck on a dead connection (e.g. after the phone slept) must not block new ones forever.
-    if (this.refreshing && this.now() - this.refreshStartedAt < REFRESH_STALE_MS) return false;
+    if (this.refreshing && this.now() - this.refreshStartedAt < REFRESH_STALE_MS) {
+      this.refreshQueued = true; // do not lose the request (e.g. "the network is back"): it may postdate the running one
+      return false;
+    }
     this.refreshing = true;
     this.refreshStartedAt = this.now();
     const seq = ++this.refreshSeq;
@@ -356,7 +361,13 @@ export class Engine {
       this.setStatus('offline');
       return false;
     } finally {
-      if (seq === this.refreshSeq) this.refreshing = false;
+      if (seq === this.refreshSeq) {
+        this.refreshing = false;
+        if (this.refreshQueued) {
+          this.refreshQueued = false;
+          void this.refresh();
+        }
+      }
     }
   }
 
