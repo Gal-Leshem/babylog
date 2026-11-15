@@ -185,12 +185,14 @@ test.describe('the date is in Hebrew', () => {
 
 test('the diaper buttons use the everyday words', async ({ page }) => {
   await install(page);
-  await expect(page.getByTestId('btn-wet')).toContainText('חיתול פיפי');
-  await expect(page.getByTestId('btn-poop')).toContainText('קקי');
+  await expect(page.getByTestId('btn-wet').locator('.lbl')).toHaveText('פיפי'); // exactly this word
+  await expect(page.getByTestId('btn-poop').locator('.lbl')).toHaveText('קקי');
+  await expect(page.getByTestId('btn-both').locator('.lbl')).toHaveText('פיפי + קקי');
   await expect(page.getByTestId('btn-both')).toContainText('פיפי + קקי');
   await page.getByTestId('add-late').click();
-  await expect(page.getByTestId('kind-wet')).toContainText('חיתול פיפי');
+  await expect(page.getByTestId('kind-wet')).toContainText('פיפי');
+  await expect(page.getByTestId('kind-wet')).not.toContainText('חיתול');
   await expect(page.getByTestId('kind-poop')).toContainText('קקי');
   await expect(page.getByTestId('kind-both')).toContainText('פיפי + קקי');
-  expect(await page.locator('body').innerText()).not.toMatch(/רטוב|צואה/);
+  expect(await page.locator('body').innerText()).not.toMatch(/רטוב|צואה|חיתול/);
 });

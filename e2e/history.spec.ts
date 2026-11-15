@@ -41,7 +41,7 @@ test('filters by event type', async ({ page, request }) => {
   await openHistory(page);
   await page.getByTestId('filter-diaper').click();
   await expect(page.getByTestId('history-row')).toHaveCount(1);
-  await expect(page.getByTestId('history-row')).toContainText('חיתול פיפי');
+  await expect(page.getByTestId('history-row')).toContainText('פיפי');
   await page.getByTestId('filter-all').click();
   await expect(page.getByTestId('history-row')).toHaveCount(3);
 });

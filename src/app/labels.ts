@@ -8,7 +8,7 @@ export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep
 export const KIND_LABEL: Record<Kind, string> = {
   feed_left: 'הנקה שמאל',
   feed_right: 'הנקה ימין',
-  wet: 'חיתול פיפי',
+  wet: 'פיפי',
   poop: 'קקי',
   both: 'פיפי + קקי',
   sleep: 'שינה',

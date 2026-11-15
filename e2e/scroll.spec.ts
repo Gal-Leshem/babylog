@@ -74,7 +74,7 @@ for (const height of [852, 700, 560]) {
         expect(b!.y + b!.height, `${id} must be above the tab bar`).toBeLessThanOrEqual((await state(page)).tabsTop);
       }
       await page.getByTestId('btn-wet').click();
-      await expect(page.getByTestId('toast-text')).toContainText('נשמר: חיתול פיפי');
+      await expect(page.getByTestId('toast-text')).toContainText('נשמר: פיפי');
       await expect(page.getByTestId('recent-row')).toHaveCount(1);
     });
 
