@@ -33,7 +33,8 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - Pages job on `main` reports FAILURE only at the last step ("verify live site"): the `gh-pages` branch is published, but GitHub
   Pages is not enabled. The pipeline's own attempt to enable it is refused (`Resource not accessible by integration`), and the
   sandbox API proxy refuses the Pages endpoints too. Only the owner can enable it (see Owner actions). Nothing else is wrong.
-- Live test against the test server reports PENDING (HTTP 403 "Access Denied") until the owner runs `setup` once.
+- Live test against the real TEST server (Apps Script web app + real sheet): LIVE TEST PASSED (14 checks) after the owner ran `setup`.
+  Remaining owner steps: run `rotateKey` in the production script (BabyLog) once for a corrected `/exec` setup code, install on phones, shortcuts.
 - Nothing is left to build for the agreed MVP. Remaining work is verification with the owner and polish (see Ideas).
 
 - Owner reported (Sun morning) that Pages is enabled (site answers HTTP 200) and that `setup` was run in the script editor;
