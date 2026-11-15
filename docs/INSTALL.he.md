@@ -8,8 +8,8 @@
 
 ## 2. אישור השרת (כ-3 דקות, פעם אחת)
 1. ב-Google Drive תמצאו שני גיליונות: **BabyLog** (האמיתי) ו-**BabyLog TEST** (לבדיקות אוטומטיות).
-2. פתחו את **BabyLog** ← Extensions ← **Apps Script**.
-3. למעלה בחרו את הפונקציה **setup** ולחצו **Run**.
+2. ב-script.google.com לחצו על הפרויקט **BabyLog** (העורך נפתח מיד; התפריט Extensions קיים רק בתוך הגיליון עצמו).
+3. למעלה, בתפריט הפונקציות ליד Run, בחרו **setup** ולחצו **Run**.
 4. Google תבקש הרשאה: Review permissions ← בחרו את החשבון ← "Google hasn’t verified this app" ← **Advanced** ← **Go to BabyLog (unsafe)** ← Allow.
    (זה הסקריפט שלכם עצמו, והוא מבקש גישה רק לגיליון הזה.)
 5. בחלון ה-Execution log יודפס **קוד התקנה** שמתחיל ב-`BL1.`. העתיקו אותו. זה המפתח הסודי: אל תשלחו אותו בשום מקום ציבורי.

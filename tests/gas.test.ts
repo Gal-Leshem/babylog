@@ -18,6 +18,13 @@ function boot(opts?: { url?: string | null }) {
 }
 
 describe('built Apps Script bundle against a fake Google runtime', () => {
+  it('declares the entry points as top-level functions, which is what the editor lists', () => {
+    // The Apps Script editor finds functions statically; a function attached at run time shows as "No function".
+    for (const f of ['doPost', 'doGet', 'setup', 'rotateKey', 'printInstallCode']) {
+      expect(code, f).toMatch(new RegExp(`^function ${f}\\(`, 'm'));
+    }
+  });
+
   it('exposes the entry points as globals', () => {
     const { g } = boot();
     for (const f of ['doPost', 'doGet', 'setup', 'rotateKey', 'printInstallCode']) expect(typeof g[f]).toBe('function');

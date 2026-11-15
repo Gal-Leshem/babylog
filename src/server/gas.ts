@@ -143,7 +143,7 @@ function json(o: unknown): GoogleAppsScript.Content.TextOutput {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
+export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.TextOutput {
   let body: unknown = null;
   try {
     body = JSON.parse(e.postData.contents);
@@ -153,7 +153,7 @@ function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Content.Tex
   return json(handle(body, deps()));
 }
 
-function doGet(): GoogleAppsScript.Content.TextOutput {
+export function doGet(): GoogleAppsScript.Content.TextOutput {
   return json({ ok: true, app: 'babylog', version: API_VERSION });
 }
 
@@ -164,7 +164,7 @@ function newKey(): string {
   return (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
 }
 
-function printInstallCode(): void {
+export function printInstallCode(): void {
   const key = props().getProperty('API_KEY');
   if (!key) {
     console.log('No key yet. Run setup() first.');
@@ -186,7 +186,7 @@ function printInstallCode(): void {
 }
 
 /** One-time setup: creates the sheets, the secret key, and prints the setup code. */
-function setup(): void {
+export function setup(): void {
   const ss = SpreadsheetApp.getActive();
   ss.setSpreadsheetTimeZone(TZ_NAME);
   const events = ss.getSheetByName(EVENTS) ?? ss.insertSheet(EVENTS);
@@ -213,10 +213,10 @@ function setup(): void {
 }
 
 /** Replaces the secret key (invalidates every installed copy of the app and shortcuts). */
-function rotateKey(): void {
+export function rotateKey(): void {
   props().setProperty('API_KEY', newKey());
   printInstallCode();
 }
 
-// Apps Script looks these up as globals; the bundle is wrapped in a function scope.
-Object.assign(globalThis, { doPost, doGet, setup, rotateKey, printInstallCode });
+// The build (scripts/build-server.ts) wraps this module and re-declares the entry points as plain
+// top-level functions. The Apps Script editor only lists (and can run) functions declared that way.

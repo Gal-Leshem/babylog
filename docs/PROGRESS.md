@@ -74,6 +74,12 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
 - Pages: publishing to `gh-pages` works; the site stays 404 until the owner enables Pages (Settings > Pages > gh-pages).
   The workflow's enable attempt is refused with the default Actions token, so this cannot be automated without a personal token.
 - npm audit: 0 vulnerabilities in shipped (production) dependencies. The 2 "high" findings are in dev tooling (clasp -> zod) that runs only in CI.
+- Bug found by the owner on first contact: the Apps Script editor showed "No function" because the entry points were attached to
+  `globalThis` at run time. The editor only lists top-level `function` declarations, so `build-server.ts` now appends them
+  (tested in `tests/gas.test.ts`). Lesson: the fake Google runtime cannot catch editor-level behaviour, only runtime behaviour.
+- Git identity: commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as
+  Unverified). The first 9+ commits on GitHub still carry the older generic identity; rewriting them needs a force-push that the
+  owner has not approved. A local branch `dev-reauthored` (not pushed) holds that rewrite; do not push it without approval.
 - Mock server: `MOCK_DELAY` env var adds latency; `/__control?reset=1|offline=1|delay=ms` and `POST /__seed` exist for tests.
 
 ## Open risks to verify with the owner (cannot be tested in the cloud sandbox)
