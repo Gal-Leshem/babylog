@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "711af12",
+  "sha": "db45be9",
   "ref": "main",
-  "at": "2026-11-15T10:27:02.753Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43703784533",
+  "at": "2026-11-15T10:53:23.150Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43705889840",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -20,14 +20,14 @@
       "dist/registerSW.js               0.13 kB",
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  0.98 kB │ gzip:  0.44 kB",
-      "dist/assets/index-CtwBMpgN.css   7.31 kB │ gzip:  2.17 kB",
-      "dist/assets/index-hg-WUYvP.js   61.80 kB │ gzip: 22.12 kB",
+      "dist/assets/index-BHt3Wopi.css   7.34 kB │ gzip:  2.19 kB",
+      "dist/assets/index-CeD1VNPi.js   61.74 kB │ gzip: 22.10 kB",
       "",
-      "✓ built in 60ms",
+      "✓ built in 56ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (68.60 KiB)",
+      "precache  10 entries (68.56 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -44,7 +44,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 4s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -69,13 +69,13 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 711af12 to gh-pages"
+      "published db45be9 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 9bb4b4b, waiting for 711af12",
-      "attempt 2: serves 9bb4b4b, waiting for 711af12",
-      "site is live and serves 711af12"
+      "attempt 1: serves 711af12, waiting for db45be9",
+      "attempt 2: serves 711af12, waiting for db45be9",
+      "site is live and serves db45be9"
     ]
   }
 }
