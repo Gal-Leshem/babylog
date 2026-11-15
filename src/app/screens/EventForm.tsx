@@ -4,6 +4,7 @@ import type { BabyEvent } from '../../shared/types';
 import { deleteEvent } from '../actions';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, showToast } from '../state';
+import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 const BACK: [string, number][] = [
@@ -26,6 +27,8 @@ export function EventForm({ mode, event, onClose }: Props) {
   const [kind, setKind] = useState<Kind>(event ? kindOf(event) : 'feed_left');
   const [sDate, setSDate] = useState(initStart.slice(0, 10));
   const [sTime, setSTime] = useState(timeOf(initStart));
+  // which "X minutes ago" button is active (cleared as soon as the time or date is changed by hand)
+  const [quick, setQuick] = useState<number | null>(null);
   const [unknownStart, setUnknownStart] = useState(Boolean(event && event.type === 'sleep' && !event.start));
   const initEnd = event?.end || nowStr;
   const [stillAsleep, setStillAsleep] = useState(event ? event.type === 'sleep' && !event.end && Boolean(event.start) : false);
@@ -42,6 +45,7 @@ export function EventForm({ mode, event, onClose }: Props) {
     setSDate(t.slice(0, 10));
     setSTime(timeOf(t));
     setUnknownStart(false);
+    setQuick(mins);
   };
 
   const save = () => {
@@ -76,18 +80,50 @@ export function EventForm({ mode, event, onClose }: Props) {
           <>
             <label class="fl">{isSleep ? 'נרדם ב' : 'מתי'}</label>
             <div class="when">
-              <input type="date" data-testid="start-date" value={sDate} max={today} onInput={(e) => setSDate((e.target as HTMLInputElement).value)} />
-              <input type="time" data-testid="start-time" value={sTime} onInput={(e) => setSTime((e.target as HTMLInputElement).value)} />
+              <DateField
+                testId="start-date"
+                value={sDate}
+                max={today}
+                onChange={(d) => {
+                  setSDate(d);
+                  setQuick(null);
+                }}
+              />
+              <input
+                type="time"
+                data-testid="start-time"
+                value={sTime}
+                onInput={(e) => {
+                  setSTime((e.target as HTMLInputElement).value);
+                  setQuick(null);
+                }}
+              />
             </div>
             <div class="chips small">
-              <button type="button" class={`chip ${sDate === today ? 'on' : ''}`} onClick={() => setSDate(today)}>
+              <button
+                type="button"
+                class={`chip ${quick === null && sDate === today ? 'on' : ''}`}
+                data-testid="chip-today"
+                onClick={() => {
+                  setSDate(today);
+                  setQuick(null);
+                }}
+              >
                 היום
               </button>
-              <button type="button" class={`chip ${sDate === addDays(today, -1) ? 'on' : ''}`} onClick={() => setSDate(addDays(today, -1))}>
+              <button
+                type="button"
+                class={`chip ${quick === null && sDate === addDays(today, -1) ? 'on' : ''}`}
+                data-testid="chip-yesterday"
+                onClick={() => {
+                  setSDate(addDays(today, -1));
+                  setQuick(null);
+                }}
+              >
                 אתמול
               </button>
               {BACK.map(([label, m]) => (
-                <button type="button" key={m} class="chip" data-testid={`back-${m}`} onClick={() => setBack(m)}>
+                <button type="button" key={m} class={`chip ${quick === m ? 'on' : ''}`} aria-pressed={quick === m} data-testid={`back-${m}`} onClick={() => setBack(m)}>
                   {label}
                 </button>
               ))}
@@ -109,7 +145,7 @@ export function EventForm({ mode, event, onClose }: Props) {
               <>
                 <label class="fl">התעורר ב</label>
                 <div class="when">
-                  <input type="date" data-testid="end-date" value={eDate} max={today} onInput={(e) => setEDate((e.target as HTMLInputElement).value)} />
+                  <DateField testId="end-date" value={eDate} max={today} onChange={setEDate} />
                   <input type="time" data-testid="end-time" value={eTime} onInput={(e) => setETime((e.target as HTMLInputElement).value)} />
                 </div>
               </>

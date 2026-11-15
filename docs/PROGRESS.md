@@ -109,6 +109,9 @@ the baby's name, script/deployment IDs or URLs of the live server in any file or
   cheap polling, silence while hidden, catch-up after offline). Mutation-checked: a slow poll interval fails the first test.
   The server must be redeployed for `poll` to exist; clients fall back to full refreshes against an older server.
 - Owner request: in the add-after-the-fact form the quick button "now" is replaced by "10 minutes ago" (`back-10`).
+- Owner feedback (Mon): quick-time buttons did not light up; date showed English months. Now the active "X minutes ago" button is lit
+  (cleared by manual time/date edits), and the form uses the in-app Hebrew calendar `DateField` (tests: `pickDate` helper in `e2e/helpers.ts`).
+  `docs/ARCHITECTURE.md` was extended with the UI rules, deployment details and test strategy; keep it in step with every change.
 - Real bug found through a flaky CI check: `KindButton` was a component defined INSIDE `Home`, so every re-render rebuilt all
   buttons (a tap straddling a re-render could be lost). Now a plain function (`kindButton`). Regression test marks the DOM nodes and
   checks they survive re-renders; it fails on the old code. Rule: never define components inside components in this app.

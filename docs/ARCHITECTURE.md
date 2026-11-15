@@ -49,3 +49,37 @@ cannot read Actions logs: `scripts/read-ci.sh`.
 `scripts/shortcuts/builder.ts` generates self-contained shortcut templates with placeholders;
 `scripts/shortcuts/sign.sh` (run on a Mac) fills in the owner's address/key/name, converts and signs them.
 Tests execute the generated files with a small interpreter (`tests/shortcut-interp.ts`) against the real server logic.
+
+## App structure and UI rules (keep these; each one came from a real bug)
+- **Screens** (`src/app/screens`): Home, History, Summary, Settings, plus the Install (first run) screen and the add/edit form (a bottom sheet).
+- **Home is a fixed screen.** `.main.fixed` has no scrolling and no overscroll, the button grid shrinks (never scrolls) on short
+  screens, and only the recent-events list (last 10, about 3.5 rows visible) scrolls in its own box. iOS let a scrollable Home get dragged
+  out of place and stay stuck. Every other tab scrolls normally; each tab has its own scroll container (`key={tab}`).
+- **Layout units:** `#app` is `position: fixed; inset: 0`; never use `vh`/`dvh` (wrong inside iOS home-screen apps). Content starts
+  `--top-gap` (22px) below the top safe area because iOS fades content under the status bar.
+- **Never define a component inside another component.** `KindButton` once lived inside `Home`, so every re-render rebuilt all buttons and a
+  tap straddling a re-render could be lost. Use plain functions that return JSX, or top-level components.
+- **Buttons:** at least 56px tall at any supported screen height; a tap locks all buttons for 1.5 s (double-tap protection) and shows a
+  5 s undo toast.
+- **Add-after-the-fact form:** quick buttons are "today", "yesterday", "10/15/30 minutes ago", "an hour ago", "two hours ago". The chosen
+  "X minutes ago" button stays lit until the time or date is changed by hand. The date uses the app's own Hebrew calendar
+  (`DateField.tsx`): the system date control follows the phone's language (English months). The time field is still the system one.
+- **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
+
+## Server deployment details
+- `scripts/deploy-server.ts` creates the sheet and bound script on first run (ids saved on `ci-status:envs/`), pushes the bundle with clasp, and
+  keeps ONE web app deployment up to date so the address never changes.
+- The bundle embeds the deployment's `/exec` address (`EXEC_URL`, only inside the private Apps Script project). `printInstallCode()` therefore
+  prints a working code; `ScriptApp.getService().getUrl()` returns the editor-only `/dev` address and must not be used for codes.
+- Entry points (`doPost`, `doGet`, `setup`, `rotateKey`, `printInstallCode`) are emitted as plain top-level functions by the build, because the
+  Apps Script editor lists only statically declared functions.
+- `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
+
+## Tests (what each layer is for)
+- `tests/` (Vitest, ~165): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+  (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
+- `e2e/` (Playwright, ~70): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+  two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
+  against a slow server (`MOCK_DELAY`), which finds timing bugs.
+- `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.
+- Habit that found real bugs: after adding a regression test, temporarily break the fix and confirm the test fails.

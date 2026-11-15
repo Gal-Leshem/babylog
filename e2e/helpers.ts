@@ -84,3 +84,15 @@ export async function installExisting(page: Page, who: 1 | 2 = 2): Promise<void>
 export async function actionsSeen(request: APIRequestContext): Promise<string[]> {
   return (await (await request.get(`${MOCK}/__calls`)).json()) as string[];
 }
+
+/** Picks a day in the app's own (Hebrew) calendar, moving between months as needed. */
+export async function pickDate(page: Page, testId: string, date: string): Promise<void> {
+  await page.getByTestId(testId).click();
+  const target = date.slice(0, 7);
+  for (let i = 0; i < 36; i++) {
+    const shown = await page.getByTestId(`${testId}-month`).getAttribute('data-ym');
+    if (shown === target) break;
+    await page.getByTestId(`${testId}-${shown! > target ? 'prev' : 'next'}`).click();
+  }
+  await page.getByTestId(`${testId}-day-${date}`).click();
+}

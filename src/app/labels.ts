@@ -63,8 +63,16 @@ export const FILTERS: { id: 'all' | EventType; label: string }[] = [
   { id: 'vitamin_d', label: 'ויטמין D' },
 ];
 
-const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+export const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+export const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
+export const WEEKDAYS_SHORT = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+
+/** 'YYYY-MM-DD' -> '14 בנובמבר 2026' */
+export function dateLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  return `${d} ב${MONTHS[m - 1]} ${y}`;
+}
 
 /** 'YYYY-MM-DD' -> 'יום ראשון, 14 בנובמבר' */
 export function dayHeading(date: string): string {

@@ -234,3 +234,22 @@ input, textarea, select {
 /* ---- install ---- */
 .install { padding: 24px 16px; max-width: 480px; margin: 0 auto; overflow: auto; height: 100%; }
 .install button.primary { margin-top: 14px; padding: 12px 20px; border-radius: 12px; border: 1px solid var(--accent); width: 100%; }
+
+/* ---- Hebrew date field ---- */
+.datefield { display: contents; }
+/* date button and time on the first row, the calendar (when open) across the full width below them */
+.when .datebtn { grid-row: 1; grid-column: 1; min-width: 0; }
+.when input[type='time'] { grid-row: 1; grid-column: 2; }
+.when .cal { grid-row: 2; grid-column: 1 / -1; }
+.datebtn { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: start; }
+.cal { margin-top: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cal-head button { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; width: 40px; height: 36px; font-size: 20px; }
+.cal-head button:disabled { opacity: 0.35; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.cal-wd { color: var(--muted); font-size: 12px; padding: 4px 0; }
+.cal-day { background: none; border: 1px solid transparent; border-radius: 10px; height: 38px; font-variant-numeric: tabular-nums; }
+.cal-day.today { border-color: var(--line); font-weight: 700; }
+.cal-day.sel { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.cal-day:disabled { opacity: 0.3; }
+.when { align-items: start; }
