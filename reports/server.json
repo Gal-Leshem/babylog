@@ -1,10 +1,10 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "5c74d07",
+  "sha": "62b86c3",
   "ref": "dev",
-  "at": "2026-11-16T16:59:20.870Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43911966153",
+  "at": "2026-11-16T17:08:02.165Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43913486912",
   "logs": {
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
@@ -14,10 +14,10 @@
       "::add-mask::[deployment]",
       "server bundle ready (test, 38 KB)",
       "Script is already up to date.",
-      "redeployed existing web app deployment (version 63)",
+      "redeployed existing web app deployment (version 64)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=63 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=64 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "test server deployed"
     ],
     "install": [
@@ -26,7 +26,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 4s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
