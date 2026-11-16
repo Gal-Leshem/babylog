@@ -199,7 +199,11 @@ work against the old server (fallback). Check both directions in the browser sui
    ops; do item 3.2 (one request per open) together with phase 1, and items 2.1 and 2.3 (lazy sheet, tail read) right after.
 2. The sheet is never edited by hand. Consequence: skip item 2.6 (`onEdit`); relax the forced full sync to every 5 minutes as soon
    as phase 1 is live.
-3. Apps Script or another server: still open; the owner asked what a move would mean (see section 6).
+3. Server: **stay on Apps Script**; a move is decided later, after measuring (section 6 is background only).
+   **No overkill (owner):** build the minimum that removes the waits. Dropped unless measurements demand them: `CacheService`
+   (items 2.5 optional part and 2.7), the per-step debug timings in phase 0 (total and server `ms` are enough), retry jitter
+   (3.4), View Transitions and the filter memory (Q6). Minimal path: phase 0 (small) → phase 1 → items 3.1 and 3.2 → items 2.1
+   to 2.3 → measure again and stop if it feels right; 2.4, 3.3 and phase 4 only if still needed. Then phase 5.
 4. Look: direction (b), polish plus an own icon set. Still to confirm: Q1 to Q4 and Q6 (assumed wanted unless the owner says no;
    show screenshots before shipping each).
 
