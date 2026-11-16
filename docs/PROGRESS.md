@@ -5,7 +5,8 @@ Last updated with the commit that contains this file. Keep it short and current;
 or live server addresses into any file, commit message or log.
 
 ## What this project is
-A shared baby log for two parents: one-tap logging of nursing, diapers, sleep and vitamin D in an installable web app (PWA, Hebrew, RTL),
+A shared baby log for two parents: one-tap logging of nursing, diapers, sleep and medicines (vitamin D by default) in an installable web
+app (PWA, Hebrew, RTL),
 data in the owner's private Google Sheet, server = Google Apps Script web app, hosting = GitHub Pages, everything deployed by GitHub Actions.
 
 ## Status snapshot
@@ -15,15 +16,24 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
 - What comes next: `docs/BACKLOG.md` (track 1: fixes from the owner's feedback, always first; track 2: features in the order the owner picks).
+- Done in the second working session (details in `CHANGELOG.md`): backlog; red night colour; insights view (cards, timeline, daily
+  counts); medicines F7 complete (Settings screen, vitamin D as an ordinary medicine, icons, dose units, courses incl. "until a date",
+  Home button / window / tile, warnings with confirmation, add/edit and summary); Settings in sections; many layout fixes from the
+  owner's screenshots; CI hardening (report race, live-test retry).
+- Open with the owner: (1) confirm on the phone that the status bar is black at night now (iOS 26 samples the page; cannot be tested
+  here); (2) answer: should the medicines tile, with several medicines, add a total like "2 מתוך 3 תרופות ניתנו היום"?
+  (3) the owner will report which of "סיכום" / "תובנות" and which insight cards get used, then reshape F8.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
 2. `git config user.name Claude && git config user.email noreply@anthropic.com`
    `git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' && git fetch origin` (otherwise a session hook mis-counts unpushed commits).
 3. Read `docs/CHANGELOG.md`, `docs/ARCHITECTURE.md` and `docs/BACKLOG.md`. Run `npm test`, `npm run typecheck`, `npm run build && npx playwright test --trace off`.
-4. Check the latest pipeline results: `scripts/read-ci.sh` (test | server | pages). Trust a report only if its `sha` equals `git rev-parse --short=7 HEAD`.
-5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; wait for CI; then push the same
-   commit to `main`; confirm `https://<account>.github.io/babylog/version.json` serves it.
+4. Check the latest pipeline results: `scripts/read-ci.sh` (test | server | pages). Trust a report only if its `sha` equals `git rev-parse --short=7 HEAD`;
+   better, find a commit's own reports on `ci-status` (see the rule below).
+5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; wait for CI (a background
+   polling loop on `ci-status` for "report: server <sha>"); then push the same commit to `main`; confirm the site's `version.json` serves
+   it AND that the `main` server report says "prod server deployed" and "LIVE TEST PASSED".
 
 ## Environment and secrets (what lives where)
 - GitHub repository secrets (readable only by Actions): `CLASPRC_JSON` (Google credential for clasp, personal account), `PRIVACY_DENYLIST` (forbidden words).
@@ -61,21 +71,23 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - The iOS 26 status bar tint (sampled from the page) cannot be reproduced in Chromium; the owner confirms on the phone.
 - iOS elastic scrolling cannot be reproduced in Chromium; the fix removes the scrollable area on Home instead.
 
-## Resume prompt (paste into a new session with the repository attached; the same text is in the owner's status document)
+## Resume prompt (paste into a new session with the repository attached)
 ```
 You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use. The repository is attached.
 
-First read, in this order: docs/PROGRESS.md (handoff: status, how to resume, environment, owner-only steps, rules), docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status via scripts/read-ci.sh. Tell me briefly in Hebrew whether everything is green (or what is not), then wait for my next request.
+First read, in this order: docs/PROGRESS.md (handoff: status, open questions, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md (fixes track and features track; F7 medicines spec), docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch). Tell me briefly in Hebrew whether everything is green (or what is not) and list the open questions from PROGRESS.md, then wait for my next request.
 
 Standing approvals: push to dev and main, deploy to GitHub Pages, deploy the Apps Script servers through GitHub Actions with the stored credential.
 Not approved: force-push or rewriting history; changing repository settings, secrets or collaborators.
 
 Hard rules:
-- The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs.
-- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (about 8 minutes; poll in short loops, foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it.
-- After each change update docs/CHANGELOG.md and docs/PROGRESS.md, and docs/ARCHITECTURE.md when the design changes.
-- Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; no in-app calendar.
-- When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code.
+- The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs (screenshots I send may show real names: never copy them anywhere).
+- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (about 8 minutes; background polling loop; foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it and the main server report says "prod server deployed" and "LIVE TEST PASSED".
+- After each change update docs/CHANGELOG.md and docs/PROGRESS.md, docs/ARCHITECTURE.md when the design changes, docs/BACKLOG.md when plans change.
+- Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; no in-app calendar; mixed Hebrew/Latin text isolated with <bdi>; ranges written in words, not "a–b"; at night nothing bright at the top (iOS tints the status bar from the page).
+- The app gives no medical advice: medicine numbers are only what the parents enter.
+- When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code; show me screenshots of what you changed.
+- For a new feature: research first, propose, and wait for my decisions before building.
 
-Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings shows the new version).
+Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings > מתקדם shows the new version).
 ```
