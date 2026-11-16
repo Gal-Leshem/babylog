@@ -1,3 +1,4 @@
+import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -139,7 +140,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     g.setup!();
     const key = rt.props.get('API_KEY')!;
     const r = post({ key, action: 'settings', set: { babyName: 'Baby', parents: ['A', 'B'], mergeWindowMin: 25 } });
-    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
+    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [DEFAULT_VITAMIN_D] });
     expect(post({ key, action: 'settings' }).settings).toEqual(r.settings);
     expect(rt.sheets.get('Settings')).toContainEqual(['mergeWindowMin', 25]);
   });
@@ -151,19 +152,29 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     // a sheet set up before medicines existed: no Medicines tab and an older guide
     rt.sheets.delete('Medicines');
     rt.sheets.set('קרא אותי', [['old guide']]);
-    const med = { id: 'm1', name: 'אקמול', dose: '2.5 מ״ל', schedule: 'prn', minGapHours: 4, maxPerDay: 4 };
+    const med = { id: 'm1', name: 'אקמול', icon: '🍓', dose: '2.5', doseUnit: 'מ״ל', schedule: 'prn', minGapHours: 4, maxPerDay: 4, course: 'until', courseUntil: '2026-12-01' };
     const r = post({ key, action: 'settings', set: { medicines: [med] } });
     expect(r.ok).toBe(true);
     const rows = rt.sheets.get('Medicines')!;
-    expect(rows[0]).toEqual(['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created']);
-    expect(rows[1]!.slice(0, 11)).toEqual(['m1', 'אקמול', '2.5 מ״ל', 'prn', '', '', 4, 4, 'none', '', 'active']);
+    // new columns go at the end, so rows written by the first version still line up
+    expect(rows[0]).toEqual(['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created', 'icon', 'dose_unit', 'course_until']);
+    expect(rows.map((r) => r[0])).toEqual(['id', 'vitamin_d', 'm1']); // vitamin D is written along, so the sheet shows it too
+    expect(rows[2]!.slice(0, 11)).toEqual(['m1', 'אקמול', '2.5', 'prn', '', '', 4, 4, 'until', '', 'active']);
+    expect(rows[2]!.slice(12)).toEqual(['🍓', 'מ״ל', "'2026-12-01"]);
     expect(post({ key, action: 'settings' }).settings.medicines).toEqual(r.settings.medicines);
     expect(JSON.stringify(rt.sheets.get('קרא אותי'))).toContain('Sheet \\"Medicines\\"');
     expect(post({ key, action: 'log', id: 'd1', type: 'medicine', detail: 'm1', start: '2000-01-01 08:00', user: 'P', source: 'app' }).ok).toBe(true);
     // archiving keeps the row, and a later names change does not lose the medicines
     post({ key, action: 'settings', set: { medicines: [{ ...med, status: 'archived' }] } });
     post({ key, action: 'settings', set: { babyName: 'B' } });
-    expect(post({ key, action: 'settings' }).settings.medicines.map((m: { status: string }) => m.status)).toEqual(['archived']);
+    expect(post({ key, action: 'settings' }).settings.medicines.map((m: { status: string }) => m.status)).toEqual(['active', 'archived']);
+    // the sheet may hand the date back with its apostrophe, or as a date: both read as the same day
+    expect(post({ key, action: 'settings' }).settings.medicines[1].courseUntil).toBe('2026-12-01');
+    rt.sheets.get('Medicines')![2]![14] = new Date('2026-12-01T10:00:00Z');
+    expect(post({ key, action: 'settings' }).settings.medicines[1].courseUntil).toBe('2026-12-01');
+    // a row written by the first version (12 columns, dose as free text) still reads
+    rt.sheets.get('Medicines')!.push(['old', 'ישן', '5 מ״ל', 'daily', '', '', '', '', 'none', '', 'active', '']);
+    expect(post({ key, action: 'settings' }).settings.medicines[2]).toMatchObject({ id: 'old', dose: '5 מ״ל', doseUnit: '', icon: '💊', course: 'none' });
   });
 
   it('rotateKey invalidates the old key', () => {

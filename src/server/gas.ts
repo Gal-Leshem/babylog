@@ -20,7 +20,7 @@ const SETTINGS = 'Settings';
 const README = 'קרא אותי';
 const MEDICINES = 'Medicines';
 /** One row per medicine besides vitamin D; numbers that do not apply to the schedule are left empty. */
-const MED_HEADER = ['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created'];
+const MED_HEADER = ['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created', 'icon', 'dose_unit', 'course_until'];
 const HEADER = ['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted'];
 const COLS = HEADER.length;
 const DATE_FORMAT = 'yyyy-mm-dd hh:mm';
@@ -116,7 +116,9 @@ class SheetStore implements Store {
     const out: Medicine[] = [];
     for (const r of sh.getRange(2, 1, sh.getLastRow() - 1, MED_HEADER.length).getValues()) {
       const n = (v: unknown) => (v === '' || v === null ? 0 : Number(v));
-      const raw = { id: String(r[0]), name: String(r[1]), dose: String(r[2]), schedule: String(r[3]), timesPerDay: n(r[4]), everyHours: n(r[5]), minGapHours: n(r[6]), maxPerDay: n(r[7]), course: String(r[8] || 'none'), courseCount: n(r[9]), status: String(r[10] || 'active') };
+      const u = r[14] as { getTime?: () => number } | string | null;
+      const until = u && typeof u === 'object' && typeof u.getTime === 'function' ? formatLocal(u.getTime()).slice(0, 10) : String(u ?? '').replace(/^'/, '');
+      const raw = { id: String(r[0]), name: String(r[1]), dose: String(r[2]), schedule: String(r[3]), timesPerDay: n(r[4]), everyHours: n(r[5]), minGapHours: n(r[6]), maxPerDay: n(r[7]), course: String(r[8] || 'none'), courseCount: n(r[9]), status: String(r[10] || 'active'), icon: String(r[12] ?? ''), doseUnit: String(r[13] ?? ''), courseUntil: until };
       const m = normalizeMedicine(raw);
       if (m.ok) out.push({ ...m.medicine, created: toLocal(r[11]) }); // a row broken by hand is skipped rather than breaking the app
     }
@@ -127,7 +129,8 @@ class SheetStore implements Store {
     const sh = existing ?? this.ss.insertSheet(MEDICINES);
     if (!existing) writeReadme(this.ss); // a sheet set up before medicines existed gets the guide that explains them
     const blank = (v: number) => (v === 0 ? '' : v);
-    const rows = list.map((m) => [m.id, m.name, m.dose, m.schedule, blank(m.timesPerDay), blank(m.everyHours), blank(m.minGapHours), blank(m.maxPerDay), m.course, blank(m.courseCount), m.status, toCell(m.created)]);
+    // course_until is written as text ("'" keeps the sheet from turning it into a date)
+    const rows = list.map((m) => [m.id, m.name, m.dose, m.schedule, blank(m.timesPerDay), blank(m.everyHours), blank(m.minGapHours), blank(m.maxPerDay), m.course, blank(m.courseCount), m.status, toCell(m.created), m.icon, m.doseUnit, m.courseUntil ? `'${m.courseUntil}` : '']);
     sh.clear();
     sh.getRange(1, 1, 1, MED_HEADER.length).setValues([MED_HEADER]);
     if (rows.length) sh.getRange(2, 1, rows.length, MED_HEADER.length).setValues(rows);

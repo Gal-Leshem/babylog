@@ -1,5 +1,5 @@
 import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
-import { type Medicine, normalizeMedicine } from '../shared/medicines';
+import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiResponse, type EventPatch } from '../shared/protocol';
 import {
   speechAlreadyAsleep,
@@ -124,10 +124,18 @@ function parsePatch(raw: unknown): EventPatch {
 
 /** A dose must name a medicine that exists (active or archived). */
 function checkMedicineKnown(e: BabyEvent, store: Store): void {
-  if (e.type === 'medicine' && !store.getSettings().medicines.some((m) => m.id === e.detail)) fail('invalid_event', 'unknown medicine');
+  if (e.type !== 'medicine') return;
+  if (e.detail === VITAMIN_D_ID) fail('invalid_event', 'vitamin D has its own type');
+  if (!store.getSettings().medicines.some((m) => m.id === e.detail)) fail('invalid_event', 'unknown medicine');
 }
 
 const MAX_MEDICINES = 30;
+
+/** Settings as clients see them: vitamin D is always in the medicines list (with its defaults until someone edits it). */
+function settingsOf(store: Store): Settings {
+  const s = store.getSettings();
+  return { ...s, medicines: withVitaminD(s.medicines) };
+}
 
 type MedicinePatch = { id: string; remove: true } | Omit<Medicine, 'created'>;
 
@@ -152,9 +160,10 @@ function mergeMedicines(current: readonly Medicine[], changes: readonly Medicine
     const i = list.findIndex((m) => m.id === ch.id);
     if ('remove' in ch) {
       if (i < 0) continue;
+      if (ch.id === VITAMIN_D_ID) fail('bad_request', 'vitamin D cannot be removed: archive it instead');
       if (live(store.all()).some((e) => e.type === 'medicine' && e.detail === ch.id)) fail('bad_request', 'medicine has doses: archive it instead');
       list = list.filter((m) => m.id !== ch.id);
-    } else if (i >= 0) list[i] = { ...ch, created: list[i]!.created };
+    } else if (i >= 0) list[i] = { ...ch, created: list[i]!.created || stamp(now) }; // vitamin D gets its time when first saved
     else {
       if (list.length >= MAX_MEDICINES) fail('bad_request', 'too many medicines');
       list.push({ ...ch, created: stamp(now) });
@@ -234,7 +243,7 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
         ok: true,
         rev,
         events: events.sort(byTimeAsc),
-        settings: store.getSettings(),
+        settings: settingsOf(store),
         serverNow: stamp(now),
         sheetUrl: store.sheetUrl(),
       };
@@ -246,10 +255,10 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
     }
 
     case 'settings': {
-      if (o.set === undefined) return { ok: true, settings: store.getSettings(), sheetUrl: store.sheetUrl() };
+      if (o.set === undefined) return { ok: true, settings: settingsOf(store), sheetUrl: store.sheetUrl() };
       const { medicines, ...patch } = parseSettings(o.set);
       return deps.withLock(() => {
-        const current = store.getSettings();
+        const current = settingsOf(store);
         const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
         store.setSettings(merged);
         store.bump();

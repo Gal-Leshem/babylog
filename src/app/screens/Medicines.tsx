@@ -1,7 +1,23 @@
 import { useState } from 'preact/hooks';
-import { type CourseKind, type Medicine, type Schedule, courseText, normalizeMedicine, scheduleText } from '../../shared/medicines';
-import { live } from '../../shared/domain';
-import { engine, useEngine } from '../state';
+import {
+  CHEERFUL_ICONS,
+  type CourseKind,
+  DOSE_UNITS,
+  type Medicine,
+  type Schedule,
+  STANDARD_ICONS,
+  VITAMIN_D_ID,
+  courseProgress,
+  courseText,
+  doseText,
+  dosesOf,
+  normalizeMedicine,
+  pickIcon,
+  scheduleText,
+} from '../../shared/medicines';
+import { addDays, localDate } from '../../shared/tz';
+import { engine, useEngine, useNow } from '../state';
+import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 
@@ -15,6 +31,7 @@ const COURSE_LABEL: [CourseKind, string][] = [
   ['none', 'ללא הגבלה'],
   ['doses', 'מספר מנות'],
   ['days', 'מספר ימים'],
+  ['until', 'עד תאריך'],
 ];
 
 /** Server/validator messages -> Hebrew. */
@@ -26,14 +43,18 @@ const ERRORS: [RegExp, string][] = [
   [/minimum gap/, 'מרווח מינימלי: ריק, או עד 72 שעות (ברבעי שעה)'],
   [/maximum per day/, 'מקסימום ביום: ריק, או בין 1 ל-24'],
   [/course length/, 'אורך הקורס: בין 1 ל-365'],
+  [/end date/, 'צריך לבחור תאריך סיום'],
   [/has doses/, 'כבר נרשמו מנות של התרופה: אפשר רק להעביר לארכיון'],
+  [/cannot be removed/, 'את ויטמין D אפשר רק להעביר לארכיון'],
 ];
 const errorHe = (e: string) => ERRORS.find(([re]) => re.test(e))?.[1] ?? 'לא נשמר, בדקו את השדות';
 
 interface Draft {
   id: string;
   name: string;
+  icon: string;
   dose: string;
+  doseUnit: string;
   schedule: Schedule;
   timesPerDay: string;
   everyHours: string;
@@ -41,35 +62,60 @@ interface Draft {
   maxPerDay: string;
   course: CourseKind;
   courseCount: string;
+  courseUntil: string;
   status: Medicine['status'];
 }
 
 const numText = (n: number) => (n ? String(n) : '');
-const toDraft = (m?: Medicine): Draft => ({
-  id: m?.id ?? uid(),
-  name: m?.name ?? '',
-  dose: m?.dose ?? '',
-  schedule: m?.schedule ?? 'daily',
-  timesPerDay: numText(m?.timesPerDay ?? 2),
-  everyHours: numText(m?.everyHours ?? 0),
-  minGapHours: numText(m?.minGapHours ?? 0),
-  maxPerDay: numText(m?.maxPerDay ?? 0),
-  course: m?.course ?? 'none',
-  courseCount: numText(m?.courseCount ?? 0),
-  status: m?.status ?? 'active',
-});
+function toDraft(m: Medicine | undefined, all: readonly Medicine[], today: string): Draft {
+  return {
+    id: m?.id ?? uid(),
+    name: m?.name ?? '',
+    icon: m?.icon ?? pickIcon(all),
+    dose: m?.dose ?? '',
+    doseUnit: m?.doseUnit ?? '',
+    schedule: m?.schedule ?? 'daily',
+    timesPerDay: numText(m?.timesPerDay ?? 2),
+    everyHours: numText(m?.everyHours ?? 0),
+    minGapHours: numText(m?.minGapHours ?? 0),
+    maxPerDay: numText(m?.maxPerDay ?? 0),
+    course: m?.course ?? 'none',
+    courseCount: numText(m?.courseCount ?? 0),
+    courseUntil: m?.courseUntil || addDays(today, 7),
+    status: m?.status ?? 'active',
+  };
+}
 /** "1,5" and "1.5" both work; an empty field means none. */
 const num = (s: string) => (s.trim() === '' ? 0 : Number(s.trim().replace(',', '.')));
+const strip = (m: Medicine) => {
+  const { created: _c, ...rest } = m;
+  return rest;
+};
 
 function save(change: Parameters<typeof engine.dispatch>[0]): string | null {
   const res = engine.dispatch(change);
   return res.ok ? null : errorHe(res.detail ?? res.error);
 }
 
+function iconChips(group: readonly string[], value: string, set: (v: string) => void, testPrefix: string) {
+  return (
+    <div class="chips icons" role="radiogroup">
+      {group.map((ic, i) => (
+        <button type="button" key={ic} class={`chip ${value === ic ? 'on' : ''}`} data-testid={`${testPrefix}-${i}`} aria-pressed={value === ic} onClick={() => set(ic)}>
+          <span class="emo">{ic}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Add or edit one medicine. */
 function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone: () => void; onBack: () => void }) {
-  const [d, setD] = useState<Draft>(() => toDraft(initial));
+  const { settings } = useEngine();
+  const today = localDate(useNow(60_000));
+  const [d, setD] = useState<Draft>(() => toDraft(initial, settings.medicines, today));
   const [error, setError] = useState('');
+  const isVitaminD = d.id === VITAMIN_D_ID;
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     setD({ ...d, [k]: v });
     setError('');
@@ -101,17 +147,38 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
       </div>
       <label class="fl">שם</label>
       <input data-testid="med-name" value={d.name} maxLength={30} onInput={field('name')} />
+
+      <label class="fl">אייקון</label>
+      {iconChips(CHEERFUL_ICONS, d.icon, (v) => set('icon', v), 'med-icon-cheerful')}
+      {iconChips(STANDARD_ICONS, d.icon, (v) => set('icon', v), 'med-icon-standard')}
+
       <label class="fl">מינון (לא חובה)</label>
-      <input data-testid="med-dose" value={d.dose} maxLength={40} placeholder="למשל 0.5 מ״ל" onInput={field('dose')} />
+      <div class="dose">
+        <input data-testid="med-dose" type="text" inputMode="decimal" value={d.dose} maxLength={40} placeholder="כמות" onInput={field('dose')} />
+        <select data-testid="med-unit" value={d.doseUnit} onChange={field('doseUnit')} aria-label="יחידה">
+          <option value="">יחידה</option>
+          {DOSE_UNITS.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <label class="fl">מתי נותנים</label>
-      <div class="chips" role="radiogroup">
-        {SCHEDULE_LABEL.map(([id, label]) => (
-          <button type="button" key={id} class={`chip ${d.schedule === id ? 'on' : ''}`} data-testid={`med-schedule-${id}`} onClick={() => set('schedule', id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {isVitaminD ? (
+        <p class="muted" data-testid="med-schedule-fixed">
+          פעם ביום
+        </p>
+      ) : (
+        <div class="chips" role="radiogroup">
+          {SCHEDULE_LABEL.map(([id, label]) => (
+            <button type="button" key={id} class={`chip ${d.schedule === id ? 'on' : ''}`} data-testid={`med-schedule-${id}`} onClick={() => set('schedule', id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {d.schedule === 'times' && (
         <>
           <label class="fl">כמה פעמים ביום</label>
@@ -145,10 +212,16 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
           </button>
         ))}
       </div>
-      {d.course !== 'none' && (
+      {(d.course === 'doses' || d.course === 'days') && (
         <>
           <label class="fl">{d.course === 'doses' ? 'כמה מנות' : 'כמה ימים'} (נספר מהמנה הראשונה)</label>
           <input data-testid="med-count" type="number" inputMode="numeric" min={1} max={365} value={d.courseCount} onInput={field('courseCount')} />
+        </>
+      )}
+      {d.course === 'until' && (
+        <>
+          <label class="fl">היום האחרון (כולל)</label>
+          <DateField testId="med-until" value={d.courseUntil} min={today} onChange={(v) => set('courseUntil', v)} />
         </>
       )}
 
@@ -169,22 +242,20 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
   );
 }
 
-function medLine(m: Medicine): string {
-  return [m.dose, scheduleText(m), courseText(m)].filter(Boolean).join(' · ');
+/** Dose and schedule; the course too unless a progress line below already tells it. */
+function medLine(m: Medicine, withCourse: boolean): string {
+  return [doseText(m), scheduleText(m), withCourse ? courseText(m) : ''].filter(Boolean).join(' · ');
 }
 
-/** Settings > תרופות: the medicines besides vitamin D (which is built in and always there). */
+/** Settings > תרופות: every medicine, vitamin D first (it can be archived, not deleted). */
 export function Medicines({ onBack }: { onBack: () => void }) {
   const { settings, allEvents } = useEngine();
+  const now = useNow(60_000);
   const [editing, setEditing] = useState<Medicine | 'new' | null>(null);
   const [error, setError] = useState('');
   const active = settings.medicines.filter((m) => m.status === 'active');
   const archived = settings.medicines.filter((m) => m.status === 'archived');
-  const hasDoses = (id: string) => live(allEvents).some((e) => e.type === 'medicine' && e.detail === id);
-  const change = (m: Medicine, status: Medicine['status']) => {
-    const { created: _created, ...rest } = m;
-    setError(save({ action: 'settings', set: { medicines: [{ ...rest, status }] } }) ?? '');
-  };
+  const change = (m: Medicine, status: Medicine['status']) => setError(save({ action: 'settings', set: { medicines: [{ ...strip(m), status }] } }) ?? '');
 
   if (editing) return <MedicineForm initial={editing === 'new' ? undefined : editing} onDone={() => setEditing(null)} onBack={onBack} />;
 
@@ -201,26 +272,31 @@ export function Medicines({ onBack }: { onBack: () => void }) {
       </p>
 
       <ul class="medlist">
-        <li class="med" data-testid="med-vitamin-d">
-          <div class="mt">
-            <span class="emo">☀️</span> ויטמין D
-          </div>
-          <div class="ms">פעם ביום · תמיד פעיל</div>
-        </li>
-        {active.map((m) => (
-          <li class="med" key={m.id} data-testid="med-row">
-            <div class="mt">{m.name}</div>
-            <div class="ms">{medLine(m)}</div>
-            <div class="actions">
-              <button type="button" data-testid="med-edit" onClick={() => setEditing(m)}>
-                עריכה
-              </button>
-              <button type="button" data-testid="med-archive" onClick={() => change(m, 'archived')}>
-                העברה לארכיון
-              </button>
-            </div>
-          </li>
-        ))}
+        {active.map((m) => {
+          const course = courseProgress(m, allEvents, now);
+          return (
+            <li class="med" key={m.id} data-testid="med-row" data-id={m.id}>
+              <div class="mt">
+                <span class="emo">{m.icon}</span> {m.name}
+              </div>
+              <div class="ms">{medLine(m, !course)}</div>
+              {course && (
+                <div class={`ms ${course.done ? 'done' : ''}`} data-testid="med-course">
+                  {course.done ? `${course.text} · הקורס הסתיים: להעביר לארכיון או להאריך?` : course.text}
+                </div>
+              )}
+              <div class="actions">
+                <button type="button" data-testid="med-edit" onClick={() => setEditing(m)}>
+                  {course?.done ? 'הארכה' : 'עריכה'}
+                </button>
+                <button type="button" data-testid="med-archive" onClick={() => change(m, 'archived')}>
+                  העברה לארכיון
+                </button>
+              </div>
+            </li>
+          );
+        })}
+        {active.length === 0 && <li class="empty">אין תרופות פעילות</li>}
       </ul>
       <div class="actions">
         <button type="button" class="primary" data-testid="med-add" onClick={() => setEditing('new')}>
@@ -238,14 +314,16 @@ export function Medicines({ onBack }: { onBack: () => void }) {
           <h3>בארכיון</h3>
           <ul class="medlist">
             {archived.map((m) => (
-              <li class="med archived" key={m.id} data-testid="med-archived-row">
-                <div class="mt">{m.name}</div>
-                <div class="ms">{medLine(m)}</div>
+              <li class="med archived" key={m.id} data-testid="med-archived-row" data-id={m.id}>
+                <div class="mt">
+                  <span class="emo">{m.icon}</span> {m.name}
+                </div>
+                <div class="ms">{medLine(m, true)}</div>
                 <div class="actions">
                   <button type="button" data-testid="med-restore" onClick={() => change(m, 'active')}>
                     החזרה לשימוש
                   </button>
-                  {!hasDoses(m.id) && (
+                  {m.id !== VITAMIN_D_ID && dosesOf(m, allEvents).length === 0 && (
                     <button type="button" class="danger" data-testid="med-delete" onClick={() => setError(save({ action: 'settings', set: { medicines: [{ id: m.id, remove: true }] } }) ?? '')}>
                       מחיקה
                     </button>

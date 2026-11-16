@@ -1,3 +1,4 @@
+import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { expect, test } from '@playwright/test';
 import { api, install, resetServer, seed, todayLocal, addDaysLocal } from './helpers';
 
@@ -72,7 +73,7 @@ test('settings: names, baby name and merge window are saved to the sheet', async
   await page.getByTestId('merge-window').fill('30');
   await page.getByTestId('save-settings').click();
   await expect(page.getByTestId('settings-msg')).toHaveText('נשמר');
-  await expect.poll(async () => (await api(request, { action: 'settings' })).settings).toEqual({ babyName: 'Little One', mergeWindowMin: 30, parents: ['Parent One', 'Parent B'], medicines: [] });
+  await expect.poll(async () => (await api(request, { action: 'settings' })).settings).toEqual({ babyName: 'Little One', mergeWindowMin: 30, parents: ['Parent One', 'Parent B'], medicines: [DEFAULT_VITAMIN_D] });
 });
 
 test('settings: invalid values are refused', async ({ page }) => {

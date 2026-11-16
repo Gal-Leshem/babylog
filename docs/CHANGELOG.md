@@ -92,6 +92,13 @@ No names, addresses or secrets in this file (the repository is public).
   🌙 תצוגה והתנהגות (night mode, night colour, merge window with its own save), 🛠️ מתקדם (sync, sheet link, disconnect, version).
   The medicine form has "חזרה להגדרות"; tapping the current tab again starts its screen over (Settings from anywhere inside it).
   Tests for the sections and both ways back (the tab test fails without the re-tap behaviour).
+- Medicines, owner changes **(owner)**: vitamin D is now a medicine like the others (reserved id `vitamin_d`, its doses keep type
+  `vitamin_d`): present by default, editable (dose, icon, course), always once a day, can be archived, never deleted. Every medicine has
+  an icon (cheerful palette with 🧸, plus standard 💊🧴🥄🩹🌡️; a new one gets an icon no active medicine uses). A dose is an amount
+  plus a unit from a wheel (`<select>`: מ״ל, מ״ג, מק״ג, טיפות, יחב״ל, כדור, כמוסה, פתילה, שקית, כפית, מנה, לחיצה). A course can
+  also run until a date (the last day counts). When a course is over, its row says so and offers "הארכה" (edit) or archive. Sheet:
+  new columns icon, dose_unit, course_until appended at the end (rows from the first version still read). Tests: unit tests for course
+  progress, icons, vitamin D defaults; server and sheet tests; five browser tests.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

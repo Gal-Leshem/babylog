@@ -1,6 +1,7 @@
 import { type Deps, handle } from '../server/core';
 import { MemoryStore } from '../server/memory-store';
 import { eventTime, live } from '../shared/domain';
+import { withVitaminD } from '../shared/medicines';
 import type { ApiRequest, ApiResponse } from '../shared/protocol';
 import { addDays, dayStart, localDate } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type Settings } from '../shared/types';
@@ -74,7 +75,7 @@ function localDeps(store: MemoryStore, now: () => number): Deps {
 /** Settings saved by an older app version, or sent by an older server, lack newer fields (e.g. `medicines`). */
 export function withDefaults(s: Partial<Settings> | null | undefined): Settings {
   if (!s || typeof s !== 'object') return DEFAULT_SETTINGS;
-  return { ...DEFAULT_SETTINGS, ...s, medicines: Array.isArray(s.medicines) ? s.medicines : [] };
+  return { ...DEFAULT_SETTINGS, ...s, medicines: withVitaminD(Array.isArray(s.medicines) ? s.medicines : []) };
 }
 
 export class Engine {

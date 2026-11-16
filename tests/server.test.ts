@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
+import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import type { ApiOk, ApiResponse } from '../src/shared/protocol';
 import { T, ev } from './helpers';
 
@@ -247,7 +248,7 @@ describe('settings', () => {
   it('reads defaults and applies validated changes', () => {
     expect(ok(call({ action: 'settings' })).settings).toMatchObject({ mergeWindowMin: 20 });
     const r = ok(call({ action: 'settings', set: { babyName: ' Baby ', mergeWindowMin: 30, parents: ['A', 'B'] } }));
-    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 30, parents: ['A', 'B'], medicines: [] });
+    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 30, parents: ['A', 'B'], medicines: [DEFAULT_VITAMIN_D] });
     expect(ok(call({ action: 'settings' })).settings).toEqual(r.settings);
   });
   it('rejects invalid settings', () => {
@@ -258,24 +259,38 @@ describe('settings', () => {
 });
 
 describe('medicines (F7)', () => {
-  const med = (over: Record<string, unknown> = {}) => ({ id: 'm1', name: ' אנטיביוטיקה ', dose: '5 מ״ל', schedule: 'interval', everyHours: 8, course: 'days', courseCount: 7, ...over });
+  const med = (over: Record<string, unknown> = {}) => ({ id: 'm1', name: ' אנטיביוטיקה ', dose: '5', doseUnit: 'מ״ל', schedule: 'interval', everyHours: 8, course: 'days', courseCount: 7, ...over });
   const save = (...changes: unknown[]) => call({ action: 'settings', set: { medicines: changes } });
+  const meds = () => ok(call({ action: 'settings' })).settings!.medicines;
 
-  it('saves a medicine with server-side created time, trims text and clears numbers that do not fit the schedule', () => {
+  it('vitamin D is there by default: active, once a day, ☀️, first in the list', () => {
+    expect(meds()).toEqual([DEFAULT_VITAMIN_D]);
+  });
+
+  it('saves a medicine with server-side created time, trims text, a default icon, and clears numbers that do not fit the schedule', () => {
     const r = ok(save(med({ timesPerDay: 3, maxPerDay: 4 })));
     expect(r.settings!.medicines).toEqual([
-      { id: 'm1', name: 'אנטיביוטיקה', dose: '5 מ״ל', schedule: 'interval', timesPerDay: 0, everyHours: 8, minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 7, status: 'active', created: '2026-11-14 12:00' },
+      DEFAULT_VITAMIN_D,
+      { id: 'm1', name: 'אנטיביוטיקה', icon: '💊', dose: '5', doseUnit: 'מ״ל', schedule: 'interval', timesPerDay: 0, everyHours: 8, minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 7, courseUntil: '', status: 'active', created: '2026-11-14 12:00' },
     ]);
   });
 
   it('saves medicines one by one: an edit keeps the others and the created time', () => {
-    ok(save(med(), med({ id: 'm2', name: 'אקמול', schedule: 'prn', minGapHours: 4, maxPerDay: 4, course: 'none' })));
+    ok(save(med(), med({ id: 'm2', name: 'אקמול', icon: '🍓', schedule: 'prn', minGapHours: 4, maxPerDay: 4, course: 'none' })));
     minutesLater(30);
     const r = ok(save(med({ status: 'archived' })));
-    expect(r.settings!.medicines.map((m) => [m.id, m.status, m.created])).toEqual([
-      ['m1', 'archived', '2026-11-14 12:00'],
-      ['m2', 'active', '2026-11-14 12:00'],
+    expect(r.settings!.medicines.map((m) => [m.id, m.status, m.icon, m.created])).toEqual([
+      ['vitamin_d', 'active', '☀️', ''],
+      ['m1', 'archived', '💊', '2026-11-14 12:00'],
+      ['m2', 'active', '🍓', '2026-11-14 12:00'],
     ]);
+  });
+
+  it('vitamin D can be edited and archived, never removed, and always stays once a day', () => {
+    const r = ok(save({ ...DEFAULT_VITAMIN_D, dose: '400', doseUnit: 'יחב״ל', schedule: 'prn', course: 'until', courseUntil: '2027-08-15', status: 'archived' }));
+    expect(r.settings!.medicines[0]).toMatchObject({ id: 'vitamin_d', dose: '400', doseUnit: 'יחב״ל', schedule: 'daily', course: 'until', courseUntil: '2027-08-15', status: 'archived', created: '2026-11-14 12:00' });
+    expect(save({ id: 'vitamin_d', remove: true })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(log('medicine', 'vitamin_d', '2026-11-14 11:00')).toMatchObject({ ok: false, error: 'invalid_event' }); // its doses keep their own type
   });
 
   it('refuses invalid medicines and changes nothing', () => {
@@ -287,11 +302,13 @@ describe('medicines (F7)', () => {
       med({ schedule: 'interval', everyHours: 1.1 }),
       med({ schedule: 'prn', maxPerDay: 30 }),
       med({ course: 'doses', courseCount: 0 }),
+      med({ course: 'until', courseUntil: '15.8.2027' }),
+      med({ doseUnit: 'kg' }),
       med({ dose: 'x'.repeat(41) }),
     ]) {
       expect(save(bad)).toMatchObject({ ok: false, error: 'bad_request' });
     }
-    expect(ok(call({ action: 'settings' })).settings!.medicines).toEqual([]);
+    expect(meds()).toEqual([DEFAULT_VITAMIN_D]);
   });
 
   it('a dose is an event of type medicine naming a known medicine', () => {
@@ -309,13 +326,13 @@ describe('medicines (F7)', () => {
     expect(save({ id: 'm1', remove: true })).toMatchObject({ ok: false, error: 'bad_request' });
     ok(call({ action: 'delete', id: e.id })); // a deleted dose no longer blocks removal
     ok(save({ id: 'm1', remove: true }));
-    expect(ok(call({ action: 'settings' })).settings!.medicines).toEqual([]);
+    expect(meds()).toEqual([DEFAULT_VITAMIN_D]);
   });
 
   it('a settings change without medicines leaves them alone', () => {
     ok(save(med()));
     ok(call({ action: 'settings', set: { babyName: 'B' } }));
-    expect(ok(call({ action: 'settings' })).settings!.medicines).toHaveLength(1);
+    expect(meds()).toHaveLength(2);
   });
 });
 

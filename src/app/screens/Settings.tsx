@@ -111,7 +111,7 @@ export function Settings() {
 
       {section('medicines', '💊', 'תרופות', [
         <p class="muted" data-testid="meds-summary" key="s">
-          ויטמין D{activeMeds.length ? `, ${activeMeds.map((m) => m.name).join(', ')}` : ''}
+          {activeMeds.length ? activeMeds.map((m) => `${m.icon} ${m.name}`).join(' · ') : 'אין תרופות פעילות'}
         </p>,
         <div class="actions" key="a">
           <button type="button" data-testid="open-medicines" onClick={() => setMedsOpen(true)}>

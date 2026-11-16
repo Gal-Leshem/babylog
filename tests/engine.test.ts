@@ -1,3 +1,4 @@
+import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Engine } from '../src/app/engine';
 import { memoryStorage } from '../src/app/storage';
@@ -344,9 +345,9 @@ describe('robustness', () => {
   });
 
   // F7: settings gained a "medicines" list. Phones still hold settings saved by the older app, and an older server sends none.
-  it('settings saved by an older version or sent by an older server get an empty medicines list', async () => {
+  it('settings saved by an older version or sent by an older server get vitamin D and no other medicines', async () => {
     storage.data.set('bl.state.v1', JSON.stringify({ serverEvents: [], queue: [], settings: { babyName: 'Baby', mergeWindowMin: 20, parents: ['A', 'B'] } }));
-    expect(makeEngine().getState().settings.medicines).toEqual([]);
+    expect(makeEngine().getState().settings.medicines).toEqual([DEFAULT_VITAMIN_D]);
     const oldServer = ((url: string, init: { body: string }) =>
       fetchImpl(url as never, init as never).then(async (r) => {
         const j = await r.json();
@@ -356,13 +357,13 @@ describe('robustness', () => {
     const e = new Engine({ storage: memoryStorage(), fetchImpl: oldServer, now: () => clock, newId: () => `op${++n}` });
     e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
     expect(await e.refresh()).toBe(true);
-    expect(e.getState().settings.medicines).toEqual([]);
+    expect(e.getState().settings.medicines).toEqual([DEFAULT_VITAMIN_D]);
   });
 
   it('shows the settings handed over at first-run setup before any refresh', () => {
     const e = new Engine({ storage, fetchImpl, now: () => clock });
     e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'A' }, { babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
-    expect(e.getState().settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
+    expect(e.getState().settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [DEFAULT_VITAMIN_D] });
     expect(new Engine({ storage, fetchImpl, now: () => clock }).getState().settings.parents).toEqual(['A', 'B']); // persisted
   });
 

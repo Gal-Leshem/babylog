@@ -320,3 +320,7 @@ input, textarea, select {
 .sect-h .emo { font-size: 22px; }
 .sect h3 { margin-top: 12px; }
 .sect input { background: var(--bg); }
+.chips.icons .chip { padding: 6px 9px; font-size: 20px; line-height: 1; }
+.dose { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
+.dose select { min-height: 44px; }
+.med .ms.done { color: var(--warn); font-weight: 600; }

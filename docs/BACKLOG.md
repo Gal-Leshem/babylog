@@ -78,8 +78,16 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
 - **No medical advice:** every field starts empty; a fixed line on the medicines screen: "המינונים והמרווחים לפי הנחיית הרופא או העלון".
 - **Other screens:** add-after-the-fact / edit pick a medicine (no warnings for past entries); history shows the medicine's name and
   the filter becomes "ויטמין D ותרופות"; the day summary gets a row per active medicine. Siri unchanged.
+- **Changes (owner, later the same day):** vitamin D is added by default but can be archived (after a year it is not needed); a dose
+  is an amount plus a unit picked from a wheel (מ״ל, מ״ג, טיפות, יחב״ל, כדור, ...); a course can also run "until a date" (e.g. vitamin
+  D until the first birthday), with the same archive-or-extend choice when it ends; the medicine form keeps "חזרה להגדרות" and the
+  Settings tab always returns to Settings; Settings is split into sections with icons.
+- **Icons (owner):** every medicine has an icon picked from a palette of cheerful ones plus standard ones for those who prefer them
+  (☀️ for vitamin D by default, 🧸 included); a new medicine gets an icon no other active medicine uses. Home button: one active
+  medicine shows its own icon and name (one tap logs it); several show their icons side by side above "תרופות" (more than three: 🧸);
+  none: the button leaves Home.
 - **Stages** (each shipped on its own): 1 medicines list in the sheet and server + the Settings screen (Home unchanged) **done**;
-  2 Home button, window and tile, without warnings (next); 3 warnings and confirmation; 4 history, summary and add-after-the-fact.
+  2 Home button, window and tile, without warnings (next; owner changes to vitamin D, units, icons and "until a date" done first); 3 warnings and confirmation; 4 history, summary and add-after-the-fact.
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.
