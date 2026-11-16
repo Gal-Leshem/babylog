@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "04025f1",
+  "sha": "37daa3a",
   "ref": "main",
-  "at": "2026-11-16T18:39:25.673Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43929523355",
+  "at": "2026-11-16T19:10:59.885Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43934995568",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js               0.13 kB",
       "dist/manifest.webmanifest        0.46 kB",
-      "dist/index.html                  1.77 kB │ gzip:  0.85 kB",
-      "dist/assets/index-DegYB37o.css  13.23 kB │ gzip:  3.42 kB",
-      "dist/assets/index-CzITHmZE.js   98.15 kB │ gzip: 33.05 kB",
+      "dist/index.html                  1.77 kB │ gzip:  0.84 kB",
+      "dist/assets/index-BG0UZVul.css  13.44 kB │ gzip:  3.43 kB",
+      "dist/assets/index-BmEee4Kb.js   98.15 kB │ gzip: 33.05 kB",
       "",
-      "✓ built in 59ms",
+      "✓ built in 91ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (110.64 KiB)",
+      "precache  10 entries (110.84 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -44,7 +44,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -69,14 +69,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 04025f1 to gh-pages"
+      "published 37daa3a to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 30adc65, waiting for 04025f1",
-      "attempt 2: serves 30adc65, waiting for 04025f1",
-      "attempt 3: serves 30adc65, waiting for 04025f1",
-      "site is live and serves 04025f1"
+      "attempt 1: serves 04025f1, waiting for 37daa3a",
+      "attempt 2: serves 04025f1, waiting for 37daa3a",
+      "attempt 3: serves 04025f1, waiting for 37daa3a",
+      "attempt 4: serves 04025f1, waiting for 37daa3a",
+      "site is live and serves 37daa3a"
     ]
   }
 }
