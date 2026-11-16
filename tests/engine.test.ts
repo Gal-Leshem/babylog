@@ -5,6 +5,7 @@ import { memoryStorage } from '../src/app/storage';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
 import { formatLocal, localDate } from '../src/shared/tz';
+import { safeToReload } from '../src/app/update';
 import { T, ev } from './helpers';
 
 const KEY = 'secret-key-123';
@@ -845,3 +846,51 @@ describe('pace', () => {
     expect(timers.map((t) => t.ms)).toEqual([3300]);
   });
 });
+
+// Phase 4 of docs/REFACTOR_PLAN.md
+describe('client housekeeping', () => {
+  it('a check that finds nothing new, or a status change, hands the screens the very same events and settings objects', async () => {
+    const e = makeEngine();
+    server.append(ev({ id: 'x', type: 'feed', detail: 'right', start: '2026-11-14 11:00', user: 'P2' }));
+    await e.refresh();
+    const before = e.getState();
+    let notified = 0;
+    e.subscribe(() => notified++);
+    await e.pollOnce(); // nothing new
+    offline = true;
+    await e.pollOnce(); // status: offline
+    offline = false;
+    await e.pollOnce(); // status: idle again
+    expect(notified).toBeGreaterThan(0);
+    expect(e.getState().events).toBe(before.events);
+    expect(e.getState().allEvents).toBe(before.allEvents);
+    expect(e.getState().settings).toBe(before.settings);
+    e.dispatch(feed('a'));
+    expect(e.getState().events).not.toBe(before.events); // real changes still give new objects
+    expect(e.getState().events.map((x) => x.id).sort()).toEqual(['a', 'x']);
+  });
+
+  it('at start, days from before the usual window are dropped from the stored copy (History fetches them again); an open sleep stays', async () => {
+    const first = makeEngine();
+    server.append(ev({ id: 'old', type: 'feed', detail: 'left', start: '2026-10-01 08:00' }));
+    server.append(ev({ id: 'edge', type: 'feed', detail: 'left', start: '2026-10-31 08:00' })); // the day before the window: Summary compares with it
+    server.append(ev({ id: 'new', type: 'feed', detail: 'left', start: '2026-11-14 08:00' }));
+    server.append(ev({ id: 'open', type: 'sleep', start: '2026-09-01 10:00' }));
+    await first.refresh();
+    await first.ensureRange('2026-10-01', '2026-10-31');
+    expect(first.getState().events.map((x) => x.id).sort()).toEqual(['edge', 'new', 'old', 'open']);
+    const reopened = makeEngine(); // the app is opened again
+    expect(reopened.getState().events.map((x) => x.id).sort()).toEqual(['edge', 'new', 'open']);
+    expect(JSON.parse(storage.data.get('bl.state.v1')!).serverEvents.map((x: { id: string }) => x.id).sort()).toEqual(['edge', 'new', 'open']);
+    await reopened.ensureRange('2026-10-01', '2026-10-01');
+    expect(reopened.getState().events.map((x) => x.id)).toContain('old');
+  });
+
+  it('a new app version reloads the page only when nothing can be lost', () => {
+    expect(safeToReload({ visible: false, formOpen: true, typing: true })).toBe(true); // in the background
+    expect(safeToReload({ visible: true, formOpen: false, typing: false })).toBe(true);
+    expect(safeToReload({ visible: true, formOpen: true, typing: false })).toBe(false);
+    expect(safeToReload({ visible: true, formOpen: false, typing: true })).toBe(false);
+  });
+});
+

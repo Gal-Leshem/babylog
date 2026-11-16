@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useMemo } from 'preact/hooks';
 import { dailySummary } from '../../shared/domain';
 import { type AfterFeedInsight, type FeedGapInsight, type NightSleepInsight, type TimelineRow, LONG_STRETCH_MIN, insights, timeline } from '../../shared/insights';
 import { addDays, localDate } from '../../shared/tz';
@@ -115,12 +115,16 @@ function countCard(id: string, title: string, days: string[], values: number[]):
 export function Insights() {
   const { events, settings } = useEngine();
   const now = useNow(60_000);
-  const r = insights(events, now, settings.mergeWindowMin);
+  // Recomputed only when the events change or a minute passes (the engine keeps `events` the same object while nothing changed).
+  const { r, rows, days, sums } = useMemo(() => {
+    const r = insights(events, now, settings.mergeWindowMin);
+    const rows = timeline(events, now, settings.mergeWindowMin);
+    const days: string[] = [];
+    for (let d = r.from; d <= r.to; d = addDays(d, 1)) days.push(d);
+    const sums = days.map((d) => dailySummary(events, d, now, settings.mergeWindowMin));
+    return { r, rows, days, sums };
+  }, [events, now, settings.mergeWindowMin]);
   const today = localDate(now);
-  const rows = timeline(events, now, settings.mergeWindowMin);
-  const days: string[] = [];
-  for (let d = r.from; d <= r.to; d = addDays(d, 1)) days.push(d);
-  const sums = days.map((d) => dailySummary(events, d, now, settings.mergeWindowMin));
 
   useEffect(() => {
     const from = addDays(r.from, -1);

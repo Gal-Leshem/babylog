@@ -172,7 +172,22 @@ export class Engine {
       sheetUrl: saved?.sheetUrl ?? '',
       rev: typeof saved?.rev === 'string' ? saved.rev : null,
     };
+    this.prune();
     this.snapshot = this.compute();
+  }
+
+  /**
+   * The stored copy only ever grew (older days fetched for History stayed for good), and all of it is parsed at every start
+   * and copied at every change. At start, days from before the usual window are dropped; History fetches an older day again
+   * when it is opened. An open sleep is kept whatever its age.
+   */
+  private prune(): void {
+    const lo = dayStart(addDays(this.defaultRange().from, -1));
+    const kept = this.p.serverEvents.filter((e) => (e.type === 'sleep' && e.start && !e.end) || !(eventTime(e) < lo));
+    if (kept.length !== this.p.serverEvents.length) {
+      this.p.serverEvents = kept;
+      this.persist();
+    }
   }
 
   // ---------- subscription ----------
@@ -184,8 +199,9 @@ export class Engine {
   getState = (): EngineState => this.snapshot;
   getConfig = (): Config | null => this.config;
 
-  private emit(): void {
-    this.snapshot = this.compute();
+  /** `data: false` = only the status / timing changed: the events and settings objects are kept (screens can memoize on them). */
+  private emit(data = true): void {
+    this.snapshot = this.compute(data);
     for (const l of this.listeners) l();
   }
 
@@ -193,16 +209,20 @@ export class Engine {
     this.storage.set(STATE_KEY, this.p);
   }
 
-  private compute(): EngineState {
-    const store = new MemoryStore(this.p.serverEvents, this.p.settings);
-    const deps = localDeps(store, this.now);
-    for (const op of this.p.queue) handle({ key: '', ...op.req }, deps);
-    const allEvents = store.all();
+  private compute(data = true): EngineState {
+    let view: Pick<EngineState, 'events' | 'allEvents' | 'settings'> = this.snapshot;
+    if (data || !view) {
+      const store = new MemoryStore(this.p.serverEvents, this.p.settings);
+      const deps = localDeps(store, this.now);
+      for (const op of this.p.queue) handle({ key: '', ...op.req }, deps);
+      const allEvents = store.all();
+      view = { events: live(allEvents), allEvents, settings: store.getSettings() };
+    }
     return {
       configured: this.config !== null,
-      events: live(allEvents),
-      allEvents,
-      settings: store.getSettings(),
+      events: view.events,
+      allEvents: view.allEvents,
+      settings: view.settings,
       pending: this.p.queue.length,
       status: this.status,
       lastSync: this.p.lastSync,
@@ -215,7 +235,7 @@ export class Engine {
   private setStatus(s: SyncStatus): void {
     if (this.status !== s) {
       this.status = s;
-      this.emit();
+      this.emit(false);
     }
   }
 
@@ -236,7 +256,7 @@ export class Engine {
 
   clearError(): void {
     this.lastError = null;
-    this.emit();
+    this.emit(false);
   }
 
   setMe(me: string): void {
@@ -415,7 +435,7 @@ export class Engine {
       this.epoch++;
       this.persist(); // a check that found nothing new writes nothing (it runs every few seconds)
     }
-    this.emit();
+    this.emit(changed);
     if (failed) this.scheduleRetry();
     return !res.unchanged || batch.length > 0;
   }

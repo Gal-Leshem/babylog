@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { byTimeDesc, clock, elapsedHM, lastFeed, nextSide, sleepState } from '../../shared/domain';
 import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
@@ -79,7 +79,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
   const sleep = sleepState(events);
   const meds = settings.medicines.filter((m) => m.status === 'active');
   const tile = meds.length ? medsTile(meds, events, now) : null;
-  const recent = recentRows(events, settings.medicines);
+  const recent = useMemo(() => recentRows(events, settings.medicines), [events, settings.medicines]);
 
   const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
   const sleepValue =
