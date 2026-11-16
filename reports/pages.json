@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "d535f28",
+  "sha": "62b86c3",
   "ref": "main",
-  "at": "2026-11-16T16:32:49.162Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43907258482",
+  "at": "2026-11-16T17:16:20.152Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43915134423",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -14,20 +14,20 @@
       "",
       "vite v8.3.8 building client environment for production...",
       "transforming...",
-      "✓ 42 modules transformed.",
+      "✓ 43 modules transformed.",
       "rendering chunks...",
       "computing gzip size...",
       "dist/registerSW.js               0.13 kB",
       "dist/manifest.webmanifest        0.46 kB",
-      "dist/index.html                  1.77 kB │ gzip:  0.85 kB",
-      "dist/assets/index-BTBb3KV6.css  12.79 kB │ gzip:  3.33 kB",
-      "dist/assets/index-DSCpMGBk.js   94.60 kB │ gzip: 32.09 kB",
+      "dist/index.html                  1.77 kB │ gzip:  0.84 kB",
+      "dist/assets/index-CnLwfT-Y.css  13.10 kB │ gzip:  3.39 kB",
+      "dist/assets/index-C2XYqrEC.js   97.30 kB │ gzip: 32.87 kB",
       "",
-      "✓ built in 54ms",
+      "✓ built in 69ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (106.74 KiB)",
+      "precache  10 entries (109.68 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -69,14 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published d535f28 to gh-pages"
+      "published 62b86c3 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 0ddb3a4, waiting for d535f28",
-      "attempt 2: serves 0ddb3a4, waiting for d535f28",
-      "attempt 3: serves 0ddb3a4, waiting for d535f28",
-      "site is live and serves d535f28"
+      "attempt 1: serves d535f28, waiting for 62b86c3",
+      "attempt 2: serves d535f28, waiting for 62b86c3",
+      "attempt 3: serves d535f28, waiting for 62b86c3",
+      "site is live and serves 62b86c3"
     ]
   }
 }
