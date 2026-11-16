@@ -12,8 +12,8 @@ Add items here as the owner reports them (date, what was seen, screenshot/record
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 
 ## Track 2: features (proposed order; the owner decides)
-Owner's choice so far: F4 (red night theme) and F8 (trends, with pattern insights such as "after a feed a diaper change usually follows
-within ...") are next; F8 gets a research-based proposal before any code. Keep the app uncluttered.
+Owner's choice so far: F4 (done) and F8 (in progress: part 1, insight cards, done; part 2, the 7-day timeline and daily counts, next).
+The owner will watch which of "סיכום" / "תובנות" gets used and which insights help, and reshape from there. Keep the app uncluttered.
 Based on a scan of similar apps (Huckleberry, Baby Tracker, Nara, Baby Daybook, Glow, Baby Connect, Sprout, BabyBuddy, an Israeli
 Hebrew tracker) and parents' reviews, November 2026. What parents value most: fast logging, "when was the last feed and which side",
 reliable partner sync at night, and an app that is not overwhelming. Most complaints: paywalls, partner devices out of sync, lost data,
@@ -35,7 +35,7 @@ other screens or into the existing tiles unless the owner asks otherwise.
 | F5 | ~~Optional nursing duration~~ not wanted for now **(owner)** | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
 | F6 | Bottle / expressed milk with amount (ml) | Common as soon as a bottle is introduced | M | New type, amount column in the sheet, Summary total per day. |
 | F7 | Medicine and temperature | Fever and dosing come up in the first months; "when is the next dose allowed" | M | New types (name, dose, temperature); a "next dose not before" line. No reminders (see "not possible"). |
-| F8 | 7-day trends | Feeds, diapers and sleep per day for the last week; spot changes at a glance | M | Simple bars on Summary, no chart library. |
+| F8 | 7-day trends and insights (in progress) | Patterns and the last week at a glance | M | Part 1 done: insight cards under "תובנות". Part 2: a 24-hour timeline per day (06:00 to 06:00, right to left; sleep blocks, feed ticks, diaper dots) and small daily count bars. No chart library. |
 | F9 | Report for the pediatrician | Daily averages for the last 7 / 14 days on one page | M | Printable page (share / print to PDF from the phone). |
 | F10 | Growth: weight, length, head | Parents note clinic measurements; percentile vs. WHO tables | M-L | WHO tables are static data in the app. Lower priority for a newborn. |
 

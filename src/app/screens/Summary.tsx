@@ -2,8 +2,9 @@ import { useEffect, useState } from 'preact/hooks';
 import { type DailySummary, dailySummary } from '../../shared/domain';
 import { addDays, localDate } from '../../shared/tz';
 import { KIND_LABEL, dayName, hm } from '../labels';
-import { engine, useEngine, useNow } from '../state';
+import { engine, setSummaryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
+import { Insights } from './Insights';
 
 type Row = [label: string, value: (s: DailySummary) => string];
 
@@ -19,7 +20,25 @@ const ROWS: Row[] = [
   ['ויטמין D', (s) => (s.vitaminD ? 'ניתן' : 'לא ניתן')],
 ];
 
+/** The summary tab: the day table ("סיכום") or the pattern insights ("תובנות"); the choice is remembered on the device. */
 export function Summary() {
+  const view = usePrefs().summaryView;
+  return (
+    <section class="page" data-testid="summary">
+      <div class="seg" role="tablist">
+        <button type="button" role="tab" class={view === 'day' ? 'on' : ''} aria-selected={view === 'day'} data-testid="view-day" onClick={() => setSummaryView('day')}>
+          סיכום
+        </button>
+        <button type="button" role="tab" class={view === 'insights' ? 'on' : ''} aria-selected={view === 'insights'} data-testid="view-insights" onClick={() => setSummaryView('insights')}>
+          תובנות
+        </button>
+      </div>
+      {view === 'insights' ? <Insights /> : <DaySummary />}
+    </section>
+  );
+}
+
+function DaySummary() {
   const { events, settings } = useEngine();
   const now = useNow(60_000);
   const today = localDate(now);
@@ -35,7 +54,7 @@ export function Summary() {
   const b = dailySummary(events, prev, now, settings.mergeWindowMin);
 
   return (
-    <section class="page" data-testid="summary">
+    <div data-testid="day-summary">
       <DayNav date={date} today={today} onChange={setDate} />
       <table class="sum">
         <thead>
@@ -56,6 +75,6 @@ export function Summary() {
         </tbody>
       </table>
       <p class="muted">שינה שחוצה חצות מתחלקת בין שני הימים. הנקות בהפרש של עד {settings.mergeWindowMin} דקות נספרות כהאכלה אחת.</p>
-    </section>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'preact/compat';
 import { useEffect, useState } from 'preact/hooks';
-import { DEFAULT_PREFS, type NightMode, type NightTint, type Prefs } from './config';
+import { DEFAULT_PREFS, type NightMode, type NightTint, type Prefs, type SummaryView } from './config';
 import { Engine } from './engine';
 import { browserStorage } from './storage';
 
@@ -31,6 +31,7 @@ function setPrefs(patch: Partial<Prefs>): void {
 }
 export const setNightMode = (mode: NightMode): void => setPrefs({ nightMode: mode });
 export const setNightTint = (tint: NightTint): void => setPrefs({ nightTint: tint });
+export const setSummaryView = (view: SummaryView): void => setPrefs({ summaryView: view });
 export const usePrefs = (): Prefs =>
   useSyncExternalStore(
     (fn) => {

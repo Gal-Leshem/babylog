@@ -74,6 +74,10 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   colour: amber (default) or dim red (`data-tint='red'` on `<html>`). In red, colour emoji are tinted with a CSS filter; every emoji the app
   shows must sit in an element with class `ico`, `hi`, `ti` or `emo` so the tint reaches it. The theme is applied before the first paint
   by an inline script in `index.html` (same rule as `src/app/theme.ts`, checked by `tests/theme.test.ts`); change both together.
+- **Summary tab:** a switch between "סיכום" (the day table) and "תובנות" (pattern insights), remembered per phone (`summaryView`).
+  Insights are pure functions in `src/shared/insights.ts` over the last 7 full days (today left out): medians and the middle half
+  (never means), a minimum amount of data per card (otherwise no card), "after a feed" patterns only when at least 20 points more often
+  than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
 - **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
 
 ## Server deployment details
@@ -86,9 +90,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~165): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~185): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~70): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~78): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

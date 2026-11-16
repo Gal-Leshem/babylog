@@ -10,12 +10,16 @@ export type NightMode = 'auto' | 'always' | 'never';
 /** Colour of the night theme: the original amber, or a dim red for a dark room. */
 export type NightTint = 'amber' | 'red';
 
+/** Which part of the summary tab is shown (remembered per device). */
+export type SummaryView = 'day' | 'insights';
+
 export interface Prefs {
   nightMode: NightMode;
   nightTint: NightTint;
+  summaryView: SummaryView;
 }
 
-export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber' };
+export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day' };
 
 /** An address the app may talk to: https, or plain http only for local development. */
 export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^http:\/\/(127\.0\.0\.1|localhost)/.test(u);

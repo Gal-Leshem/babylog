@@ -55,6 +55,12 @@ No names, addresses or secrets in this file (the repository is public).
 - F8 decisions **(owner)**: inside "סיכום", a switch between the current "סיכום" and a new "תובנות" view (usage will decide what stays);
   timeline right to left from 06:00 to 06:00; no comparison with official diaper numbers; build all three insights (feed gaps day/night,
   poop after a feed, longest night stretch) plus an indication of how many stretches of 3 hours or more there are.
+- F8 part 1: the summary tab has a switch "סיכום" / "תובנות" (remembered per phone; "סיכום" stays the default). "תובנות" shows up to four
+  cards from the last 7 full days: usual gap between feeds by day and by night; poop after a feed (usual delay); diaper change after a feed;
+  the longest night stretch, when it usually starts, how many stretches of 3 hours or more a night has, and last night's long stretches.
+  Medians and the middle half, never means; each card appears only with enough data; "after a feed" cards appear only when clearly more
+  often than chance. Ranges are written in words ("בין 2:00 ל-2:35"): a dash between numbers reads backwards in right-to-left text.
+  Calculations in `src/shared/insights.ts` (16 unit tests, one proven to fail when the chance check is removed); two browser tests.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
