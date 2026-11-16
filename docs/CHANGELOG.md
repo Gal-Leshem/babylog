@@ -133,6 +133,10 @@ No names, addresses or secrets in this file (the repository is public).
   between medicines. The daily summary has a row per medicine that is active or was given on one of the two days: once a day shows
   "ניתן" / "לא ניתן", other schedules the number of doses. Browser tests for both.
 - Backlog **(owner idea)**: F14, other families with their own sheet in their own Google account (possible later).
+- CI incident: on `main` the live test's request to the Google test server got no answer (header timeout), so the production server
+  was not deployed although the same commit had passed on `dev` and the site was published (pages only wait for the tests). The live
+  test now gives each request 90 s and sends it again up to three times on a timeout or lost connection (safe: writes carry ids and
+  are recorded once). The following commit redeployed the production server.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

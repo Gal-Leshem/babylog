@@ -14,13 +14,32 @@ const key = process.env.LIVE_KEY ?? process.env.FIXED_KEY ?? '';
 if (!key) throw new Error('no key for the live test');
 
 type R = Record<string, any>;
+const TIMEOUT_MS = Number(process.env.LIVE_TIMEOUT_MS ?? 90_000);
+const ATTEMPTS = 3;
+
+/**
+ * One request. Google sometimes does not answer one request at all (seen once: a header timeout failed the pipeline and the
+ * production server was not deployed). A request that times out or loses its connection is sent again; that is safe because
+ * every write carries an id and is recorded only once.
+ */
 async function call(body: Record<string, unknown>, k = key): Promise<{ status: number; raw: string; json?: R }> {
-  const res = await fetch(url, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ key: k, ...body }),
-  });
+  let res: Response | undefined;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ key: k, ...body }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      break;
+    } catch (e) {
+      if (attempt >= ATTEMPTS) throw e;
+      console.log(`RETRY  ${String(body.action)} (attempt ${attempt} failed: ${e instanceof Error ? e.name : 'error'})`);
+      await new Promise((r) => setTimeout(r, 5_000));
+    }
+  }
   const raw = await res.text();
   try {
     return { status: res.status, raw, json: JSON.parse(raw) as R };

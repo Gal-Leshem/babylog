@@ -47,6 +47,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - When a trigger can arrive during work in progress, queue it; do not drop it.
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
+- After pushing to `main`, check that the `main` server report says "prod server deployed" (the site can be published while the
+  server job failed: pages wait only for the tests).
 - Run one Playwright run at a time: parallel runs share the mock server and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
 - `dev` and `main` runs write the same report files on `ci-status`, so the current file may belong to the other branch. Find a commit's
