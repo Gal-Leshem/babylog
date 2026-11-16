@@ -1,6 +1,7 @@
 /**
  * Medicines (F7). Every medicine is defined once in Settings. Vitamin D is one of them with the reserved id `vitamin_d`: present by
- * default (active, ☀️), may be archived but never removed, and its doses keep their own event type `vitamin_d`. Doses of every other
+ * default (active, once a day, ☀️; every field can be changed like any medicine's), may be archived but never removed, and its doses
+ * keep their own event type `vitamin_d`. Doses of every other
  * medicine are events of type `medicine` whose detail is the medicine's id.
  * The app gives no medical advice: every number here is what the parents entered, and every field may stay empty.
  */
@@ -78,8 +79,7 @@ export function normalizeMedicine(raw: unknown): { ok: true; medicine: Omit<Medi
   if (doseUnit !== '' && !(DOSE_UNITS as readonly string[]).includes(doseUnit)) return { ok: false, error: 'unknown dose unit' };
   const icon = typeof o.icon === 'string' && o.icon.trim() ? o.icon.trim() : id === VITAMIN_D_ID ? '☀️' : '💊';
   if (icon.length > 8) return { ok: false, error: 'icon is too long' };
-  // vitamin D is given once a day
-  const schedule = (id === VITAMIN_D_ID ? 'daily' : o.schedule) as Schedule;
+  const schedule = o.schedule as Schedule;
   if (!SCHEDULES.includes(schedule)) return { ok: false, error: 'unknown schedule' };
   const course = (o.course ?? 'none') as CourseKind;
   if (!COURSES.includes(course)) return { ok: false, error: 'unknown course' };

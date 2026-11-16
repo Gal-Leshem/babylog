@@ -22,7 +22,7 @@ export const README_ROWS: string[][] = [
   ['1', 'Ignore rows where deleted is TRUE.'],
   ['2', 'Nursing: presses within the merge window (sheet "Settings", default 20 minutes) of the previous press belong to the same feeding. Count feedings, not presses.'],
   ['3', 'A sleep that crosses midnight is split between the two days.'],
-  ['4', 'Vitamin D is expected once a day. A second entry on the same day is allowed and probably a double tap.'],
+  ['4', 'Vitamin D rows have type vitamin_d; how often it is given is its row in the "Medicines" sheet (id vitamin_d; once a day unless the parents changed it).'],
   ['5', 'All times are Israel local time. Duration = end minus start.'],
   [''],
   ['Sheet "Settings": display name of the baby, the two parents, and the merge window. Do not copy these values into other tools without asking.'],

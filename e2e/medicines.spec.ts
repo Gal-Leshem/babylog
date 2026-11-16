@@ -77,13 +77,12 @@ test('medicines: as needed with an optional gap and daily maximum, a standard ic
 
 // Owner: vitamin D is there by default but can be archived (not needed after a year); a dose is an amount plus a unit; a course can run
 // until a date (e.g. the first birthday).
-test('medicines: vitamin D gets 400 IU until a date, stays once a day, can be archived and restored but never deleted', async ({ page, request }) => {
+test('medicines: vitamin D gets 400 IU until a date, can be archived and restored but never deleted', async ({ page, request }) => {
   const until = addDaysLocal(todayLocal(), 30);
   await install(page);
   await openMeds(page);
   await row(page, 'vitamin_d').getByTestId('med-edit').click();
-  await expect(page.getByTestId('med-schedule-fixed')).toHaveText('פעם ביום');
-  await expect(page.getByTestId('med-schedule-prn')).toHaveCount(0);
+  await expect(page.getByTestId('med-schedule-daily')).toHaveClass(/\bon\b/); // the default, and it can be changed (next test)
   await page.getByTestId('med-dose').fill('400');
   await page.getByTestId('med-unit').selectOption('יחב״ל');
   await page.getByTestId('med-course-until').click();
@@ -161,4 +160,25 @@ test('medicines: archive and restore; delete only while no dose was logged', asy
     ['vitamin_d', 'active'],
     ['m1', 'active'],
   ]);
+});
+
+// Owner: vitamin D behaves like any medicine; "once a day" is only how it starts.
+test('medicines: the vitamin D schedule can be changed, and Home follows it (twice a day: the second dose needs no confirmation)', async ({ page, request }) => {
+  await install(page);
+  await openMeds(page);
+  await row(page, 'vitamin_d').getByTestId('med-edit').click();
+  await page.getByTestId('med-schedule-times').click();
+  await page.getByTestId('med-times').fill('2');
+  await page.getByTestId('med-save').click();
+  await expect(row(page, 'vitamin_d')).toContainText('פעמיים ביום');
+  await expect.poll(async () => (await serverMeds(request))[0]).toMatchObject({ id: 'vitamin_d', schedule: 'times', timesPerDay: 2 } as never);
+  await page.getByTestId('tab-home').click();
+  await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });
+  await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('confirm-dose')).toHaveCount(0);
+  await expect(page.getByTestId('toast-text')).not.toContainText('כבר ניתן היום'); // the second of two is expected
+  await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });
+  await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('confirm-warnings')).toContainText('כבר ניתנו היום 2 מתוך 2'); // a third one asks
 });

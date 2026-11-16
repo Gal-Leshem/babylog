@@ -24,8 +24,8 @@ sheet dates. Requests carry a client-generated `id`, which makes retries idempot
 Medicines (F7, API 0.3.0): every medicine is defined in Settings and kept in the sheet's "Medicines" tab, one readable row each
 (`src/shared/medicines.ts`: name, icon, dose amount and unit, schedule daily / times / interval / prn with its numbers, optional course of
 X doses / X days / until a date, active or archived; new columns are only ever appended). Vitamin D is the reserved id `vitamin_d`:
-added with defaults when the sheet has no row for it (`withVitaminD`), always once a day, can be archived but not removed, and its doses
-keep the event type `vitamin_d`. They travel inside `settings.medicines`; `settings` with `set.medicines` saves
+added with defaults when the sheet has no row for it (`withVitaminD`: active, once a day, ☀️), then edited like any medicine (schedule
+included), can be archived but not removed, and its doses keep the event type `vitamin_d`. They travel inside `settings.medicines`; `settings` with `set.medicines` saves
 them one by one by id (so two phones editing different medicines never overwrite each other); a removal is refused once a dose exists
 (archive instead). A dose is an event of type `medicine` whose detail is the medicine's id (refused for an unknown id). Settings saved by an
 older app or sent by an older server get an empty list (`withDefaults` in the engine). The "קרא אותי" guide is rewritten when the

@@ -286,9 +286,9 @@ describe('medicines (F7)', () => {
     ]);
   });
 
-  it('vitamin D can be edited and archived, never removed, and always stays once a day', () => {
-    const r = ok(save({ ...DEFAULT_VITAMIN_D, dose: '400', doseUnit: 'יחב״ל', schedule: 'prn', course: 'until', courseUntil: '2027-08-15', status: 'archived' }));
-    expect(r.settings!.medicines[0]).toMatchObject({ id: 'vitamin_d', dose: '400', doseUnit: 'יחב״ל', schedule: 'daily', course: 'until', courseUntil: '2027-08-15', status: 'archived', created: '2026-11-14 12:00' });
+  it('vitamin D can be edited like any medicine (its schedule too) and archived, never removed', () => {
+    const r = ok(save({ ...DEFAULT_VITAMIN_D, dose: '400', doseUnit: 'יחב״ל', schedule: 'times', timesPerDay: 2, course: 'until', courseUntil: '2027-08-15', status: 'archived' }));
+    expect(r.settings!.medicines[0]).toMatchObject({ id: 'vitamin_d', dose: '400', doseUnit: 'יחב״ל', schedule: 'times', timesPerDay: 2, course: 'until', courseUntil: '2027-08-15', status: 'archived', created: '2026-11-14 12:00' });
     expect(save({ id: 'vitamin_d', remove: true })).toMatchObject({ ok: false, error: 'bad_request' });
     expect(log('medicine', 'vitamin_d', '2026-11-14 11:00')).toMatchObject({ ok: false, error: 'invalid_event' }); // its doses keep their own type
   });

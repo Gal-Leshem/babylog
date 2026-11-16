@@ -115,7 +115,6 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
   const today = localDate(useNow(60_000));
   const [d, setD] = useState<Draft>(() => toDraft(initial, settings.medicines, today));
   const [error, setError] = useState('');
-  const isVitaminD = d.id === VITAMIN_D_ID;
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     setD({ ...d, [k]: v });
     setError('');
@@ -166,19 +165,13 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
       </div>
 
       <label class="fl">מתי נותנים</label>
-      {isVitaminD ? (
-        <p class="muted" data-testid="med-schedule-fixed">
-          פעם ביום
-        </p>
-      ) : (
-        <div class="chips" role="radiogroup">
-          {SCHEDULE_LABEL.map(([id, label]) => (
-            <button type="button" key={id} class={`chip ${d.schedule === id ? 'on' : ''}`} data-testid={`med-schedule-${id}`} onClick={() => set('schedule', id)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div class="chips" role="radiogroup">
+        {SCHEDULE_LABEL.map(([id, label]) => (
+          <button type="button" key={id} class={`chip ${d.schedule === id ? 'on' : ''}`} data-testid={`med-schedule-${id}`} onClick={() => set('schedule', id)}>
+            {label}
+          </button>
+        ))}
+      </div>
       {d.schedule === 'times' && (
         <>
           <label class="fl">כמה פעמים ביום</label>

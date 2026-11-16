@@ -125,6 +125,9 @@ No names, addresses or secrets in this file (the repository is public).
 - History **(owner screenshot)**: a sleep's range ("17:30–18:23") wrapped onto two lines in the 92px time column and stretched the
   row. The time column is 112px, one line, centred (checked at 375px wide). Browser test: the range is one line, centred, and the
   sleep row is as tall as a feed row (failed before).
+- Vitamin D **(owner)**: an ordinary medicine in every way, its schedule too; "once a day" is only how it starts (the default made
+  with a new account). The server's "already given today" hint shows only while vitamin D is once a day. Test: twice a day, the second
+  dose needs no confirmation, the third asks.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

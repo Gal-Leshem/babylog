@@ -29,7 +29,8 @@ export function quickLog(kind: Kind): void {
   const label = KIND_LABEL[kind];
   const time = timeOf(start);
   const offline = engine.getState().status === 'offline';
-  if (res.warning === 'vitamin_d_already_given') {
+  const vit = engine.getState().settings.medicines.find((m) => m.id === VITAMIN_D_ID);
+  if (res.warning === 'vitamin_d_already_given' && (!vit || vit.schedule === 'daily')) {
     const first = engine.getState().events.find((e) => e.type === 'vitamin_d' && e.start.slice(0, 10) === start.slice(0, 10) && e.id !== id);
     showToast({ text: `כבר ניתן היום${first ? ` ב-${timeOf(first.start)}` : ''} · נרשם שוב`, tone: 'warn', undo: () => undoOp(res.opId, { action: 'delete', id }) });
     return;
