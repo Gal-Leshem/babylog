@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
-import { clock } from '../../shared/domain';
-import { type Medicine, doseText, medicineToday } from '../../shared/medicines';
+import { type Medicine, doseText, doseWarnings, medicineToday } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
 import { type Mark, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
 import { engine, useEngine, useNow } from '../state';
+import { ConfirmDose } from './ConfirmDose';
 
 /**
  * Where a medicine stands, as separate parts: given today (when, by whom) or not yet; next allowed time; course progress.
@@ -17,7 +17,6 @@ function statusParts(m: Medicine, events: Parameters<typeof medicineToday>[1], n
   if (t.count > 0 && t.last) parts.push(`ניתן היום ${timeOf(t.last.start)}${t.count > 1 ? ` (${t.count} פעמים)` : ''}`, t.last.user);
   else if (t.last) parts.push(`לא ניתן היום · אחרון: ${dayName(t.last.start.slice(0, 10), today)} ${timeOf(t.last.start)}`);
   else parts.push('עוד לא ניתן');
-  if (t.nextAt !== null) parts.push(`הבאה מ-${clock(t.nextAt)}`);
   if (t.course) parts.push(t.course.done ? `${t.course.text} · משך מתן התרופה הסתיים` : t.course.text);
   return parts;
 }
@@ -38,6 +37,11 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
   const { events, settings } = useEngine();
   const now = useNow(15_000);
   const [marks, setMarks] = useState<Mark[]>([]);
+  const [pending, setPending] = useState<Medicine | null>(null);
+  const give = (m: Medicine) => {
+    const r = logMedicine(m);
+    if (r) setMarks([...marks, r]);
+  };
   useEffect(() => {
     void engine.refresh(); // the other parent may have just given something
   }, []);
@@ -51,17 +55,15 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
           {meds.map((m) => {
             const marked = marks.filter((k) => k.medicineId === m.id).length;
             const t = medicineToday(m, events, now);
+            const warn = doseWarnings(m, events, now);
             return (
               <li key={m.id}>
                 <button
                   type="button"
-                  class={`medbtn ${marked ? 'marked' : ''} ${t.missing ? 'missing' : ''}`}
+                  class={`medbtn ${marked ? 'marked' : ''} ${t.missing ? 'missing' : ''} ${warn.length ? 'warned' : ''}`}
                   data-testid="meds-row"
                   data-id={m.id}
-                  onClick={() => {
-                    const r = logMedicine(m);
-                    if (r) setMarks([...marks, r]);
-                  }}
+                  onClick={() => (warn.length ? setPending(m) : give(m))}
                 >
                   <span class="mi emo">{m.icon}</span>
                   <span class="mtext">
@@ -74,6 +76,11 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
                         </small>
                       ) : null}
                     </span>
+                    {warn.length > 0 && (
+                      <span class="mwarn" data-testid="meds-warning">
+                        {joined(warn)}
+                      </span>
+                    )}
                     <span class="mst" data-testid="meds-status">
                       {joined([...(marked ? [`✓ סומן עכשיו${marked > 1 ? ` ×${marked}` : ''}`] : []), ...statusParts(m, events, now)])}
                     </span>
@@ -100,6 +107,18 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
+      {pending && (
+        <ConfirmDose
+          medicine={pending}
+          warnings={doseWarnings(pending, events, now)}
+          last={medicineToday(pending, events, now).last}
+          onCancel={() => setPending(null)}
+          onConfirm={() => {
+            give(pending);
+            setPending(null);
+          }}
+        />
+      )}
     </div>
   );
 }

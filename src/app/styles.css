@@ -338,3 +338,10 @@ input, textarea, select {
 .medbtn.missing { border-color: var(--warn); }
 .medbtn.marked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 .medbtn.marked .mst { color: var(--fg); }
+
+/* ---- stage 3: warnings before a dose ---- */
+.medbtn.warned { border-color: var(--warn); }
+.medbtn .mwarn { color: var(--warn); font-weight: 700; font-size: 13px; }
+.sheet-backdrop.confirm { z-index: 60; align-items: center; padding: 16px; }
+.sheet-backdrop.confirm .sheet { border-radius: 18px; }
+.warnlist { margin: 6px 0; padding-inline-start: 20px; color: var(--warn); font-weight: 600; }

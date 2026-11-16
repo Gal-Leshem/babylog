@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, dosesOf, medicineToday, pickIcon, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, doseWarnings, dosesOf, medicineToday, pickIcon, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -104,5 +104,39 @@ describe('today', () => {
   it('a finished course is never missing', () => {
     const m = med({ schedule: 'daily', course: 'until', courseUntil: '2026-11-13' });
     expect(medicineToday(m, [], NOW)).toMatchObject({ missing: false, course: { done: true } });
+  });
+});
+
+describe('warnings before a dose (stage 3)', () => {
+  const at = (start: string, user = 'Parent 2') => ev({ type: 'medicine', detail: 'm1', start, user });
+
+  it('nothing to say for a first dose', () => {
+    expect(doseWarnings(med({ schedule: 'daily' }), [], NOW)).toEqual([]);
+    expect(doseWarnings(med({ schedule: 'prn', minGapHours: 4, maxPerDay: 4 }), [], NOW)).toEqual([]);
+  });
+
+  it('once a day already given (vitamin D too), with when', () => {
+    expect(doseWarnings(med({ schedule: 'daily' }), [at('2026-11-14 08:10')], NOW)).toEqual(['כבר ניתן היום ב-8:10']);
+    expect(doseWarnings(DEFAULT_VITAMIN_D, [ev({ type: 'vitamin_d', start: '2026-11-14 09:00', user: 'Parent 1' })], NOW)).toEqual(['כבר ניתן היום ב-9:00']);
+  });
+
+  it('X times a day reached; too early within the minimum gap', () => {
+    const m = med({ schedule: 'times', timesPerDay: 2, minGapHours: 8 });
+    expect(doseWarnings(m, [at('2026-11-14 01:00'), at('2026-11-14 10:00')], NOW)).toEqual([
+      'כבר ניתנו היום 2 מתוך 2',
+      'מוקדם מדי: הבאה מ-18:00',
+    ]);
+    expect(doseWarnings(m, [at('2026-11-14 01:00')], NOW)).toEqual([]); // one of two, and the gap has passed
+  });
+
+  it('every X hours: too early; as needed: daily maximum', () => {
+    expect(doseWarnings(med({ schedule: 'interval', everyHours: 8 }), [at('2026-11-14 06:00')], NOW)).toEqual(['מוקדם מדי: הבאה מ-14:00']);
+    const prn = med({ schedule: 'prn', maxPerDay: 2 });
+    expect(doseWarnings(prn, [at('2026-11-14 01:00'), at('2026-11-14 05:00')], NOW)).toEqual(['הגיע למקסימום היומי (2)']);
+    expect(doseWarnings(prn, [at('2026-11-13 20:00'), at('2026-11-14 05:00')], NOW)).toEqual([]); // the day runs midnight to midnight
+  });
+
+  it('the period of the medicine is over', () => {
+    expect(doseWarnings(med({ schedule: 'prn', course: 'until', courseUntil: '2026-11-13' }), [], NOW)).toEqual(['משך מתן התרופה הסתיים (עד 13.11.26)']);
   });
 });

@@ -131,14 +131,21 @@ test('undoing a wake-up reopens the sleep', async ({ page, request }) => {
   await expect.poll(async () => (await serverEvents(request)).filter((e) => e.type === 'sleep' && !e.end).length).toBe(1);
 });
 
-test('vitamin D: status tile, and a second tap warns but is recorded', async ({ page, request }) => {
+// F7 stage 3 (owner): a second vitamin D on the same day asks first, even as the only button; it can still be logged.
+test('vitamin D: status tile; a second tap the same day asks first, cancel logs nothing, confirm logs it', async ({ page, request }) => {
   await install(page);
   await expect(page.getByTestId('tile-vitamin')).toContainText('עדיין לא');
   await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('confirm-dose')).toHaveCount(0); // the first one needs no confirmation
   await expect(page.getByTestId('tile-vitamin')).toContainText('ניתן היום');
   await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });
   await page.getByTestId('btn-vitamin_d').click();
-  await expect(page.getByTestId('toast-text')).toContainText('כבר ניתן היום');
+  await expect(page.getByTestId('confirm-warnings')).toContainText('כבר ניתן היום ב-');
+  await expect(page.getByTestId('confirm-last')).toContainText('Parent One');
+  await page.getByTestId('confirm-no').click();
+  await expect(page.getByTestId('confirm-dose')).toHaveCount(0);
+  await page.getByTestId('btn-vitamin_d').click();
+  await page.getByTestId('confirm-yes').click();
   await expect.poll(async () => (await serverEvents(request)).filter((e) => e.type === 'vitamin_d').length).toBe(2);
 });
 

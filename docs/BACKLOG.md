@@ -87,7 +87,7 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   medicine shows its own icon and name (one tap logs it); several show their icons side by side above "תרופות" (more than three: 🧸);
   none: the button leaves Home.
 - **Stages** (each shipped on its own): 1 medicines list in the sheet and server + the Settings screen (Home unchanged) **done**;
-  2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation; 4 history, summary and add-after-the-fact.
+  2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation **done**; 4 history, summary and add-after-the-fact.
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.

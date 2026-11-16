@@ -5,7 +5,7 @@
  * The app gives no medical advice: every number here is what the parents entered, and every field may stay empty.
  */
 import { live } from './domain';
-import { addDays, isDateString, localDate, parseLocal } from './tz';
+import { addDays, formatLocal, isDateString, localDate, parseLocal } from './tz';
 import type { BabyEvent } from './types';
 
 export const VITAMIN_D_ID = 'vitamin_d';
@@ -253,4 +253,26 @@ export function medicineToday(m: Medicine, events: readonly BabyEvent[], nowEpoc
     else if (m.schedule === 'interval') missing = nextAt === null;
   }
   return { count, last, missing, nextAt, course };
+}
+
+const hm = (epoch: number) => {
+  const s = formatLocal(epoch).slice(11);
+  return s.startsWith('0') ? s.slice(1) : s;
+};
+
+/**
+ * Why giving a dose now needs a second look (empty: nothing to say). Short Hebrew sentences without names (who gave the last dose is
+ * shown separately, isolated, so a name cannot reorder the sentence). Only what the parents set is used: once a day already given,
+ * X times a day reached, the as-needed maximum reached, too early for the gap, or the period of the medicine is over.
+ * The app never blocks: the screen shows these and asks for a confirmation.
+ */
+export function doseWarnings(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): string[] {
+  const t = medicineToday(m, events, nowEpoch);
+  const out: string[] = [];
+  if (t.course?.done) out.push(`משך מתן התרופה הסתיים (${t.course.text})`);
+  if (m.schedule === 'daily' && t.count >= 1 && t.last) out.push(`כבר ניתן היום ב-${hm(parseLocal(t.last.start))}`);
+  if (m.schedule === 'times' && t.count >= m.timesPerDay) out.push(`כבר ניתנו היום ${t.count} מתוך ${m.timesPerDay}`);
+  if (m.schedule === 'prn' && m.maxPerDay > 0 && t.count >= m.maxPerDay) out.push(`הגיע למקסימום היומי (${m.maxPerDay})`);
+  if (t.nextAt !== null) out.push(`מוקדם מדי: הבאה מ-${hm(t.nextAt)}`);
+  return out;
 }

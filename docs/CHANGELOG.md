@@ -116,6 +116,12 @@ No names, addresses or secrets in this file (the repository is public).
 - Feed or diaper while marked asleep **(owner question, our call)**: nothing changes by itself (night feeds and changes often happen in
   sleep, and an automatic wake would cut the sleep stretches); the confirmation adds "עדיין מסומן שישן" and an "התעורר" button.
   Toasts can carry a second button for this. Tests fail on the old code.
+- F7 stage 3 **(owner spec)**: warnings before a dose, from the parents' own settings only (`doseWarnings`): once a day already
+  given, X times a day reached, the as-needed daily maximum reached, too early for the gap / every X hours, the medicine's period is
+  over. The window shows them as a highlighted line on the row; tapping such a row (or the single medicine button, vitamin D included)
+  opens a confirmation ("לרשום בכל זאת" / "ביטול") with the last dose's time and who gave it. Never blocks. Warnings carry no names
+  (a name inside a sentence reorders right-to-left text); the last dose is a separate, isolated line. Unit tests for every warning;
+  browser tests for the window, the single button and vitamin D (cancel logs nothing, confirm logs).
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

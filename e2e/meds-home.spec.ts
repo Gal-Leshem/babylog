@@ -77,7 +77,7 @@ test('the window shows the next allowed time and closes when tapping outside', a
   await install(page);
   await page.getByTestId('btn-meds').click();
   await row(page, 'm1').click();
-  await expect(row(page, 'm1').getByTestId('meds-status')).toContainText('הבאה מ-');
+  await expect(row(page, 'm1').getByTestId('meds-warning')).toContainText('הבאה מ-');
   await expect(row(page, 'm1').getByTestId('meds-status')).toContainText('מנה 1 מתוך 14');
   await page.getByTestId('meds-window').click({ position: { x: 10, y: 10 } });
   await expect(page.getByTestId('meds-window')).toBeHidden();
@@ -146,4 +146,40 @@ test('renaming a medicine or changing its icon shows in the recent list and in h
   await expect(page.getByTestId('history-row').first()).toContainText('🧸');
   await expect(page.getByTestId('history-row').first()).toContainText('ברזל');
   await expect(page.getByTestId('history-row').first()).not.toContainText('🍓');
+});
+
+// F7 stage 3 (owner): the window shows a highlighted line when the parents' limits say "not now", and tapping such a row asks first.
+test('window: too early and daily maximum are highlighted; such a row asks before logging', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'אנטיביוטיקה', icon: '🧸', schedule: 'interval', everyHours: 8 }, { id: 'm2', name: 'אקמול', icon: '🍓', schedule: 'prn', maxPerDay: 1 }]);
+  await install(page);
+  await page.getByTestId('btn-meds').click();
+  await expect(page.getByTestId('meds-warning')).toHaveCount(0); // nothing given yet: no warnings
+  await row(page, 'm1').click();
+  await row(page, 'm2').click();
+  await expect(page.getByTestId('confirm-dose')).toHaveCount(0); // first doses need no confirmation
+  await expect(row(page, 'm1').getByTestId('meds-warning')).toContainText('מוקדם מדי: הבאה מ-');
+  await expect(row(page, 'm2').getByTestId('meds-warning')).toContainText('הגיע למקסימום היומי (1)');
+  await expect(row(page, 'vitamin_d').getByTestId('meds-warning')).toHaveCount(0);
+
+  await row(page, 'm1').click();
+  await expect(page.getByTestId('confirm-warnings')).toContainText('מוקדם מדי');
+  await page.getByTestId('confirm-no').click();
+  await expect.poll(async () => (await doses(request)).filter((d) => d === 'm1').length).toBe(1);
+  await row(page, 'm2').click();
+  await page.getByTestId('confirm-yes').click();
+  await expect.poll(async () => (await doses(request)).filter((d) => d === 'm2').length).toBe(2);
+  await expect(row(page, 'm2').getByTestId('meds-status')).toContainText('✓ סומן עכשיו ×2');
+  // cancelling the window takes back everything marked in it, including the confirmed one
+  await page.getByTestId('meds-cancel').click();
+  await expect.poll(() => doses(request)).toEqual([]);
+});
+
+test('a single medicine button asks first when its period is over', async ({ page, request }) => {
+  const yesterday = new Date(Date.now() - 86_400_000).toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }).slice(0, 10);
+  await setMeds(request, [{ ...VIT, status: 'archived' }, { id: 'm1', name: 'סירופ', icon: '🍓', schedule: 'prn', course: 'until', courseUntil: yesterday }]);
+  await install(page);
+  await page.getByTestId('btn-med').click();
+  await expect(page.getByTestId('confirm-warnings')).toContainText('משך מתן התרופה הסתיים');
+  await page.getByTestId('confirm-yes').click();
+  await expect.poll(() => doses(request)).toEqual(['m1']);
 });

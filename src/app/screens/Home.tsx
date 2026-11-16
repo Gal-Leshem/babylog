@@ -1,11 +1,12 @@
 import { useState } from 'preact/hooks';
 import { byTimeDesc, clock, elapsedHM, lastFeed, nextSide, sleepState } from '../../shared/domain';
-import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, medicineToday } from '../../shared/medicines';
+import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
+import { ConfirmDose } from './ConfirmDose';
 
 const side = (s: string | null) => (s === 'left' ? 'שמאל' : s === 'right' ? 'ימין' : '');
 
@@ -61,6 +62,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
   const now = useNow(15_000);
   const [locked, setLocked] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<Medicine | null>(null);
 
   const press = (id: string, fn: () => void) => {
     if (locked) return;
@@ -105,13 +107,15 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
     if (list.length === 1) {
       const m = list[0]!;
       const id = m.id === VITAMIN_D_ID ? 'vitamin_d' : 'med';
+      const give = () => (m.id === VITAMIN_D_ID ? quickLog('vitamin_d') : void logMedicine(m, true));
       return (
         <button
           type="button"
           class={`big ${flash === id ? 'flash' : ''}`}
           data-testid={`btn-${id}`}
           disabled={locked}
-          onClick={() => press(id, () => (m.id === VITAMIN_D_ID ? quickLog('vitamin_d') : void logMedicine(m, true)))}
+          // the parents' own limits say "not now": ask first (the only case with a second tap)
+          onClick={() => (doseWarnings(m, events, now).length ? setConfirm(m) : press(id, give))}
         >
           <span class="ico">{m.icon}</span>
           <span class="lbl">{m.name}</span>
@@ -199,6 +203,19 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
         ))}
         {recent.length === 0 && <li class="empty">עדיין לא תועד כלום</li>}
       </ul>
+      {confirm && (
+        <ConfirmDose
+          medicine={confirm}
+          warnings={doseWarnings(confirm, events, now)}
+          last={medicineToday(confirm, events, now).last}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            setConfirm(null);
+            if (confirm.id === VITAMIN_D_ID) quickLog('vitamin_d');
+            else logMedicine(confirm, true);
+          }}
+        />
+      )}
     </section>
   );
 }
