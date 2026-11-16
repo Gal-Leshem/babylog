@@ -230,3 +230,20 @@ Fill in after each phase. "total" = the whole trip seen by a client in the CI ru
 latency); "server" = time inside our code.
 | When | Call | total ms | server ms | Notes |
 |------|------|----------|-----------|-------|
+| Before (old actions, measured in the same runs) | `poll` | 800-1200 | 60-190 | properties only |
+| Before | `list` (small test sheet) | 1700 | 870-930 | settings read 450-490, events read 100 |
+| Before | `log` | 1300-1700 | 600-1000 | TextFinder 290-360, write 200, lock 90 |
+| Before | one tap = `log` + `list` | about 3400 | | two round trips |
+| After phases 0-1 | `sync`, nothing new | 600-660 | 55-120 | properties only: the per-request floor is about 0.6 s |
+| After phases 0-1 | `sync`, one tap | 1700-2500 | 1000-1700 | find 320-360, write 150-230, properties 160-440 (4 calls) |
+| After phases 0-1 | `sync`, three taps | 3400-4000 | 2500-3200 | find 1000-1100 for 4 calls: the duplicate check dominates |
+| After phases 0-1 | `sync` with the list | 1800-3700 | 900-2700 | settings read 480-2150 (very variable): the top cost |
+
+What the numbers say for phase 2 (re-ordered by measured cost):
+1. **Settings / medicines read** (0.45 to 2.1 s in every list answer): cache the serialized settings (script cache or a script
+   property), rewritten on every settings save; the sheet stays the store. Biggest win for "open after the other parent wrote".
+2. **Duplicate check** (TextFinder, 0.3 to 0.5 s per operation): skip on a first attempt (item 2.4), look in the tail already read.
+3. **Properties** (20 to 440 ms, 2 to 4 calls): read once per request, write once (item 2.2).
+4. Opening the spreadsheet costs 2 to 4 ms: item 2.1 (lazy spreadsheet) is not worth much; do it only because it is trivial.
+5. Events read is about 100 ms on the small test sheet; the tail read (item 2.3) matters for the real, growing sheet.
+Seen once: right after a deploy a few answers came back without `ms` (probably still served by the previous version for a moment).
