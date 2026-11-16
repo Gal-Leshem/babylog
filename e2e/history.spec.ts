@@ -134,3 +134,31 @@ test('an open sleep is shown as still sleeping', async ({ page, request }) => {
   await expect(page.getByTestId('history-row')).toContainText('ישן עכשיו');
   void api;
 });
+
+// Owner screenshot: a sleep's time range ("17:30–18:23") wrapped onto two lines in the 92px time column and stretched the row.
+// The time column fits a range on one line, centred, like the icons; a sleep row is no taller than a feed row.
+test('history: a sleep time range stays on one line, centred, and its row is as tall as the others', async ({ page, request }) => {
+  const d = todayLocal();
+  await seed(request, [
+    { type: 'sleep', start: `${d} 00:10`, end: `${d} 00:53` },
+    { type: 'feed', detail: 'right', start: `${d} 00:55` },
+  ]);
+  await install(page);
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('history-row')).toHaveCount(2);
+  const m = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="history-row"]')].map((row) => {
+      const cell = row.querySelector('.ht')!;
+      const r = document.createRange();
+      r.selectNodeContents(cell);
+      const text = r.getBoundingClientRect();
+      const box = cell.getBoundingClientRect();
+      return { rowH: row.getBoundingClientRect().height, textH: text.height, off: Math.abs(text.left + text.width / 2 - (box.left + box.width / 2)), t: cell.textContent };
+    }),
+  );
+  const sleep = m.find((x) => x.t!.includes('–'))!;
+  const feed = m.find((x) => !x.t!.includes('–'))!;
+  expect(sleep.textH).toBeLessThan(30); // one line
+  expect(Math.abs(sleep.rowH - feed.rowH)).toBeLessThan(1);
+  for (const x of m) expect(x.off).toBeLessThan(2); // centred
+});

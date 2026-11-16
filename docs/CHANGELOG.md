@@ -122,6 +122,9 @@ No names, addresses or secrets in this file (the repository is public).
   opens a confirmation ("לרשום בכל זאת" / "ביטול") with the last dose's time and who gave it. Never blocks. Warnings carry no names
   (a name inside a sentence reorders right-to-left text); the last dose is a separate, isolated line. Unit tests for every warning;
   browser tests for the window, the single button and vitamin D (cancel logs nothing, confirm logs).
+- History **(owner screenshot)**: a sleep's range ("17:30–18:23") wrapped onto two lines in the 92px time column and stretched the
+  row. The time column is 112px, one line, centred (checked at 375px wide). Browser test: the range is one line, centred, and the
+  sleep row is as tall as a feed row (failed before).
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

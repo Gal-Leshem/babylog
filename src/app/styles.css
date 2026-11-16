@@ -238,7 +238,8 @@ input, textarea, select {
 .hrow {
   width: 100%;
   display: grid;
-  grid-template-columns: 92px 40px 1fr;
+  /* the time column fits a sleep's range ("17:30–18:23") on one line */
+  grid-template-columns: 112px 40px 1fr;
   gap: 6px 8px;
   align-items: baseline;
   background: none;
@@ -247,7 +248,7 @@ input, textarea, select {
   padding: 10px 2px;
   text-align: start;
 }
-.ht { font-variant-numeric: tabular-nums; direction: ltr; text-align: end; }
+.ht { font-variant-numeric: tabular-nums; direction: ltr; text-align: center; white-space: nowrap; letter-spacing: -0.3px; }
 .hl small { color: var(--muted); }
 .hm { grid-column: 3; color: var(--muted); font-size: 12px; }
 .sum { width: 100%; border-collapse: collapse; margin-top: 8px; }
