@@ -149,6 +149,10 @@ No names, addresses or secrets in this file (the repository is public).
   "היום 1 מתוך 2 · אחרון 08:10" for those. Unit tests for the wording; browser checks on the tile (vitamin D twice a day) and the
   window (every 8 hours).
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
+- Owner answers: night status bar confirmed black on the phone; no total on the medicines tile for now.
+- Plan only **(owner request)**: `docs/REFACTOR_PLAN.md`, a code review of the sync path with a phased refactor plan (one `sync`
+  round trip instead of several, cheaper sheet reads, sending while the app is being left, a quiet sync indicator, look and feel
+  options). Nothing built.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

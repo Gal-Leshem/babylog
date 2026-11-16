@@ -20,9 +20,10 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   counts); medicines F7 complete (Settings screen, vitamin D as an ordinary medicine, icons, dose units, courses incl. "until a date",
   Home button / window / tile, warnings with confirmation, add/edit and summary); Settings in sections; many layout fixes from the
   owner's screenshots; CI hardening (report race, live-test retry).
-- Open with the owner: (1) confirm on the phone that the status bar is black at night now (iOS 26 samples the page; cannot be tested
-  here); (2) answer: should the medicines tile, with several medicines, add a total like "2 מתוך 3 תרופות ניתנו היום"?
-  (3) the owner will report which of "סיכום" / "תובנות" and which insight cards get used, then reshape F8.
+- Answered by the owner: the status bar is black at night on the phone (fixed); no total line on the medicines tile for now.
+- Open with the owner: (1) which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape
+  F8; (2) the refactor plan for sync speed, performance and look, `docs/REFACTOR_PLAN.md`: a proposal, nothing built; the owner's
+  answers to its section 5 decide the order. Whoever implements it: read that file first and go phase by phase.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
