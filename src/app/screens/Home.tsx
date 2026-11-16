@@ -109,7 +109,7 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
         {recent.map((e) => (
           <li key={e.id}>
             <button type="button" class="rrow" data-testid="recent-row" onClick={() => onEdit(e)}>
-              <span class="emo">{eventIcon(e)}</span>
+              <span class="ri emo">{eventIcon(e)}</span>
               <span class="rl">{eventLabel(e)}</span>
               <span class="rt">{timeOf(e.start || e.end)}</span>
               <span class="rm">

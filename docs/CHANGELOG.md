@@ -85,6 +85,9 @@ No names, addresses or secrets in this file (the repository is public).
   next test (seen as a flaky medicines test). Requests from before a reset are now discarded.
 - Live test (real Google test server): also saves a medicine, logs a dose, checks that removal is refused while the dose exists, and
   cleans both up (exercises the real "Medicines" sheet calls).
+- Recent list and History **(owner screenshot)**: "💧💩" wrapped onto two lines in the 24px icon column and made its row taller, and a
+  single icon looked off-centre. The icon column is now 40px, icons stay on one line and are centred (`.ri`, `.hi`); the label keeps the
+  rest. Browser test measures row heights and centring in both lists (failed with a 17px taller row before).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

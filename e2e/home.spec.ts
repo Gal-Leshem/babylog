@@ -190,3 +190,37 @@ test('seeded events from the server show up on the home screen', async ({ page, 
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByTestId('recent-row')).toHaveCount(1);
 });
+
+// Owner screenshot: in the recent list "💧💩" wrapped onto two lines (the icon column was 24px), making that row taller, and a single
+// icon looked off-centre. Icons stay on one line, centred in a column wide enough for two; the same in History.
+test('recent list and history: two icons stay on one line, centred like a single icon', async ({ page, request }) => {
+  await seed(request, [
+    { type: 'diaper', detail: 'both', start: `${todayLocal()} 00:02` },
+    { type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:01` },
+  ]);
+  await install(page);
+  const measure = (rowSel: string, iconSel: string) =>
+    page.evaluate(
+      ([rs, is]) =>
+        [...document.querySelectorAll(rs)].slice(0, 2).map((row) => {
+          const cell = row.querySelector(is)!;
+          const r = document.createRange();
+          r.selectNodeContents(cell);
+          const text = r.getBoundingClientRect();
+          const box = cell.getBoundingClientRect();
+          return { rowH: row.getBoundingClientRect().height, textH: text.height, off: Math.abs(text.left + text.width / 2 - (box.left + box.width / 2)) };
+        }),
+      [rowSel, iconSel] as const,
+    );
+  const check = (m: { rowH: number; textH: number; off: number }[]) => {
+    expect(m).toHaveLength(2);
+    expect(Math.abs(m[0]!.rowH - m[1]!.rowH)).toBeLessThan(1); // "both" is not taller
+    expect(m[0]!.textH).toBeLessThan(30); // one line of icons
+    for (const x of m) expect(x.off).toBeLessThan(2); // centred in the cell
+  };
+  await expect(page.getByTestId('recent-row')).toHaveCount(2);
+  check(await measure('[data-testid="recent-row"]', '.ri'));
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('history-row')).toHaveCount(2);
+  check(await measure('[data-testid="history-row"]', '.hi'));
+});

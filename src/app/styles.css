@@ -161,8 +161,9 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .rrow {
   width: 100%;
   display: grid;
-  grid-template-columns: 24px 1fr auto auto;
-  gap: 8px;
+  /* the icon column fits two icons ("💧💩") on one line; the label takes what is left */
+  grid-template-columns: 40px 1fr auto auto;
+  gap: 6px;
   align-items: center;
   background: none;
   border: none;
@@ -172,6 +173,8 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
   font-size: 14px;
 }
 .rt { font-variant-numeric: tabular-nums; }
+/* icons: one line, centred in their column, so one icon and two icons look balanced */
+.ri, .hi { white-space: nowrap; text-align: center; letter-spacing: -1px; }
 .rm { color: var(--muted); font-size: 12px; }
 
 /* ---- tabs ---- */
@@ -235,7 +238,7 @@ input, textarea, select {
 .hrow {
   width: 100%;
   display: grid;
-  grid-template-columns: 92px 28px 1fr;
+  grid-template-columns: 92px 40px 1fr;
   gap: 6px 8px;
   align-items: baseline;
   background: none;
