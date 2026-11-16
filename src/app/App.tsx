@@ -81,6 +81,18 @@ function ToastView() {
           בטל
         </button>
       )}
+      {t.action && (
+        <button
+          type="button"
+          data-testid="toast-action"
+          onClick={() => {
+            hideToast();
+            t.action?.run();
+          }}
+        >
+          {t.action.label}
+        </button>
+      )}
     </div>
   );
 }

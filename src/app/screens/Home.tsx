@@ -9,6 +9,31 @@ import { useEngine, useNow } from '../state';
 
 const side = (s: string | null) => (s === 'left' ? 'שמאל' : s === 'right' ? 'ימין' : '');
 
+interface RecentRow {
+  key: string;
+  e: BabyEvent;
+  /** local time of this row */
+  at: string;
+  icon: string;
+  label: string;
+}
+
+/**
+ * The last 10 things that happened. A sleep is two moments here: "נרדם" when it started and "התעורר" when it ended (History keeps
+ * one "שינה" row), so it is easy to check that a wake-up was logged. Tapping either opens the same sleep.
+ */
+function recentRows(events: readonly BabyEvent[], meds: readonly Medicine[]): RecentRow[] {
+  const rows: RecentRow[] = [];
+  // walk the newest entries first: the sort below is stable, so rows in the same minute stay newest-entered first
+  for (const e of [...events].reverse()) {
+    if (e.type === 'sleep') {
+      if (e.start) rows.push({ key: `${e.id}:s`, e, at: e.start, icon: '🌙', label: 'נרדם' });
+      if (e.end) rows.push({ key: `${e.id}:e`, e, at: e.end, icon: '☀️', label: 'התעורר' });
+    } else rows.push({ key: e.id, e, at: e.start, icon: eventIcon(e, meds), label: eventLabel(e, meds) });
+  }
+  return rows.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 10);
+}
+
 /** The medicines tile: one medicine shows its own state; several show what is missing, else the next allowed time, else "all given". */
 function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: number) {
   const st = meds.map((m) => ({ m, t: medicineToday(m, events, now) }));
@@ -26,7 +51,7 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
   return {
     title: 'תרופות',
     value: missing.length ? `חסר: ${missing[0]!.m.name}` : next !== undefined ? `הבאה מ-${clock(next)}` : 'הכל ניתן',
-    sub: missing.length > 1 ? `ועוד ${missing.length - 1}` : st.some((x) => x.t.course?.done) ? 'קורס הסתיים' : '',
+    sub: missing.length > 1 ? `ועוד ${missing.length - 1}` : st.some((x) => x.t.course?.done) ? 'מתן תרופה הסתיים' : '',
     warn: missing.length > 0,
   };
 }
@@ -52,7 +77,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
   const sleep = sleepState(events);
   const meds = settings.medicines.filter((m) => m.status === 'active');
   const tile = meds.length ? medsTile(meds, events, now) : null;
-  const recent = [...events].sort(byTimeDesc).slice(0, 10);
+  const recent = recentRows(events, settings.medicines);
 
   const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
   const sleepValue =
@@ -159,12 +184,12 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
       </button>
 
       <ul class="recent" data-testid="recent">
-        {recent.map((e) => (
-          <li key={e.id}>
+        {recent.map(({ key, e, at, icon, label }) => (
+          <li key={key}>
             <button type="button" class="rrow" data-testid="recent-row" onClick={() => onEdit(e)}>
-              <span class="ri emo">{eventIcon(e, settings.medicines)}</span>
-              <span class="rl">{eventLabel(e, settings.medicines)}</span>
-              <span class="rt">{timeOf(e.start || e.end)}</span>
+              <span class="ri emo">{icon}</span>
+              <span class="rl">{label}</span>
+              <span class="rt">{timeOf(at)}</span>
               <span class="rm">
                 {e.user}
                 {e.source === 'siri' ? ' 🎙' : ''}

@@ -47,6 +47,8 @@ export interface Toast {
   id: number;
   text: string;
   undo?: () => void;
+  /** a second button, e.g. "התעורר" after logging a feed while the baby is marked asleep */
+  action?: { label: string; run: () => void };
   tone?: 'ok' | 'warn' | 'error';
 }
 

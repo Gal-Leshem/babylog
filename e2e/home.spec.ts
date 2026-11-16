@@ -224,3 +224,48 @@ test('recent list and history: two icons stay on one line, centred like a single
   await expect(page.getByTestId('history-row')).toHaveCount(2);
   check(await measure('[data-testid="history-row"]', '.hi'));
 });
+
+// Owner: the recent list shows falling asleep and waking up as separate rows, so a missing wake-up is easy to spot.
+test('recent list: a sleep shows as "נרדם" and "התעורר" at their own times; an open sleep only as "נרדם"', async ({ page, request }) => {
+  const d = todayLocal();
+  await seed(request, [
+    { type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` },
+    { type: 'diaper', detail: 'wet', start: `${d} 00:20` },
+    { type: 'sleep', start: `${d} 00:50` },
+  ]);
+  await install(page);
+  const rows = page.getByTestId('recent-row');
+  await expect(rows).toHaveCount(4);
+  const texts = (await rows.allTextContents()).map((t) => t.replace(/\s+/g, ' '));
+  expect(texts[0]).toContain('נרדם');
+  expect(texts[0]).toContain('00:50');
+  expect(texts[1]).toContain('התעורר');
+  expect(texts[1]).toContain('00:40');
+  expect(texts[2]).toContain('פיפי');
+  expect(texts[3]).toContain('נרדם');
+  expect(texts[3]).toContain('00:05');
+  await rows.nth(1).click(); // "התעורר" opens that sleep
+  await expect(page.getByTestId('event-form')).toBeVisible();
+  await expect(page.getByTestId('kind-sleep')).toHaveClass(/\bon\b/);
+  await expect(page.getByTestId('end-time')).toHaveValue('00:40');
+});
+
+// Owner: logging a feed or a diaper while the baby is marked asleep. Nothing changes by itself (night feeds and changes often happen
+// in sleep); the confirmation says he is still marked asleep and offers "התעורר" in one tap.
+test('a feed or diaper while asleep offers "התעורר" in the confirmation; awake there is no such button', async ({ page, request }) => {
+  await install(page);
+  await page.getByTestId('btn-wet').click();
+  await expect(page.getByTestId('toast-text')).toContainText('נשמר: פיפי');
+  await expect(page.getByTestId('toast-action')).toHaveCount(0);
+  await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 3000 });
+  await page.getByTestId('btn-sleep').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+  await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
+  await page.getByTestId('btn-feed_left').click();
+  await expect(page.getByTestId('toast-text')).toContainText('עדיין מסומן שישן');
+  await expect(page.getByTestId('recent-row').first()).toContainText('הנקה שמאל'); // same minute as "נרדם": entered later, so first
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר'); // still asleep: nothing changed by itself
+  await page.getByTestId('toast-action').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+  await expect.poll(async () => (await serverEvents(request)).filter((e) => e.type === 'sleep').map((e) => Boolean(e.start && e.end))).toEqual([true]);
+});

@@ -18,7 +18,7 @@ function statusParts(m: Medicine, events: Parameters<typeof medicineToday>[1], n
   else if (t.last) parts.push(`לא ניתן היום · אחרון: ${dayName(t.last.start.slice(0, 10), today)} ${timeOf(t.last.start)}`);
   else parts.push('עוד לא ניתן');
   if (t.nextAt !== null) parts.push(`הבאה מ-${clock(t.nextAt)}`);
-  if (t.course) parts.push(t.course.done ? `${t.course.text} · הקורס הסתיים` : t.course.text);
+  if (t.course) parts.push(t.course.done ? `${t.course.text} · משך מתן התרופה הסתיים` : t.course.text);
   return parts;
 }
 

@@ -125,3 +125,25 @@ for (const height of [852, 700, 560]) {
     expect(s.minButton).toBeGreaterThanOrEqual(56);
   });
 }
+
+// Owner: fixing a medicine's name or icon later must show in everything already logged (a dose stores the medicine's id only).
+test('renaming a medicine or changing its icon shows in the recent list and in history for doses already given', async ({ page, request }) => {
+  await setMeds(request, [{ ...VIT, status: 'archived' }, { id: 'm1', name: 'ברזלל', icon: '🍓', schedule: 'daily' }]);
+  await install(page);
+  await page.getByTestId('btn-med').click();
+  await expect(page.getByTestId('recent-row').first()).toContainText('ברזלל');
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('open-medicines').click();
+  await page.locator('[data-testid="med-row"][data-id="m1"]').getByTestId('med-edit').click();
+  await page.getByTestId('med-name').fill('ברזל');
+  await page.getByTestId('med-icon-cheerful-1').click(); // 🧸
+  await page.getByTestId('med-save').click();
+  await page.getByTestId('tab-home').click();
+  await expect(page.getByTestId('recent-row').first()).toContainText('🧸');
+  await expect(page.getByTestId('recent-row').first()).toContainText('ברזל');
+  await expect(page.getByTestId('recent-row').first()).not.toContainText('ברזלל');
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('history-row').first()).toContainText('🧸');
+  await expect(page.getByTestId('history-row').first()).toContainText('ברזל');
+  await expect(page.getByTestId('history-row').first()).not.toContainText('🍓');
+});

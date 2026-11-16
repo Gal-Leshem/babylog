@@ -42,7 +42,7 @@ const ERRORS: [RegExp, string][] = [
   [/every X hours/, 'כל כמה שעות: מספר בין רבע שעה ל-72 (ברבעי שעה, למשל 8 או 1.5)'],
   [/minimum gap/, 'מרווח מינימלי: ריק, או עד 72 שעות (ברבעי שעה)'],
   [/maximum per day/, 'מקסימום ביום: ריק, או בין 1 ל-24'],
-  [/course length/, 'אורך הקורס: בין 1 ל-365'],
+  [/course length/, 'משך מתן התרופה: בין 1 ל-365'],
   [/end date/, 'צריך לבחור תאריך סיום'],
   [/has doses/, 'כבר נרשמו מנות של התרופה: אפשר רק להעביר לארכיון'],
   [/cannot be removed/, 'את ויטמין D אפשר רק להעביר לארכיון'],
@@ -204,7 +204,7 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
         </>
       )}
 
-      <label class="fl">משך</label>
+      <label class="fl">משך מתן התרופה</label>
       <div class="chips" role="radiogroup">
         {COURSE_LABEL.map(([id, label]) => (
           <button type="button" key={id} class={`chip ${d.course === id ? 'on' : ''}`} data-testid={`med-course-${id}`} onClick={() => set('course', id)}>
@@ -282,7 +282,7 @@ export function Medicines({ onBack }: { onBack: () => void }) {
               <div class="ms">{medLine(m, !course)}</div>
               {course && (
                 <div class={`ms ${course.done ? 'done' : ''}`} data-testid="med-course">
-                  {course.done ? `${course.text} · הקורס הסתיים: להעביר לארכיון או להאריך?` : course.text}
+                  {course.done ? `${course.text} · משך מתן התרופה הסתיים: להעביר לארכיון או להאריך?` : course.text}
                 </div>
               )}
               <div class="actions">

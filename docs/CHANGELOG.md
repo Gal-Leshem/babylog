@@ -108,6 +108,14 @@ No names, addresses or secrets in this file (the repository is public).
   medicine's name and icon in the lists; the History filter is "ויטמין D ותרופות"; editing a dose keeps its medicine. Names, doses
   and parts of status lines are isolated (`<bdi>`) so right-to-left text cannot reorder them. Tests: unit tests for today's status;
   nine browser tests incl. refresh on open (fails without it) and layout at 852/700/560.
+- Wording **(owner)**: no "קורס" (not used in Hebrew); "משך מתן התרופה" instead.
+- Renaming a medicine or changing its icon already shows in everything logged before (a dose stores only the medicine's id; labels
+  are looked up when shown); a browser test pins it **(owner question)**.
+- Recent list **(owner report)**: a sleep is now two rows, "נרדם" at its start and "התעורר" at its end (an open sleep only
+  "נרדם"); History keeps one "שינה" row. Rows in the same minute show the one entered last first. Tapping either opens the sleep.
+- Feed or diaper while marked asleep **(owner question, our call)**: nothing changes by itself (night feeds and changes often happen in
+  sleep, and an automatic wake would cut the sleep stretches); the confirmation adds "עדיין מסומן שישן" and an "התעורר" button.
+  Toasts can carry a second button for this. Tests fail on the old code.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

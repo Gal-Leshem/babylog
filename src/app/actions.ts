@@ -34,6 +34,15 @@ export function quickLog(kind: Kind): void {
     showToast({ text: `כבר ניתן היום${first ? ` ב-${timeOf(first.start)}` : ''} · נרשם שוב`, tone: 'warn', undo: () => undoOp(res.opId, { action: 'delete', id }) });
     return;
   }
+  // A feed or a diaper while the baby is marked asleep: often he really is still asleep (a night feed or change), so nothing
+  // changes by itself; the toast says so and offers to mark him awake with one tap.
+  if ((type === 'feed' || type === 'diaper') && openSleep(engine.getState().events)) {
+    showToast(
+      { text: `${savedText(label, time, offline)} · עדיין מסומן שישן`, undo: () => undoOp(res.opId, { action: 'delete', id }), action: { label: 'התעורר', run: toggleSleep } },
+      8000,
+    );
+    return;
+  }
   showToast({ text: savedText(label, time, offline), undo: () => undoOp(res.opId, { action: 'delete', id }) });
 }
 

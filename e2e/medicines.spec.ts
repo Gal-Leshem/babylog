@@ -121,7 +121,7 @@ test('medicines: when a course is over the row says so and offers to archive or 
   await install(page);
   await openMeds(page);
   for (const id of ['m1', 'm2']) {
-    await expect(row(page, id).getByTestId('med-course')).toContainText('הקורס הסתיים: להעביר לארכיון או להאריך?');
+    await expect(row(page, id).getByTestId('med-course')).toContainText('משך מתן התרופה הסתיים: להעביר לארכיון או להאריך?');
     await expect(row(page, id).getByTestId('med-edit')).toHaveText('הארכה');
   }
   await expect(row(page, 'm2').getByTestId('med-course')).toContainText('מנה 2 מתוך 2');
