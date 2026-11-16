@@ -7,11 +7,13 @@ No names or private details here (public repository).
 
 ## Track 1: fixes and quality of life
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
-- (empty: nothing open)
+- (nothing open; the last report, a sleep added after the fact not flipping the home button, is fixed: see `CHANGELOG.md`)
 
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 
 ## Track 2: features (proposed order; the owner decides)
+Owner's choice so far: F4 (red night theme) and F8 (trends, with pattern insights such as "after a feed a diaper change usually follows
+within ...") are next; F8 gets a research-based proposal before any code. Keep the app uncluttered.
 Based on a scan of similar apps (Huckleberry, Baby Tracker, Nara, Baby Daybook, Glow, Baby Connect, Sprout, BabyBuddy, an Israeli
 Hebrew tracker) and parents' reviews, November 2026. What parents value most: fast logging, "when was the last feed and which side",
 reliable partner sync at night, and an app that is not overwhelming. Most complaints: paywalls, partner devices out of sync, lost data,
@@ -30,7 +32,7 @@ other screens or into the existing tiles unless the owner asks otherwise.
 ### Then (medium; may change the sheet)
 | # | Feature | Why | Size | Notes |
 |---|---------|-----|------|-------|
-| F5 | Optional nursing duration (start / stop, like sleep) | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
+| F5 | ~~Optional nursing duration~~ not wanted for now **(owner)** | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
 | F6 | Bottle / expressed milk with amount (ml) | Common as soon as a bottle is introduced | M | New type, amount column in the sheet, Summary total per day. |
 | F7 | Medicine and temperature | Fever and dosing come up in the first months; "when is the next dose allowed" | M | New types (name, dose, temperature); a "next dose not before" line. No reminders (see "not possible"). |
 | F8 | 7-day trends | Feeds, diapers and sleep per day for the last week; spot changes at a glance | M | Simple bars on Summary, no chart library. |

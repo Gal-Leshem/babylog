@@ -39,6 +39,11 @@ No names, addresses or secrets in this file (the repository is public).
 ## Monday: backlog
 - `docs/BACKLOG.md` added: a fixes track (owner feedback, always first) and a features track, proposed from a scan of similar apps and
   parents' reviews; the owner picks the order. Items already covered by the app and things iPhone web apps cannot do are listed separately.
+- Bug **(owner report)**: a sleep added after the fact did not flip the home button to "התעורר". The form opened with "עדיין ישן" off and
+  the wake time set to the moment the form was opened, so the sleep was saved as already over. Now a new sleep starts as "still asleep";
+  only when a sleep is already open (the added one must be over) does the form ask for the wake time. Two browser tests, both proven to
+  fail without the fix. Owner decisions: no nursing duration for now; keep the app uncluttered; next look at F4 (red night theme) and
+  F8 (trends and pattern insights, research and a proposal first).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

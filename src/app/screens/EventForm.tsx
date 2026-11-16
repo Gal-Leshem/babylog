@@ -1,9 +1,10 @@
 import { useState } from 'preact/hooks';
+import { openSleep } from '../../shared/domain';
 import { addDays, localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { deleteEvent } from '../actions';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
-import { engine, showToast } from '../state';
+import { engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function EventForm({ mode, event, onClose }: Props) {
+  const { events } = useEngine();
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
   const [kind, setKind] = useState<Kind>(event ? kindOf(event) : 'feed_left');
@@ -31,7 +33,10 @@ export function EventForm({ mode, event, onClose }: Props) {
   const [quick, setQuick] = useState<number | null>(null);
   const [unknownStart, setUnknownStart] = useState(Boolean(event && event.type === 'sleep' && !event.start));
   const initEnd = event?.end || nowStr;
-  const [stillAsleep, setStillAsleep] = useState(event ? event.type === 'sleep' && !event.end && Boolean(event.start) : false);
+  // A new sleep added after the fact is usually a baby who fell asleep a little while ago and is still asleep, so that is the
+  // default (otherwise it was saved as over and the home button stayed on "נרדם"). If a sleep is already open, the added one
+  // must be a finished one, so then the end time is asked for.
+  const [stillAsleep, setStillAsleep] = useState(event ? event.type === 'sleep' && !event.end && Boolean(event.start) : !openSleep(events));
   const [eDate, setEDate] = useState(initEnd.slice(0, 10));
   const [eTime, setETime] = useState(timeOf(initEnd));
   const [note, setNote] = useState(event?.note ?? '');

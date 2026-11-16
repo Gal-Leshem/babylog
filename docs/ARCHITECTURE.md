@@ -66,6 +66,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   "X minutes ago" button stays lit until the time or date is changed by hand. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
   with the phone's own date input laid invisibly over it, so the system picker opens only when the date is tapped; the app draws no calendar of
   its own (the owner did not want one). The system picker itself uses the phone's language. The time field is the system one.
+  A new sleep starts as "still asleep" (the usual case: the baby fell asleep a while ago); if a sleep is already open, the form asks for
+  the wake time instead.
 - **Wording:** diaper kinds are "פיפי", "קקי", "פיפי + קקי" (`KIND_LABEL` in `labels.ts` is the single source, also used by the summary
   table). The sheet values stay `wet` / `poop` / `both`; Siri phrases are English and unchanged.
 - **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).

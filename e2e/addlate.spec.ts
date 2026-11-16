@@ -42,6 +42,7 @@ test('add a finished sleep with start and end', async ({ page, request }) => {
   const yesterday = addDaysLocal(todayLocal(), -1);
   await page.getByTestId('add-late').click();
   await page.getByTestId('kind-sleep').click();
+  await page.getByTestId('still-asleep').uncheck();
   await pickDate(page, 'start-date', yesterday);
   await page.getByTestId('start-time').fill('22:00');
   await pickDate(page, 'end-date', yesterday);
@@ -56,6 +57,7 @@ test('refuses a sleep that ends before it starts and keeps the form open', async
   const yesterday = addDaysLocal(todayLocal(), -1);
   await page.getByTestId('add-late').click();
   await page.getByTestId('kind-sleep').click();
+  await page.getByTestId('still-asleep').uncheck();
   await pickDate(page, 'start-date', yesterday);
   await page.getByTestId('start-time').fill('22:00');
   await pickDate(page, 'end-date', yesterday);
@@ -86,6 +88,31 @@ test('"still asleep" records an open sleep and flips the home button', async ({ 
   await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
   await expect(page.getByTestId('tile-sleep')).toContainText('ישן כבר 0:3');
   await expect.poll(async () => (await allServerRows(request)).filter((e) => !e.end).length).toBe(1);
+});
+
+// Owner report: a sleep added after the fact ("fell asleep 15 minutes ago") was saved as already over, ending at the moment the
+// form was opened, so the home button stayed on "נרדם". The usual case is a baby who is still asleep, so that is the default.
+test('a sleep added after the fact is "still asleep" by default and flips the home button', async ({ page, request }) => {
+  await install(page);
+  await page.getByTestId('add-late').click();
+  await page.getByTestId('kind-sleep').click();
+  await expect(page.getByTestId('still-asleep')).toBeChecked();
+  await expect(page.getByTestId('end-time')).toHaveCount(0);
+  await page.getByTestId('back-15').click();
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+  await expect(page.getByTestId('tile-sleep')).toContainText('ישן כבר 0:1');
+  await expect.poll(async () => (await allServerRows(request)).map((e) => [e.type, e.end])).toEqual([['sleep', '']]);
+});
+
+test('while the baby is already asleep, a sleep added after the fact asks for its end', async ({ page }) => {
+  await install(page);
+  await page.getByTestId('btn-sleep').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+  await page.getByTestId('add-late').click();
+  await page.getByTestId('kind-sleep').click();
+  await expect(page.getByTestId('still-asleep')).not.toBeChecked();
+  await expect(page.getByTestId('end-time')).toBeVisible();
 });
 
 test('cancel and tapping outside close the form without saving', async ({ page, request }) => {
