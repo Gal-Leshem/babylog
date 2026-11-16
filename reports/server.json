@@ -1,25 +1,11 @@
 {
   "job": "server",
   "status": "success",
-  "sha": "d535f28",
-  "ref": "main",
-  "at": "2026-11-16T16:33:15.715Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43907258482",
+  "sha": "5c74d07",
+  "ref": "dev",
+  "at": "2026-11-16T16:59:20.870Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43911966153",
   "logs": {
-    "deploy-prod": [
-      "+ npx tsx scripts/deploy-server.ts prod",
-      "::add-mask::[token]",
-      "using existing prod script",
-      "::add-mask::[deployment]",
-      "::add-mask::[deployment]",
-      "server bundle ready (production, 37 KB)",
-      "Script is already up to date.",
-      "redeployed existing web app deployment (version 27)",
-      "::add-mask::[deployment]",
-      "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=26 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "prod server deployed"
-    ],
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
       "::add-mask::[token]",
@@ -28,10 +14,10 @@
       "::add-mask::[deployment]",
       "server bundle ready (test, 38 KB)",
       "Script is already up to date.",
-      "redeployed existing web app deployment (version 62)",
+      "redeployed existing web app deployment (version 63)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=62 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=63 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "test server deployed"
     ],
     "install": [
