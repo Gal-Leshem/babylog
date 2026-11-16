@@ -53,10 +53,21 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Whether Gemini can read a sheet shared from another account. Behavior of the system date/time pickers on every iOS version (they follow the phone's language).
 - iOS elastic scrolling cannot be reproduced in Chromium; the fix removes the scrollable area on Home instead.
 
-## Resume prompt (paste into a new session with the repository attached)
-> Continue the BabyLog project. Read `docs/PROGRESS.md`, `docs/CHANGELOG.md` and `docs/ARCHITECTURE.md` first and follow "How to resume".
-> The owner approved, for ongoing work: pushing to `dev` and `main`, deploying to GitHub Pages, and deploying the Apps Script servers through
-> GitHub Actions with the stored credential. A force-push is NOT approved. Never put names, e-mail addresses, device models, secrets or live
-> addresses into the repository, commit messages or logs. Work in small steps; after each step run the unit and browser tests, push to `dev`,
-> wait for green CI, promote to `main`, and update `docs/CHANGELOG.md` and `docs/PROGRESS.md` (and `docs/ARCHITECTURE.md` when design changes).
-> Report to the owner in Hebrew: what changed, how it was verified, and what is left for them.
+## Resume prompt (paste into a new session with the repository attached; the same text is in the owner's status document)
+```
+You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use. The repository is attached.
+
+First read, in this order: docs/PROGRESS.md (handoff: status, how to resume, environment, owner-only steps, rules), docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status via scripts/read-ci.sh. Tell me briefly in Hebrew whether everything is green (or what is not), then wait for my next request.
+
+Standing approvals: push to dev and main, deploy to GitHub Pages, deploy the Apps Script servers through GitHub Actions with the stored credential.
+Not approved: force-push or rewriting history; changing repository settings, secrets or collaborators.
+
+Hard rules:
+- The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs.
+- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (about 8 minutes; poll in short loops, foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it.
+- After each change update docs/CHANGELOG.md and docs/PROGRESS.md, and docs/ARCHITECTURE.md when the design changes.
+- Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; no in-app calendar.
+- When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code.
+
+Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings shows the new version).
+```
