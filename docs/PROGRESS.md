@@ -48,6 +48,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
+- `dev` and `main` runs write the same report files on `ci-status`: wait for the `dev` **server** report of the commit (live test) before
+  pushing it to `main`, or the `main` run of the previous commit can overwrite it and the check is skipped by mistake.
 
 ## Open risks (cannot be tested in the sandbox)
 - Whether `shortcuts sign` accepts the generated files and iOS imports them (only simulated). Whether a network shortcut runs on a locked phone.

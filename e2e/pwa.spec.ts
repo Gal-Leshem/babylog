@@ -116,3 +116,15 @@ test('night colour: dim red can be chosen, tints the emoji, survives a reload an
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.ti')!).filter)).toBe('none');
   expect(await bg(page)).not.toBe('rgb(0, 0, 0)');
 });
+
+// Opening the app at night used to paint day colours first (the theme was set after the first render) and the buttons faded to dark:
+// a short flash of light in a dark room. The theme must be on the page before any app code runs.
+test('at night the page is dark before the app code runs (no flash of day colours)', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-14T21:00:00Z')); // 23:00 in Israel
+  await page.addInitScript(() => localStorage.setItem('bl.prefs.v1', JSON.stringify({ nightMode: 'auto', nightTint: 'red' })));
+  await page.route(/\.(js|tsx?)(\?.*)?$/, (r) => r.abort()); // the app bundle never runs
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+  await expect(page.locator('html')).toHaveAttribute('data-tint', 'red');
+  expect(await bg(page)).toBe('rgb(0, 0, 0)');
+});

@@ -7,6 +7,7 @@ import { Home } from './screens/Home';
 import { Install } from './screens/Install';
 import { Settings } from './screens/Settings';
 import { Summary } from './screens/Summary';
+import { isNight } from './theme';
 import { engine, hideToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
@@ -23,7 +24,7 @@ function useTheme(): void {
   useEffect(() => {
     const systemDark = typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
     const h = localHour(now);
-    const night = prefs.nightMode === 'always' || (prefs.nightMode === 'auto' && (h >= 21 || h < 7 || systemDark));
+    const night = isNight(prefs.nightMode, h, systemDark);
     document.documentElement.dataset.theme = night ? 'night' : 'day';
     document.documentElement.dataset.tint = prefs.nightTint;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#000000' : '#f7f2ea');

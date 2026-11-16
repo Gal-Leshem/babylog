@@ -49,6 +49,12 @@ No names, addresses or secrets in this file (the repository is public).
   (`.ico`, `.hi`, `.ti`, `.emo`), otherwise they were the brightest things on a dark screen. The test checks every visible colour is
   red-dominant and dim; it fails without the red palette. Found on the way: on opening at night the app first paints in day colours and
   the buttons fade to dark (a short white flash); logged as a fix in `BACKLOG.md`.
+- Fix: no flash of day colours when the app opens at night. A small inline script in `index.html` sets the theme and night colour from the
+  stored preferences before the first paint; the rule lives in `src/app/theme.ts` and a unit test runs the inline script for every hour,
+  mode and system setting to keep the two identical. Browser test: with the app code blocked, the page is already black at 23:00.
+- F8 decisions **(owner)**: inside "סיכום", a switch between the current "סיכום" and a new "תובנות" view (usage will decide what stays);
+  timeline right to left from 06:00 to 06:00; no comparison with official diaper numbers; build all three insights (feed gaps day/night,
+  poop after a feed, longest night stretch) plus an indication of how many stretches of 3 hours or more there are.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

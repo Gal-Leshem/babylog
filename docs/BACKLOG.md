@@ -7,8 +7,7 @@ No names or private details here (public repository).
 
 ## Track 1: fixes and quality of life
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
-- Opening the app at night paints day colours for a moment and the buttons fade to dark over 0.2 s (a short flash of light). Found while
-  building F4; the theme should be applied before the first paint. Size S.
+- (nothing open; the last fix, a flash of day colours when opening at night, is done: see `CHANGELOG.md`)
 
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 

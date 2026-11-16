@@ -11,6 +11,18 @@
     <meta name="apple-mobile-web-app-title" content="BabyLog" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>BabyLog</title>
+    <!-- Theme before the first paint (same rule as src/app/theme.ts, kept identical by tests/theme.test.ts). -->
+    <script id="theme-boot">
+      try {
+        var p = JSON.parse(localStorage.getItem('bl.prefs.v1') || '{}') || {};
+        var m = p.nightMode || 'auto';
+        var h = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hourCycle: 'h23' }).format(new Date());
+        var d = typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+        var n = m === 'always' || (m === 'auto' && (h >= 21 || h < 7 || d));
+        document.documentElement.dataset.theme = n ? 'night' : 'day';
+        document.documentElement.dataset.tint = p.nightTint === 'red' ? 'red' : 'amber';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

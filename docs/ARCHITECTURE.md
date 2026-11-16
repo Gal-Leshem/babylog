@@ -72,7 +72,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   table). The sheet values stay `wet` / `poop` / `both`; Siri phrases are English and unchanged.
 - **Night mode** (per phone, `bl.prefs.v1` in local storage): auto (21:00-07:00 or the phone's dark mode) / always / never, and a night
   colour: amber (default) or dim red (`data-tint='red'` on `<html>`). In red, colour emoji are tinted with a CSS filter; every emoji the app
-  shows must sit in an element with class `ico`, `hi`, `ti` or `emo` so the tint reaches it.
+  shows must sit in an element with class `ico`, `hi`, `ti` or `emo` so the tint reaches it. The theme is applied before the first paint
+  by an inline script in `index.html` (same rule as `src/app/theme.ts`, checked by `tests/theme.test.ts`); change both together.
 - **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
 
 ## Server deployment details
