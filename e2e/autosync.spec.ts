@@ -100,6 +100,26 @@ test('an older server (before "sync") still works: taps arrive and the other par
   expect(seen).toContain('poll');
 });
 
+// A tap and then locking the phone used to leave the entry on the phone until the app was opened again.
+test('an entry not yet delivered is handed to the browser when the app is left, and arrives without the app', async ({ page, request }) => {
+  await install(page);
+  const setVisibility = (state: 'hidden' | 'visible') =>
+    page.evaluate((s) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => s });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+  await control(request, 'offline=1');
+  await page.getByTestId('btn-poop').click(); // the request fails; a retry is a few seconds away
+  await expect(page.getByTestId('banner-sync')).toContainText('1 ממתינים');
+  await control(request, 'offline=0');
+  await setVisibility('hidden'); // the phone is locked before the retry
+  await expect.poll(async () => (await serverEvents(request)).length, { timeout: 2_000 }).toBe(1);
+  await setVisibility('visible'); // back in the app: nothing is written twice
+  await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 10_000 });
+  expect(await serverEvents(request)).toHaveLength(1);
+  await expect(page.getByTestId('recent-row')).toHaveCount(1);
+});
+
 test('settings show how long the last sync took', async ({ page }) => {
   await install(page);
   await page.getByTestId('tab-settings').click();

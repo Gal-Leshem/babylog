@@ -5,7 +5,7 @@ import { withVitaminD } from '../shared/medicines';
 import type { ApiRequest, ApiResponse } from '../shared/protocol';
 import { addDays, dayStart, localDate } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type Settings } from '../shared/types';
-import { type Endpoint, type FetchLike, NetworkError, callApi } from './api';
+import { type Endpoint, type FetchLike, NetworkError, callApi, sendAway } from './api';
 import type { Config } from './config';
 import type { KV } from './storage';
 
@@ -15,6 +15,8 @@ export interface Op {
   opId: string;
   req: ApiRequest;
   at: number;
+  /** It may already have reached the server (a request or a beacon left with it): from now on it is sent as a retry. */
+  sent?: boolean;
 }
 
 interface Persisted {
@@ -64,6 +66,8 @@ export interface EngineOptions {
   newId?: () => string;
   setTimer?: (fn: () => void, ms: number) => unknown;
   clearTimer?: (t: unknown) => void;
+  /** Delivers a request with no answer expected, while the app is being left (default: the browser's beacon). */
+  beacon?: (ep: Endpoint, req: ApiRequest) => boolean;
   /** A clock for measuring durations (not the app's time). */
   stopwatch?: () => number;
 }
@@ -131,7 +135,9 @@ export class Engine {
   /** The server does not know `sync` (an older deployment): talk to it the old way for this session. */
   private legacy = false;
   private timing: SyncTiming | null = null;
+  private lastBeaconAt = -Infinity;
   private readonly stopwatch: () => number;
+  private readonly beacon: (ep: Endpoint, req: ApiRequest) => boolean;
   private retryTimer: unknown = null;
   private retryStep = 0;
 
@@ -142,6 +148,7 @@ export class Engine {
     this.newId = opts.newId ?? defaultId;
     this.setTimer = opts.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimer = opts.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
+    this.beacon = opts.beacon ?? sendAway;
     this.stopwatch = opts.stopwatch ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     this.config = this.storage.get<Config>(CONFIG_KEY);
     const saved = this.storage.get<Persisted>(STATE_KEY);
@@ -344,7 +351,9 @@ export class Engine {
     const rev = mode === 'rev' && this.p.rev ? { rev: this.p.rev } : {};
     const t0 = this.stopwatch();
     // a check with nothing to send gives up sooner: the next one is seconds away
-    const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(batch.length ? { ops: batch.map((o) => o.req) } : {}) }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000);
+    const ops = this.wireOps(batch);
+    // a request that carries entries is marked keepalive: the browser should finish it even if the phone is locked right after
+    const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(ops.length ? { ops } : {}) }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000, batch.length > 0);
     if (seq !== this.syncSeq) return false; // declared dead meanwhile: a newer sync owns the state (anything sent is sent again; ids make that safe)
     if (!res.ok) {
       if (res.error === 'unknown_action') {
@@ -396,6 +405,36 @@ export class Engine {
     this.emit();
     if (failed) this.scheduleRetry();
     return !res.unchanged || batch.length > 0;
+  }
+
+  /**
+   * The operations as they travel. One that leaves for the first time says so (`fresh`: the server then skips its slow
+   * duplicate lookup) and is marked as sent BEFORE the request goes, so whatever happens next it is a retry from now on.
+   */
+  private wireOps(batch: Op[]): (ApiRequest & { fresh?: true })[] {
+    const out = batch.map((o) => (o.sent ? o.req : { ...o.req, fresh: true as const }));
+    if (batch.some((o) => !o.sent)) {
+      for (const o of batch) o.sent = true;
+      this.persist();
+    }
+    return out;
+  }
+
+  /**
+   * The app is being left (hidden, closed, phone locked) with entries not yet delivered and no request carrying them:
+   * hand them to the browser to deliver on its own. No answer is read; they stay queued and the next sync sends them again as
+   * retries, which the server recognises by their ids. Returns how many were handed over.
+   */
+  leave(): number {
+    const ep = this.endpoint();
+    if (!ep || this.legacy) return 0;
+    const batch = this.p.queue.filter((o) => !this.inFlight.has(o.opId)).slice(0, MAX_OPS);
+    if (!batch.length) return 0;
+    if (this.stopwatch() - this.lastBeaconAt < 2_000) return 0; // "hidden" and "page closing" arrive together: once is enough
+    this.lastBeaconAt = this.stopwatch();
+    const ops = this.wireOps(batch);
+    const ok = this.beacon(ep, { action: 'sync', ...this.defaultRange(), ...(this.p.rev ? { rev: this.p.rev } : {}), ops });
+    return ok ? batch.length : 0;
   }
 
   private putServerEvent(e: BabyEvent): void {
@@ -549,6 +588,10 @@ export class Engine {
     const resume = () => {
       if (visible()) void this.sync('rev', true);
     };
+    const leaving = () => {
+      if (!visible()) this.leave();
+    };
+    const closing = () => void this.leave();
     const online = () => {
       if (visible()) void this.sync('rev'); // never coalesced: the running request may be the one that just failed
     };
@@ -562,6 +605,8 @@ export class Engine {
     window.addEventListener('focus', resume);
     window.addEventListener('pageshow', resume);
     document.addEventListener('visibilitychange', resume);
+    document.addEventListener('visibilitychange', leaving);
+    window.addEventListener('pagehide', closing);
     resume();
     return () => {
       clearInterval(poll);
@@ -570,6 +615,8 @@ export class Engine {
       window.removeEventListener('focus', resume);
       window.removeEventListener('pageshow', resume);
       document.removeEventListener('visibilitychange', resume);
+      document.removeEventListener('visibilitychange', leaving);
+      window.removeEventListener('pagehide', closing);
     };
   }
 }

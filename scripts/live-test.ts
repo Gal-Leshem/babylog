@@ -168,7 +168,19 @@ check('sync answers every operation in order (the repeated one as a duplicate)',
 as('sync: after a foreign write (list)');
 const s4 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true });
 check('sync with an older revision brings the list', (s4.json?.events ?? []).some((e: R) => e.id === id('sync2')), JSON.stringify(s4.json).slice(0, 200));
-for (const n of ['sync1', 'sync2']) await call({ action: 'delete', id: id(n) });
+// What a browser beacon does when the app is being left: it posts and does not wait for, or follow, the answer.
+// Apps Script answers a POST with a redirect to the stored output, so the write must already have happened by then.
+const beacon = await fetch(url, {
+  method: 'POST',
+  redirect: 'manual',
+  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+  body: JSON.stringify({ key, action: 'sync', ...range, ops: [{ action: 'log', id: id('beacon'), type: 'diaper', detail: 'poop', start: now(), ...base, fresh: true }] }),
+  signal: AbortSignal.timeout(TIMEOUT_MS),
+});
+await beacon.body?.cancel();
+const afterBeacon = await call({ action: 'list', ...range });
+check('a write is recorded even when its answer is never fetched (what a beacon does)', (afterBeacon.json?.events ?? []).some((e: R) => e.id === id('beacon')), `HTTP ${beacon.status}`);
+for (const n of ['sync1', 'sync2', 'beacon']) await call({ action: 'delete', id: id(n) });
 
 // clean up what this run created (soft delete; the test medicine is removed once its dose is deleted)
 for (const n of ['feed', 'asleep', 'awake', 'dose']) await call({ action: 'delete', id: id(n) });

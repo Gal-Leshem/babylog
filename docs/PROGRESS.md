@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 242 unit (Vitest) and 115 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 260 unit (Vitest) and 116 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -22,12 +22,14 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   owner's screenshots; CI hardening (report race, live-test retry).
 - Answered by the owner: the status bar is black at night on the phone (fixed); no total line on the medicines tile for now.
 - In progress: the sync / performance refactor, `docs/REFACTOR_PLAN.md` (owner: the full plan on the current Apps Script server;
-  a move to another server is decided later). Done: phase 0 (timings), phase 1 (`sync`, one round trip) and item 3.2 (one
-  request per open). Next, in order: the rest of phase 3 (send while leaving the app with `keepalive` / `sendBeacon` and a
-  `sent` / `retry` flag, adaptive polling, retry jitter), phase 2 (lazy spreadsheet, properties once, tail read, cheaper
-  duplicate check, caching), phase 4 (client housekeeping, incl. pruning old events from the stored copy), phase 5 (quiet sync
-  indicator, freshness on open, highlight of the other parent's entries, shorter tap lock, polish plus own icons: screenshots
-  to the owner before shipping). After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
+  a move to another server is decided later). Done: phase 0 (timings), phase 1 (`sync`, one round trip), item 3.2 (one
+  request per open), from phase 2: settings copy in a property, properties once per request, no whole-sheet duplicate lookup
+  for first attempts, one row search per edit; from phase 3: `keepalive` and the beacon when the app is left. Next, in order:
+  adaptive polling and retry jitter (3.3, 3.4), tail read of the events (2.3; matters as the real sheet grows), phase 4 (client
+  housekeeping, incl. pruning old events from the stored copy), phase 5 (quiet sync indicator, freshness on open, highlight of
+  the other parent's entries, shorter tap lock, polish plus own icons: screenshots to the owner before shipping). Ask the owner
+  what Settings > מתקדם shows as "סנכרון אחרון" on the phones (real numbers from real use).
+  After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
 - Open with the owner: which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape F8.
 
 ## How to resume (first 10 minutes in a new session)

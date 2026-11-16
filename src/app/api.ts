@@ -10,7 +10,11 @@ export interface Endpoint {
 
 export type FetchLike = typeof fetch;
 
-export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLike = fetch, timeoutMs = 20_000): Promise<ApiResponse> {
+/**
+ * `keepalive`: the request should be finished by the browser even if the app is closed or the phone locked right after
+ * (used for requests that carry the parents' entries).
+ */
+export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLike = fetch, timeoutMs = 20_000, keepalive = false): Promise<ApiResponse> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -21,6 +25,7 @@ export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLik
       body: JSON.stringify({ ...req, key: ep.key }),
       redirect: 'follow',
       signal: ctrl.signal,
+      ...(keepalive ? { keepalive: true } : {}),
     });
     const text = await res.text();
     try {
@@ -35,5 +40,19 @@ export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLik
     throw new NetworkError(e instanceof Error ? e.message : String(e));
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Hands a request to the browser to deliver on its own, with no answer expected: for the moment the app is being left.
+ * Returns false when the browser cannot or will not take it.
+ */
+export function sendAway(ep: Endpoint, req: ApiRequest): boolean {
+  try {
+    if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return false;
+    // text/plain: no preflight, the same shape as an ordinary request
+    return navigator.sendBeacon(ep.url, new Blob([JSON.stringify({ ...req, key: ep.key })], { type: 'text/plain;charset=utf-8' }));
+  } catch {
+    return false;
   }
 }

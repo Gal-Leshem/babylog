@@ -86,9 +86,15 @@ class SheetStore implements Store {
   all(): BabyEvent[] {
     return this.read(2);
   }
+  /** Rows found in this request (rows never move: events are only appended or rewritten in place). */
+  private rows = new Map<string, number>();
   private rowOf(id: string): number {
+    const seen = this.rows.get(id);
+    if (seen) return seen;
     const hit = timed('find', () => this.events().getRange('A2:A').createTextFinder(id).matchEntireCell(true).matchCase(true).findNext());
-    return hit ? hit.getRow() : 0;
+    const row = hit ? hit.getRow() : 0;
+    if (row) this.rows.set(id, row);
+    return row;
   }
   find(id: string): BabyEvent | undefined {
     const row = this.rowOf(id);

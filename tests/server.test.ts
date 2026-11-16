@@ -533,4 +533,37 @@ describe('sync: one round trip for a phone (API 0.4.0)', () => {
     expect(call({ action: 'sync', ...range }, 'nope')).toEqual({ ok: false, error: 'unauthorized' });
     expect(store.all()).toHaveLength(0);
   });
+
+  // measured on the real server: looking an id up in the whole sheet costs 0.3 to 0.5 s per operation
+  describe('fresh operations skip the slow duplicate lookup', () => {
+    const finds = () => {
+      let c = 0;
+      const orig = store.find.bind(store);
+      store.find = (i) => {
+        c++;
+        return orig(i);
+      };
+      return () => c;
+    };
+    it('a first attempt is not looked up in the whole sheet; a retry is', () => {
+      const count = finds();
+      sync({ ops: [{ ...feedOp('a'), fresh: true }, { action: 'asleep', id: 's', user: 'Parent 1', source: 'app', start: '2026-11-14 12:00', fresh: true }, { action: 'awake', id: 'w', user: 'Parent 1', source: 'app', end: '2026-11-14 12:00', fresh: true }] });
+      expect(count()).toBe(0);
+      expect(store.all().map((e) => e.id)).toEqual(['a', 's']);
+      const again = sync({ ops: [feedOp('a')] });
+      expect(count()).toBe(1);
+      expect((again.results![0] as ApiOk).duplicate).toBe(true);
+    });
+    it('even a wrongly "fresh" repeat is caught when the row is among the recent ones', () => {
+      sync({ ops: [{ ...feedOp('a'), fresh: true }] });
+      const again = sync({ ops: [{ ...feedOp('a'), fresh: true }, { action: 'asleep', id: 'a', user: 'Parent 1', source: 'app', start: '2026-11-14 12:00', fresh: true }] });
+      expect(again.results!.map((x) => (x as ApiOk).duplicate)).toEqual([true, true]);
+      expect(store.all()).toHaveLength(1);
+    });
+    it('single requests (Siri, older apps) keep the full lookup', () => {
+      const count = finds();
+      log('feed', 'left', '2026-11-14 11:00');
+      expect(count()).toBe(1);
+    });
+  });
 });

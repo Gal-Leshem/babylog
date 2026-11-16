@@ -389,10 +389,20 @@ function newEvent(o: Obj, type: BabyEvent['type'], detail: string, start: string
   };
 }
 
+/**
+ * Was this request id recorded before? Looking an id up in the whole sheet is slow (measured: 0.3 to 0.5 s), and a phone knows
+ * when an operation leaves it for the very first time: it says `fresh: true`, and then only the recent rows are checked (they
+ * are needed anyway). Anything else (a retry, Siri, an older app) gets the full lookup.
+ */
+function known(o: Obj, id: string, store: Store): BabyEvent | undefined {
+  if (o.fresh === true) return store.recent(RECENT_ROWS).find((e) => e.id === id);
+  return store.find(id);
+}
+
 function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
-  const existing = store.find(id);
+  const existing = known(o, id, store);
   if (existing) return { ok: true, duplicate: true, event: existing, speech: speechForLogged(existing, store.recent(RECENT_ROWS)) };
 
   const type = o.type as BabyEvent['type'];
@@ -422,7 +432,7 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
 function asleep(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
-  const existing = store.find(id);
+  const existing = known(o, id, store);
   if (existing) return { ok: true, duplicate: true, event: existing, speech: speechForLogged(existing, []) };
   const recent = store.recent(RECENT_ROWS);
   const open = openSleep(recent);
@@ -438,7 +448,7 @@ function awake(o: Obj, deps: Deps, now: number): ApiResponse {
   const id = reqString(o, 'id', 64);
   // Shortcuts always send "start" (their current time); accept it as the wake-up time when no "end" is given.
   const end = optString(o, 'end', 16) || optString(o, 'start', 16);
-  const existing = store.find(id);
+  const existing = known(o, id, store);
   if (existing) return { ok: true, duplicate: true, event: existing, speech: speechAwake(sleepMinutes(existing)) };
 
   const recent = store.recent(RECENT_ROWS);

@@ -51,6 +51,14 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
 - While the app is open and visible: a check every 10 s, a forced full list every 5 minutes (safety net), an immediate check on
   return to the foreground (visibilitychange, focus, pageshow: the several events of one return within 0.4 s count as one) and
   when the network returns. Nothing is sent while the app is hidden.
+- First attempt or retry: an operation that leaves the phone for the first time travels with `fresh: true` and is marked `sent`
+  in the stored queue before the request goes. For a fresh operation the server skips the whole-sheet id lookup (0.3 to 0.5 s)
+  and only checks the recent rows it reads anyway; a retry, Siri and older apps get the full lookup. Within one request a row
+  found once is not searched again (`SheetStore.rows`).
+- Leaving the app: requests that carry operations use `keepalive`; when the app is hidden or closed with operations that no
+  request is carrying, `Engine.leave()` hands them to the browser (`navigator.sendBeacon`). No answer is read: they stay queued
+  and the next sync sends them again as retries, recognised by their ids. (Whether iOS always completes these is not testable
+  here; the live test proves the server records a write whose answer is never fetched.)
 - Older days (History, Summary) are fetched with `list` and merged; a slower answer is dropped if the local copy changed meanwhile.
 - A server from before `sync` answers `unknown_action`: the engine then talks the old way for that session (one request per
   operation, `poll`, `list`). The old actions stay on the server for Siri shortcuts and for phones still running an older app.
@@ -135,9 +143,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   Settings / Medicines tabs is taken in by running `setup()` again (the owner does not edit by hand).
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~242): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~260): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~115): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~116): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

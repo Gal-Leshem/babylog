@@ -695,3 +695,135 @@ describe('polling for changes made on the other phone', () => {
     expect(e.getState().events.map((v) => v.id)).toEqual(['r']);
   });
 });
+
+// Phase 2 / 3 of docs/REFACTOR_PLAN.md: the server's duplicate lookup is slow, and a tap followed by locking the phone must still arrive.
+describe('first attempts, retries and leaving the app', () => {
+  let beacons: Array<Record<string, any>>;
+  let ticks: number;
+  const make = (beaconOk = true) => {
+    beacons = [];
+    ticks = 0;
+    const e = new Engine({
+      storage,
+      fetchImpl,
+      now: () => clock,
+      newId: () => `op${++n}`,
+      setTimer: (fn, ms) => timers.push({ fn, ms }),
+      clearTimer: () => undefined,
+      stopwatch: () => (ticks += 5_000), // every look at the stopwatch is 5 s later
+      beacon: (_ep, req) => {
+        beacons.push(req as Record<string, any>);
+        if (beaconOk) handle({ key: KEY, ...req }, deps()); // the browser delivers it; nobody reads the answer
+        return beaconOk;
+      },
+    });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    return e;
+  };
+  const wire = () => syncs().flatMap((x) => x.ops ?? []);
+
+  it('an operation says "fresh" only the first time it leaves the phone', async () => {
+    const e = make();
+    await e.refresh();
+    garbage = true; // the request goes out, the answer is unusable
+    e.dispatch(feed('a'));
+    await idle();
+    garbage = false;
+    timers.at(-1)!.fn();
+    await idle();
+    expect(wire().map((o: any) => [o.id, o.fresh])).toEqual([['a', true], ['a', undefined]]);
+    expect(server.all()).toHaveLength(1);
+  });
+
+  it('the "already sent" mark survives a restart (the app was killed while the request was on its way)', async () => {
+    const e = make();
+    await e.refresh();
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('a')); // on its way; the app is killed now
+    await idle();
+    const reopened = make(); // same storage
+    gate = null;
+    seen = [];
+    await reopened.resume();
+    expect(wire().map((o: any) => [o.id, o.fresh])).toEqual([['a', undefined]]);
+    release();
+    await idle();
+    expect(server.all()).toHaveLength(1);
+  });
+
+  it('leaving the app with undelivered entries hands them to the browser; coming back writes nothing twice', async () => {
+    const e = make();
+    await e.refresh();
+    offline = true;
+    e.dispatch(feed('a'));
+    e.dispatch({ action: 'asleep', id: 's', user: 'P1', source: 'app', start: nowStr() });
+    await idle();
+    offline = false; // the connection is back, but the phone is being locked before the retry
+    expect(e.leave()).toBe(2);
+    expect(beacons).toHaveLength(1);
+    expect(beacons[0]).toMatchObject({ action: 'sync', rev: '0' }); // with the revision we hold: the server answers small
+    expect(beacons[0]!.ops.map((o: any) => o.id)).toEqual(['a', 's']);
+    expect(server.all().map((x) => x.id)).toEqual(['a', 's']); // delivered without the app
+    expect(e.getState().pending).toBe(2); // nobody read an answer: still queued here
+
+    seen = [];
+    await e.resume(); // back in the app
+    expect(wire().every((o: any) => o.fresh === undefined)).toBe(true);
+    expect(server.all()).toHaveLength(2);
+    expect(e.getState()).toMatchObject({ pending: 0, status: 'idle' });
+    expect(e.getState().events).toHaveLength(2);
+  });
+
+  it('does not use the beacon for entries a request is already carrying, or when nothing waits', async () => {
+    const e = make();
+    await e.refresh();
+    expect(e.leave()).toBe(0);
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('a')); // in flight (a keepalive request: the browser finishes it by itself)
+    await idle();
+    expect(e.leave()).toBe(0);
+    expect(beacons).toHaveLength(0);
+    gate = null;
+    release();
+    await idle();
+    expect(server.all()).toHaveLength(1);
+  });
+
+  it('"hidden" and "page closing" together send one beacon; a refused beacon changes nothing', async () => {
+    let now = 0;
+    beacons = [];
+    const e = new Engine({ storage, fetchImpl, now: () => clock, newId: () => `op${++n}`, setTimer: (fn, ms) => timers.push({ fn, ms }), clearTimer: () => undefined, stopwatch: () => now, beacon: (_ep, req) => (beacons.push(req as never), false) });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    offline = true;
+    e.dispatch(feed('a'));
+    await idle();
+    now = 10_000;
+    expect(e.leave()).toBe(0); // the browser refused it
+    expect(e.leave()).toBe(0);
+    expect(beacons).toHaveLength(1);
+    now = 20_000;
+    e.leave();
+    expect(beacons).toHaveLength(2);
+    offline = false;
+    await e.flush();
+    expect(server.all()).toHaveLength(1);
+    expect(e.getState().pending).toBe(0);
+  });
+
+  it('requests that carry entries ask the browser to finish them even if the app is closed (keepalive)', async () => {
+    const flags: Array<[boolean, boolean]> = [];
+    const spy = ((url: string, init: { body: string; keepalive?: boolean }) => {
+      flags.push([Boolean(JSON.parse(init.body).ops), init.keepalive === true]);
+      return fetchImpl(url as never, init as never);
+    }) as unknown as typeof fetch;
+    const e = new Engine({ storage, fetchImpl: spy, now: () => clock, newId: () => `op${++n}` });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    await e.refresh();
+    e.dispatch(feed('a'));
+    await idle();
+    expect(flags).toEqual([[false, false], [true, true]]);
+  });
+});
+

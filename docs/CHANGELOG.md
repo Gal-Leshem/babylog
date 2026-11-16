@@ -182,6 +182,14 @@ No names, addresses or secrets in this file (the repository is public).
   cannot leave an old copy; all properties are read with one call per request and again only under the lock. A check with nothing
   new is now exactly one call to Google; a list reads only the events. Tests through the built bundle count the calls to Google
   (two of them proven to fail: revision not re-read under the lock, copy accepted without its version).
+- Phase 2, part 2 and phase 3, part 1: (a) a first attempt says `fresh`, and the server then skips the whole-sheet duplicate
+  lookup (recent rows are still checked); the phone marks an operation as sent before the request leaves, so anything later is a
+  retry with the full lookup; an edit or delete searches the sheet once instead of twice. (b) A tap followed by locking the phone:
+  requests with entries are `keepalive`, and entries that no request is carrying when the app is hidden or closed are handed to
+  the browser's beacon; coming back sends them again as retries and nothing is written twice. Tests: engine (fresh / retry across
+  a restart, beacon, keepalive; proven to fail without the sent mark), server and bundle (lookups counted; proven to fail without
+  the row memo), a browser test (the entry reaches the server while the app is hidden), and a live check that a write is recorded
+  when its answer is never fetched.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

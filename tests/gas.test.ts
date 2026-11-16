@@ -297,6 +297,20 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(tap.props).toBe(3);
     });
 
+    it('a first-attempt tap does not search the whole sheet; an edit searches once (not twice)', () => {
+      const { post, key, count } = start();
+      const first = post({ key, action: 'sync', ...range });
+      const op = { action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' };
+      const tap = count(() => post({ key, action: 'sync', ...range, rev: first.rev, ops: [{ ...op, fresh: true }] }));
+      expect(tap.find).toBe(0);
+      const retry = count(() => post({ key, action: 'sync', ...range, ops: [op] }));
+      expect(retry.out.results[0].duplicate).toBe(true);
+      expect(retry.find).toBe(1);
+      const edit = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'f1', patch: { note: 'x' } }] }));
+      expect(edit.out.results[0].event.note).toBe('x');
+      expect(edit.find, 'the row found for reading is reused for writing').toBe(1);
+    });
+
     it('the revision is read under the lock: a write that slipped in while waiting for it is not missed', () => {
       const { rt, post, key } = start();
       const first = post({ key, action: 'sync', ...range });
