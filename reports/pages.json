@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "705f9cc",
+  "sha": "0ddb3a4",
   "ref": "main",
-  "at": "2026-11-16T15:52:29.083Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43899714363",
+  "at": "2026-11-16T16:20:17.519Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43904858419",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js               0.13 kB",
       "dist/manifest.webmanifest        0.46 kB",
-      "dist/index.html                  1.77 kB │ gzip:  0.85 kB",
-      "dist/assets/index-CzUkWwKD.css  11.71 kB │ gzip:  3.10 kB",
-      "dist/assets/index-6Srn5gN2.js   85.85 kB │ gzip: 29.44 kB",
+      "dist/index.html                  1.77 kB │ gzip:  0.84 kB",
+      "dist/assets/index-hpVRJH0k.css  11.91 kB │ gzip:  3.16 kB",
+      "dist/assets/index-DbHCJoom.js   89.78 kB │ gzip: 30.74 kB",
       "",
-      "✓ built in 79ms",
+      "✓ built in 80ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (97.14 KiB)",
+      "precache  10 entries (101.17 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -69,13 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 705f9cc to gh-pages"
+      "published 0ddb3a4 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 304394f, waiting for 705f9cc",
-      "attempt 2: serves 304394f, waiting for 705f9cc",
-      "site is live and serves 705f9cc"
+      "attempt 1: serves 705f9cc, waiting for 0ddb3a4",
+      "attempt 2: serves 705f9cc, waiting for 0ddb3a4",
+      "attempt 3: serves 705f9cc, waiting for 0ddb3a4",
+      "site is live and serves 0ddb3a4"
     ]
   }
 }
