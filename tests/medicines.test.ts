@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, doseWarnings, dosesOf, medicineToday, pickIcon, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -138,5 +138,22 @@ describe('warnings before a dose (stage 3)', () => {
 
   it('the period of the medicine is over', () => {
     expect(doseWarnings(med({ schedule: 'prn', course: 'until', courseUntil: '2026-11-13' }), [], NOW)).toEqual(['משך מתן התרופה הסתיים (עד 13.11.26)']);
+  });
+});
+
+describe('today in words (tile and window)', () => {
+  it('once a day: given or not yet', () => {
+    expect(todayText(med({ schedule: 'daily' }), 0)).toBe('עדיין לא');
+    expect(todayText(DEFAULT_VITAMIN_D, 1)).toBe('ניתן היום');
+  });
+  it('several a day: how many of how many; every X hours counts 24/X', () => {
+    expect(todayText(med({ schedule: 'times', timesPerDay: 2 }), 1)).toBe('1 מתוך 2');
+    expect(todayText(med({ schedule: 'interval', everyHours: 8 }), 0)).toBe('0 מתוך 3');
+    expect(dosesPerDay(med({ schedule: 'interval', everyHours: 5 }))).toBe(4);
+    expect(dosesPerDay(med({ schedule: 'interval', everyHours: 36 }))).toBe(1);
+  });
+  it('as needed: just how many today', () => {
+    expect(todayText(med({ schedule: 'prn' }), 0)).toBe('עדיין לא');
+    expect(todayText(med({ schedule: 'prn', maxPerDay: 4 }), 2)).toBe('2 היום');
   });
 });

@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { byTimeDesc, clock, elapsedHM, lastFeed, nextSide, sleepState } from '../../shared/domain';
-import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday } from '../../shared/medicines';
+import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { logMedicine, quickLog, toggleSleep } from '../actions';
@@ -42,7 +42,7 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
     const { m, t } = st[0]!;
     return {
       title: m.name,
-      value: t.count > 0 ? 'ניתן היום' : 'עדיין לא',
+      value: todayText(m, t.count), // "ניתן היום" / "עדיין לא" once a day; "1 מתוך 2" several a day
       sub: t.nextAt !== null ? `הבאה מ-${clock(t.nextAt)}` : t.count > 0 && t.last ? timeOf(t.last.start) : '',
       warn: t.missing,
     };

@@ -116,7 +116,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~219): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~222): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
 - `e2e/` (Playwright, ~109): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time

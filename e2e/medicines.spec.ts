@@ -173,9 +173,13 @@ test('medicines: the vitamin D schedule can be changed, and Home follows it (twi
   await expect(row(page, 'vitamin_d')).toContainText('פעמיים ביום');
   await expect.poll(async () => (await serverMeds(request))[0]).toMatchObject({ id: 'vitamin_d', schedule: 'times', timesPerDay: 2 } as never);
   await page.getByTestId('tab-home').click();
+  await expect(page.getByTestId('tile-vitamin')).toContainText('0 מתוך 2'); // owner: several a day show how many of how many
   await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('tile-vitamin')).toContainText('1 מתוך 2');
+  await expect(page.getByTestId('tile-vitamin')).toHaveClass(/warn/); // one is still owed today
   await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });
   await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('tile-vitamin')).toContainText('2 מתוך 2');
   await expect(page.getByTestId('confirm-dose')).toHaveCount(0);
   await expect(page.getByTestId('toast-text')).not.toContainText('כבר ניתן היום'); // the second of two is expected
   await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });

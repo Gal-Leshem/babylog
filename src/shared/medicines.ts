@@ -276,3 +276,19 @@ export function doseWarnings(m: Medicine, events: readonly BabyEvent[], nowEpoch
   if (t.nextAt !== null) out.push(`מוקדם מדי: הבאה מ-${hm(t.nextAt)}`);
   return out;
 }
+
+/** How many doses a day the schedule means: once a day 1, X times a day X, every X hours 24/X (rounded down); as needed: none. */
+export function dosesPerDay(m: Pick<Medicine, 'schedule' | 'timesPerDay' | 'everyHours'>): number | null {
+  if (m.schedule === 'daily') return 1;
+  if (m.schedule === 'times') return m.timesPerDay;
+  if (m.schedule === 'interval') return Math.max(1, Math.floor(24 / m.everyHours));
+  return null;
+}
+
+/** Today in a few words: once a day "ניתן היום" / "עדיין לא"; several a day "1 מתוך 2"; as needed "2 היום" / "עדיין לא". */
+export function todayText(m: Medicine, count: number): string {
+  const perDay = dosesPerDay(m);
+  if (perDay === 1) return count > 0 ? 'ניתן היום' : 'עדיין לא';
+  if (perDay !== null) return `${count} מתוך ${perDay}`;
+  return count > 0 ? `${count} היום` : 'עדיין לא';
+}

@@ -79,6 +79,7 @@ test('the window shows the next allowed time and closes when tapping outside', a
   await row(page, 'm1').click();
   await expect(row(page, 'm1').getByTestId('meds-warning')).toContainText('הבאה מ-');
   await expect(row(page, 'm1').getByTestId('meds-status')).toContainText('מנה 1 מתוך 14');
+  await expect(row(page, 'm1').getByTestId('meds-status')).toContainText('היום 1 מתוך 3'); // every 8 hours: 3 a day
   await page.getByTestId('meds-window').click({ position: { x: 10, y: 10 } });
   await expect(page.getByTestId('meds-window')).toBeHidden();
   await expect(page.getByTestId('tile-vitamin')).toContainText('חסר: ויטמין D'); // vitamin D still missing today

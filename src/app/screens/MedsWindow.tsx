@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type Medicine, doseText, doseWarnings, medicineToday } from '../../shared/medicines';
+import { type Medicine, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
 import { type Mark, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
@@ -14,7 +14,11 @@ function statusParts(m: Medicine, events: Parameters<typeof medicineToday>[1], n
   const t = medicineToday(m, events, now);
   const parts: string[] = [];
   const today = localDate(now);
-  if (t.count > 0 && t.last) parts.push(`ניתן היום ${timeOf(t.last.start)}${t.count > 1 ? ` (${t.count} פעמים)` : ''}`, t.last.user);
+  if (t.count > 0 && t.last) {
+    // once a day: "ניתן היום 08:10"; several a day: "היום 1 מתוך 2 · אחרון 08:10" (as needed: "היום 2 · אחרון ...")
+    if (dosesPerDay(m) === 1) parts.push(`ניתן היום ${timeOf(t.last.start)}`, t.last.user);
+    else parts.push(`היום ${todayText(m, t.count).replace(' היום', '')}`, `אחרון ${timeOf(t.last.start)}`, t.last.user);
+  }
   else if (t.last) parts.push(`לא ניתן היום · אחרון: ${dayName(t.last.start.slice(0, 10), today)} ${timeOf(t.last.start)}`);
   else parts.push('עוד לא ניתן');
   if (t.course) parts.push(t.course.done ? `${t.course.text} · משך מתן התרופה הסתיים` : t.course.text);
