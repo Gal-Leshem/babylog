@@ -22,6 +22,13 @@ test('the other parent logs something: it appears by itself within seconds (noth
   await ctx2.close();
 });
 
+test('while the app is in use the other parent\'s entry shows within about 5 seconds', async ({ page, request }) => {
+  await install(page);
+  await page.waitForTimeout(500);
+  await api(request, { action: 'log', id: 'quick-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 6_500 }); // the old pace (10 s) could miss this
+});
+
 test('checking for changes is cheap: tiny checks, no repeated list downloads while nothing changes', async ({ page, request }) => {
   await install(page);
   await resetServer(request); // forget the setup traffic (also clears data; the app keeps its local copy)
@@ -110,7 +117,8 @@ test('an entry not yet delivered is handed to the browser when the app is left, 
     }, state);
   await control(request, 'offline=1');
   await page.getByTestId('btn-poop').click(); // the request fails; a retry is a few seconds away
-  await expect(page.getByTestId('banner-sync')).toContainText('1 ממתינים');
+  // "אין חיבור" = the request has really failed and nothing carries the entry (while it is still on its way the app rightly sends no beacon)
+  await expect(page.getByTestId('banner-sync')).toContainText('אין חיבור · 1 ממתינים');
   await control(request, 'offline=0');
   await setVisibility('hidden'); // the phone is locked before the retry
   await expect.poll(async () => (await serverEvents(request)).length, { timeout: 2_000 }).toBe(1);

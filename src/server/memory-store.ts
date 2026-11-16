@@ -25,6 +25,9 @@ export class MemoryStore implements Store {
   all(): BabyEvent[] {
     return this.rows.map((r) => ({ ...r }));
   }
+  count(): number {
+    return this.rows.length;
+  }
   find(id: string): BabyEvent | undefined {
     const r = this.rows.find((x) => x.id === id);
     return r ? { ...r } : undefined;

@@ -48,7 +48,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   dropped); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
   requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
   because every operation has an id. The answer's events replace the phone's guesses (server time stamps).
-- While the app is open and visible: a check every 10 s, a forced full list every 5 minutes (safety net), an immediate check on
+- While the app is open and visible: a check every 5 s for two minutes after it was opened, returned to or used to log
+  something, then every 15 s (`pollDelay`); a forced full list every 5 minutes (safety net); an immediate check on
   return to the foreground (visibilitychange, focus, pageshow: the several events of one return within 0.4 s count as one) and
   when the network returns. Nothing is sent while the app is hidden.
 - First attempt or retry: an operation that leaves the phone for the first time travels with `fresh: true` and is marked `sent`
@@ -62,6 +63,10 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
 - Older days (History, Summary) are fetched with `list` and merged; a slower answer is dropped if the local copy changed meanwhile.
 - A server from before `sync` answers `unknown_action`: the engine then talks the old way for that session (one request per
   operation, `poll`, `list`). The old actions stay on the server for Siri shortcuts and for phones still running an older app.
+- The list reads only the tail of the Events sheet (`rowsSince` in `core.ts`: the last 1,500 rows, when the oldest of them was
+  created at least two days before the range; otherwise, and for older days, everything). Known limit: a sleep left open for
+  longer than the tail reaches back is no longer reported as open.
+- Retries after a failure wait 3, 6, 12, 30, 60 s, each up to a fifth longer at random (two phones do not come back in step).
 - Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
   work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.
@@ -125,7 +130,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
   bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
-- **Sync:** see "Sync engine" above (one `sync` request; a check every 10 s, a full list every 5 minutes, a check on resume).
+- **Sync:** see "Sync engine" above (one `sync` request; a check every 5 or 15 s, a full list every 5 minutes, a check on resume).
 
 ## Server deployment details
 - `scripts/deploy-server.ts` creates the sheet and bound script on first run (ids saved on `ci-status:envs/`), pushes the bundle with clasp, and
@@ -143,9 +148,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   Settings / Medicines tabs is taken in by running `setup()` again (the owner does not edit by hand).
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~260): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~266): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~116): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~117): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

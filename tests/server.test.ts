@@ -567,3 +567,71 @@ describe('sync: one round trip for a phone (API 0.4.0)', () => {
     });
   });
 });
+
+// The sheet grows by some 25 rows a day for good; a list must not read all of it.
+describe('a list reads only the tail of a long sheet', () => {
+  /** `n` rows, 20 a day, in creation order, ending on 2026-11-14. */
+  const fill = (n: number) => {
+    const end = T('2026-11-14 11:00');
+    for (let i = 0; i < n; i++) {
+      const t = end - (n - 1 - i) * 72 * 60_000;
+      const at = new Date(t + 2 * 3600_000).toISOString().slice(0, 16).replace('T', ' ');
+      store.append(ev({ id: `r${i}`, type: 'diaper', detail: 'wet', start: at, created: at }));
+    }
+  };
+  const reads = () => {
+    const c = { all: 0, recent: 0 };
+    const all = store.all.bind(store);
+    const recent = store.recent.bind(store);
+    store.all = () => (c.all++, all());
+    store.recent = (k) => (c.recent++, recent(k));
+    return c;
+  };
+  const list = (from: string, to: string) => ok(call({ action: 'list', from, to }));
+
+  it('the last 14 days of a 5,000-row sheet come from the tail, and are the same events as a full read', () => {
+    fill(5000);
+    const expected = store.all().filter((e) => e.start >= '2026-11-01').map((e) => e.id);
+    const c = reads();
+    const r = list('2026-11-01', '2026-11-14');
+    expect(c).toEqual({ all: 0, recent: 1 });
+    expect(r.events!.map((e) => e.id)).toEqual(expected);
+    expect(expected.length).toBeGreaterThan(200);
+  });
+
+  it('an older range, or a short sheet, is read in full', () => {
+    fill(5000);
+    let c = reads();
+    const old = list('2026-06-01', '2026-06-02');
+    expect(c.all).toBe(1);
+    expect(old.events!.length).toBeGreaterThan(30);
+    store = new MemoryStore();
+    deps.store = store;
+    fill(300);
+    c = reads();
+    list('2026-11-01', '2026-11-14');
+    expect(c).toEqual({ all: 1, recent: 0 });
+  });
+
+  it('a sheet that is not in creation order (sorted by hand) is read in full', () => {
+    fill(5000);
+    const rows = store.all().reverse();
+    store = new MemoryStore(rows);
+    deps.store = store;
+    const c = reads();
+    const r = list('2026-11-01', '2026-11-14');
+    expect(c.all).toBe(1);
+    expect(r.events!.length).toBeGreaterThan(200);
+  });
+
+  it('a sleep that began before the range and reaches into it is still included; an entry added late for an old day too', () => {
+    fill(5000);
+    store.append(ev({ id: 'late', type: 'feed', detail: 'left', start: '2026-11-02 08:00', created: '2026-11-14 11:30' }));
+    const long = store.all().find((e) => e.start.startsWith('2026-10-31 2'))!;
+    store.replace({ ...long, type: 'sleep', detail: '', end: '2026-11-01 05:00' });
+    const ids = list('2026-11-01', '2026-11-14').events!.map((e) => e.id);
+    expect(ids).toContain('late');
+    expect(ids).toContain(long.id);
+  });
+});
+

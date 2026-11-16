@@ -68,6 +68,8 @@ export interface EngineOptions {
   clearTimer?: (t: unknown) => void;
   /** Delivers a request with no answer expected, while the app is being left (default: the browser's beacon). */
   beacon?: (ep: Endpoint, req: ApiRequest) => boolean;
+  /** 0..1, for spreading retries (default Math.random). */
+  random?: () => number;
   /** A clock for measuring durations (not the app's time). */
   stopwatch?: () => number;
 }
@@ -75,8 +77,14 @@ export interface EngineOptions {
 const STATE_KEY = 'bl.state.v1';
 const CONFIG_KEY = 'bl.config.v1';
 const RETRY_MS = [3_000, 6_000, 12_000, 30_000, 60_000];
-/** How often an open app asks the server "did anything change?" (a very small request). */
-export const POLL_MS = 10_000;
+/**
+ * How often an open app asks the server "did anything change?" (one small request that reads no data when nothing did).
+ * Faster while the app is in use: right after it is opened or something is logged, the other parent is likely to log too.
+ */
+export const POLL_ACTIVE_MS = 5_000;
+export const POLL_IDLE_MS = 15_000;
+export const ACTIVE_FOR_MS = 2 * 60_000;
+export const pollDelay = (sinceActiveMs: number): number => (sinceActiveMs < ACTIVE_FOR_MS ? POLL_ACTIVE_MS : POLL_IDLE_MS);
 /** Full refresh even without a reported change, to catch edits made directly in the sheet. */
 export const FULL_REFRESH_MS = 5 * 60_000;
 /** A sync that has been running this long is considered dead and no longer blocks new ones. */
@@ -137,6 +145,9 @@ export class Engine {
   private timing: SyncTiming | null = null;
   private lastBeaconAt = -Infinity;
   private readonly stopwatch: () => number;
+  private readonly random: () => number;
+  /** When the app was last opened, returned to, or used to log something (drives the polling pace). */
+  private lastActive = -Infinity;
   private readonly beacon: (ep: Endpoint, req: ApiRequest) => boolean;
   private retryTimer: unknown = null;
   private retryStep = 0;
@@ -149,6 +160,7 @@ export class Engine {
     this.setTimer = opts.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimer = opts.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
     this.beacon = opts.beacon ?? sendAway;
+    this.random = opts.random ?? Math.random;
     this.stopwatch = opts.stopwatch ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     this.config = this.storage.get<Config>(CONFIG_KEY);
     const saved = this.storage.get<Persisted>(STATE_KEY);
@@ -264,6 +276,7 @@ export class Engine {
       this.tombstones.set(req.id, r.event);
       if (this.tombstones.size > 50) this.tombstones.delete(this.tombstones.keys().next().value as string);
     }
+    this.lastActive = this.now();
     const op: Op = { opId: this.newId(), req, at: this.now() };
     this.p.queue.push(op);
     this.persist();
@@ -507,7 +520,8 @@ export class Engine {
 
   private scheduleRetry(): void {
     if (this.retryTimer) return;
-    const ms = RETRY_MS[Math.min(this.retryStep, RETRY_MS.length - 1)]!;
+    // up to a fifth longer, at random: two phones that lost the connection together do not come back in step
+    const ms = Math.round(RETRY_MS[Math.min(this.retryStep, RETRY_MS.length - 1)]! * (1 + this.random() * 0.2));
     this.retryStep++;
     this.retryTimer = this.setTimer(() => {
       this.retryTimer = null;
@@ -579,14 +593,16 @@ export class Engine {
   }
 
   /**
-   * Keeps the app current while it is open and visible: a cheap check every POLL_MS, a full refresh every
+   * Keeps the app current while it is open and visible: a cheap check every few seconds (`pollDelay`), a full refresh every
    * FULL_REFRESH_MS, and an immediate check whenever the app comes back to the foreground or the network returns
    * (the several events one return fires count as one). Nothing runs while the app is hidden. Returns a stop function.
    */
   start(): () => void {
     const visible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
     const resume = () => {
-      if (visible()) void this.sync('rev', true);
+      if (!visible()) return;
+      this.lastActive = this.now();
+      void this.sync('rev', true);
     };
     const leaving = () => {
       if (!visible()) this.leave();
@@ -595,9 +611,12 @@ export class Engine {
     const online = () => {
       if (visible()) void this.sync('rev'); // never coalesced: the running request may be the one that just failed
     };
-    const poll = setInterval(() => {
+    let poll: ReturnType<typeof setTimeout>;
+    const tick = () => {
       if (visible() && this.config) void this.sync('rev');
-    }, POLL_MS);
+      poll = setTimeout(tick, pollDelay(this.now() - this.lastActive));
+    };
+    poll = setTimeout(tick, POLL_ACTIVE_MS);
     const full = setInterval(() => {
       if (visible()) void this.sync('full');
     }, FULL_REFRESH_MS);
@@ -609,7 +628,7 @@ export class Engine {
     window.addEventListener('pagehide', closing);
     resume();
     return () => {
-      clearInterval(poll);
+      clearTimeout(poll);
       clearInterval(full);
       window.removeEventListener('online', online);
       window.removeEventListener('focus', resume);

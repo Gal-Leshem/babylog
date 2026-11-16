@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 260 unit (Vitest) and 116 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 266 unit (Vitest) and 117 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -24,8 +24,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - In progress: the sync / performance refactor, `docs/REFACTOR_PLAN.md` (owner: the full plan on the current Apps Script server;
   a move to another server is decided later). Done: phase 0 (timings), phase 1 (`sync`, one round trip), item 3.2 (one
   request per open), from phase 2: settings copy in a property, properties once per request, no whole-sheet duplicate lookup
-  for first attempts, one row search per edit; from phase 3: `keepalive` and the beacon when the app is left. Next, in order:
-  adaptive polling and retry jitter (3.3, 3.4), tail read of the events (2.3; matters as the real sheet grows), phase 4 (client
+  for first attempts, one row search per edit; all of phase 3 (`keepalive`, the beacon when the app is left, adaptive polling, retry spread), tail read of the events.
+  Left out on purpose: server-side caching of the list (2.7; the list is already near the floor) and the lazy spreadsheet (2.1;
+  opening it costs 2 ms). Next, in order: phase 4 (client
   housekeeping, incl. pruning old events from the stored copy), phase 5 (quiet sync indicator, freshness on open, highlight of
   the other parent's entries, shorter tap lock, polish plus own icons: screenshots to the owner before shipping). Ask the owner
   what Settings > מתקדם shows as "סנכרון אחרון" on the phones (real numbers from real use).
@@ -64,6 +65,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Never define a component inside a component; never use vh/dvh; Home must never be scrollable; each tab has its own scroll container.
 - When a trigger can arrive during work in progress, queue it; do not drop it.
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
+- A browser test must wait for the state it means, not for a text that is also shown one step earlier (the beacon test went on
+  at "1 waiting", which is shown while the request is still on its way; it failed only in CI).
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
 - After pushing to `main`, check that the `main` server report says "prod server deployed" (the site can be published while the
   server job failed: pages wait only for the tests).

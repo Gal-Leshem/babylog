@@ -86,6 +86,9 @@ class SheetStore implements Store {
   all(): BabyEvent[] {
     return this.read(2);
   }
+  count(): number {
+    return Math.max(0, this.events().getLastRow() - 1);
+  }
   /** Rows found in this request (rows never move: events are only appended or rewritten in place). */
   private rows = new Map<string, number>();
   private rowOf(id: string): number {

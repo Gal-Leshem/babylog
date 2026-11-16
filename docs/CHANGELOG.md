@@ -190,6 +190,14 @@ No names, addresses or secrets in this file (the repository is public).
   a restart, beacon, keepalive; proven to fail without the sent mark), server and bundle (lookups counted; proven to fail without
   the row memo), a browser test (the entry reaches the server while the app is hidden), and a live check that a write is recorded
   when its answer is never fetched.
+- Measured after the settings copy (real server): a list answer 0.9 to 1.3 s in total, 0.34 s of it ours (before: 1.8 to 3.7 s).
+- CI: the new browser test for the beacon failed once in CI and never locally: it went on as soon as the banner said "1 waiting",
+  which is also true while the request is still on its way (then the app rightly sends no beacon). It now waits for "אין חיבור".
+- Phase 3, rest, and item 2.3: the app checks every 5 s for two minutes after it was opened, returned to or used, then every 15 s
+  (was a flat 10 s); retries are spread by up to a fifth; a list reads only the last 1,500 rows of the Events sheet when that
+  provably covers the range (falls back to everything for older days, short or hand-sorted sheets). Tests: a 5,000-row sheet
+  (same events as a full read, no full read; proven to fail without the tail read), the pace (a browser test that fails at the
+  old 10 s), the spread.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

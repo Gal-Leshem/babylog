@@ -1,6 +1,6 @@
 import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Engine } from '../src/app/engine';
+import { ACTIVE_FOR_MS, Engine, pollDelay } from '../src/app/engine';
 import { memoryStorage } from '../src/app/storage';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
@@ -50,6 +50,7 @@ function makeEngine(key = KEY, store = storage): Engine {
       return timers.length;
     },
     clearTimer: () => undefined,
+    random: () => 0,
   });
   e.configure({ url: 'http://127.0.0.1/x', key, me: 'P1' });
   return e;
@@ -827,3 +828,20 @@ describe('first attempts, retries and leaving the app', () => {
   });
 });
 
+describe('pace', () => {
+  it('checks every 5 s for two minutes after the app was opened or used, then every 15 s', () => {
+    expect(pollDelay(0)).toBe(5_000);
+    expect(pollDelay(ACTIVE_FOR_MS - 1)).toBe(5_000);
+    expect(pollDelay(ACTIVE_FOR_MS)).toBe(15_000);
+    expect(pollDelay(Infinity)).toBe(15_000); // never used yet
+  });
+
+  it('spreads retries by up to a fifth, so two phones do not come back in step', async () => {
+    offline = true;
+    const e = new Engine({ storage, fetchImpl, now: () => clock, newId: () => `op${++n}`, setTimer: (fn, ms) => timers.push({ fn, ms }), clearTimer: () => undefined, random: () => 0.5 });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    e.dispatch(feed('a'));
+    await idle();
+    expect(timers.map((t) => t.ms)).toEqual([3300]);
+  });
+});

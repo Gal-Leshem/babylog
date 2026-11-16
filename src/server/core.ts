@@ -26,6 +26,8 @@ export interface Store {
   /** The last `n` rows in sheet order (oldest first). */
   recent(n: number): BabyEvent[];
   all(): BabyEvent[];
+  /** How many rows there are (cheap: no data is read). */
+  count(): number;
   find(id: string): BabyEvent | undefined;
   append(e: BabyEvent): void;
   replace(e: BabyEvent): boolean;
@@ -267,7 +269,7 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
 function listRange(store: Store, from: string, to: string, now: number): ApiOk {
   const lo = dayStart(from);
   const hi = dayStart(addDays(to, 1));
-  const all = live(store.all());
+  const all = live(rowsSince(store, lo));
   const open = openSleep(all);
   const events = all.filter((e) => {
     if (e === open) return true;
@@ -278,6 +280,26 @@ function listRange(store: Store, from: string, to: string, now: number): ApiOk {
     return at >= lo && at < hi;
   });
   return { ok: true, events: events.sort(byTimeAsc), settings: settingsOf(store), serverNow: stamp(now), sheetUrl: store.sheetUrl() };
+}
+
+const TAIL_ROWS = 1500;
+const TAIL_MARGIN = 2 * 24 * 60 * MIN;
+
+/**
+ * The rows that can matter for days from `lo` on, without reading the whole sheet (it grows by some 25 rows a day, for good).
+ * Rows are appended in the order they are created, and nothing can be logged for a time later than "now", so everything that
+ * happened from `lo` on sits after the last row created before `lo`. The tail is enough when its oldest row was created at
+ * least two days before `lo` (the margin covers a sleep that began earlier and reaches into the range). Whenever that cannot
+ * be shown (an older range, a short sheet, rows not in creation order because someone sorted the sheet) everything is read.
+ * Known limit: a sleep left open for longer than the tail reaches back is not reported as open any more.
+ */
+function rowsSince(store: Store, lo: number): BabyEvent[] {
+  if (store.count() <= TAIL_ROWS) return store.all();
+  const tail = store.recent(TAIL_ROWS);
+  const first = tail[0] ? parseLocal(tail[0].created) : NaN;
+  const last = tail.length ? parseLocal(tail[tail.length - 1]!.created) : NaN;
+  if (Number.isNaN(first) || Number.isNaN(last) || first > last || first >= lo - TAIL_MARGIN) return store.all();
+  return tail;
 }
 
 /** The write actions without lock and revision handling (the callers do both). Returns null for anything that is not a write. */
