@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { install, resetServer } from './helpers';
+import { control, install, resetServer } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -127,4 +127,30 @@ test('at night the page is dark before the app code runs (no flash of day colour
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
   await expect(page.locator('html')).toHaveAttribute('data-tint', 'red');
   expect(await bg(page)).toBe('rgb(0, 0, 0)');
+});
+
+// Owner screenshot: at night the iPhone status bar was coloured (gold). iOS 26 ignores theme-color and tints the bar from the
+// page: the full-screen container's background or a coloured element at the top (the "מסנכרן" banner was a bright strip).
+// At night everything at the top is black: the container has a black background and banners are dark with coloured text.
+test('night: the full-screen container is black and the sync banner is dark, in both night colours', async ({ page, request }) => {
+  await page.clock.setFixedTime(new Date('2026-11-14T21:00:00Z')); // 23:00 in Israel
+  await install(page);
+  const dark = (c: string) => Math.max(...c.match(/\d+/g)!.slice(0, 3).map(Number)) < 40;
+  for (const tint of ['amber', 'red']) {
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId(`tint-${tint}`).click();
+    await page.getByTestId('tab-home').click();
+    expect(await page.evaluate(() => getComputedStyle(document.getElementById('app')!).backgroundColor)).toBe('rgb(0, 0, 0)');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(0, 0, 0)');
+    await control(request, 'offline=1');
+    await page.getByTestId('btn-wet').click();
+    const banner = page.getByTestId('banner-sync');
+    await expect(banner).toBeVisible();
+    const bg = await banner.evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(dark(bg), `${tint} banner background ${bg}`).toBe(true);
+    await control(request, 'offline=0');
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect(banner).toBeHidden({ timeout: 15_000 });
+    await expect(page.getByTestId('btn-wet')).toBeEnabled({ timeout: 3000 });
+  }
 });

@@ -10,7 +10,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 219 unit (Vitest) and 108 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 219 unit (Vitest) and 109 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -58,6 +58,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 ## Open risks (cannot be tested in the sandbox)
 - Whether `shortcuts sign` accepts the generated files and iOS imports them (only simulated). Whether a network shortcut runs on a locked phone.
 - Whether Gemini can read a sheet shared from another account. Behavior of the system date/time pickers on every iOS version (they follow the phone's language).
+- The iOS 26 status bar tint (sampled from the page) cannot be reproduced in Chromium; the owner confirms on the phone.
 - iOS elastic scrolling cannot be reproduced in Chromium; the fix removes the scrollable area on Home instead.
 
 ## Resume prompt (paste into a new session with the repository attached; the same text is in the owner's status document)

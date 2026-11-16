@@ -140,6 +140,10 @@ No names, addresses or secrets in this file (the repository is public).
 - Recent list **(owner screenshot)**: the time moved with the length of the parent's name (the name column sized to its text). The
   time (48px) and the name (76px, cut with "…") have fixed columns now; checked at 375 and 393 px. Browser test: the time is at the
   same place in rows with a one-letter name and a long one (failed before).
+- Night status bar **(owner screenshot: gold bar at night)**: iOS 26 ignores `theme-color` and tints the status bar from the page (the
+  background of a full-screen fixed element, or a coloured element at the top); our `#app` had no background and the "מסנכרן" banner
+  was a bright warning-coloured strip at the top after every tap. `#app` now has the page background (black at night) and at night
+  banners are dark with coloured text and a thin line. Cannot be reproduced in Chromium: the test checks the colours that iOS samples.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

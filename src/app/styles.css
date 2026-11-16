@@ -66,9 +66,12 @@ html, body {
   overscroll-behavior: none;
 }
 /* Pinned to the real visible area. vh/dvh units are unreliable in iOS home-screen apps (they can include the status bar). */
+/* iOS 26 ignores theme-color and tints the status bar from the page (this full-screen element's background, or a coloured
+   element at the top), so the background is set here explicitly: black at night, so the bar is black too. */
 #app {
   position: fixed;
   inset: 0;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
@@ -96,7 +99,9 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
   align-items: center;
   gap: 8px;
 }
-:root[data-theme='night'] .banner { color: #0b0905; }
+/* at night a banner is not a bright strip at the top (iOS would tint the status bar with it): dark, with coloured text */
+:root[data-theme='night'] .banner { background: var(--surface); color: var(--warn); border-bottom: 1px solid var(--warn); }
+:root[data-theme='night'] .banner.err { background: var(--surface); color: var(--danger); border-bottom-color: var(--danger); }
 .banner.err { background: var(--danger); }
 .banner button { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 2px 8px; }
 
