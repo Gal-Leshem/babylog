@@ -150,7 +150,7 @@ as('sync: nothing new');
 const s1 = await call({ action: 'sync', ...range, rev: s0.json?.rev, debug: true });
 check('sync with the current revision says unchanged and carries no list', s1.json?.unchanged === true && s1.json?.events === undefined, JSON.stringify(s1.json).slice(0, 200));
 as('sync: one tap');
-const s2 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true, ops: [{ action: 'log', id: id('sync1'), type: 'diaper', detail: 'wet', start: now(), ...base }] });
+const s2 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true, ops: [{ action: 'log', id: id('sync1'), type: 'diaper', detail: 'wet', start: now(), ...base, fresh: true }] }); // as the app sends a first attempt
 check('sync applies an operation and stays "unchanged" for an up-to-date phone', s2.json?.unchanged === true && s2.json?.results?.[0]?.ok === true && s2.json?.rev !== s1.json?.rev, JSON.stringify(s2.json).slice(0, 300));
 as('sync: three taps');
 const s3 = await call({
