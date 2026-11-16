@@ -21,6 +21,14 @@ One row per event (columns in `src/server/readme.ts`, also written to the sheet'
 tools). Sleep is one row with start and end. Deletes are soft. Times are Israel time, stored as real
 sheet dates. Requests carry a client-generated `id`, which makes retries idempotent.
 
+Medicines (F7, API 0.3.0): vitamin D is built in (event type `vitamin_d`, unchanged). Other medicines are defined in Settings and kept in
+the sheet's "Medicines" tab, one readable row each (`src/shared/medicines.ts`: name, dose text, schedule daily / times / interval / prn
+with its numbers, optional course, active or archived). They travel inside `settings.medicines`; `settings` with `set.medicines` saves
+them one by one by id (so two phones editing different medicines never overwrite each other); a removal is refused once a dose exists
+(archive instead). A dose is an event of type `medicine` whose detail is the medicine's id (refused for an unknown id). Settings saved by an
+older app or sent by an older server get an empty list (`withDefaults` in the engine). The "קרא אותי" guide is rewritten when the
+Medicines tab is first created, so an existing sheet explains the new data without running `setup` again.
+
 ## Sync engine
 Operations queue in `localStorage`; the view is `server copy + queue replayed`. Refused operations are dropped with a
 visible message; connection problems retry with back-off.
@@ -92,9 +100,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~188): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~197): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~80): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~83): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

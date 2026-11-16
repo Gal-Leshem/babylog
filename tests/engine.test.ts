@@ -343,10 +343,26 @@ describe('robustness', () => {
     expect(makeEngine().getState().pending).toBe(0);
   });
 
+  // F7: settings gained a "medicines" list. Phones still hold settings saved by the older app, and an older server sends none.
+  it('settings saved by an older version or sent by an older server get an empty medicines list', async () => {
+    storage.data.set('bl.state.v1', JSON.stringify({ serverEvents: [], queue: [], settings: { babyName: 'Baby', mergeWindowMin: 20, parents: ['A', 'B'] } }));
+    expect(makeEngine().getState().settings.medicines).toEqual([]);
+    const oldServer = ((url: string, init: { body: string }) =>
+      fetchImpl(url as never, init as never).then(async (r) => {
+        const j = await r.json();
+        if (j.settings) delete j.settings.medicines;
+        return new Response(JSON.stringify(j));
+      })) as unknown as typeof fetch;
+    const e = new Engine({ storage: memoryStorage(), fetchImpl: oldServer, now: () => clock, newId: () => `op${++n}` });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    expect(await e.refresh()).toBe(true);
+    expect(e.getState().settings.medicines).toEqual([]);
+  });
+
   it('shows the settings handed over at first-run setup before any refresh', () => {
     const e = new Engine({ storage, fetchImpl, now: () => clock });
-    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'A' }, { babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'] });
-    expect(e.getState().settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'] });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'A' }, { babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
+    expect(e.getState().settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
     expect(new Engine({ storage, fetchImpl, now: () => clock }).getState().settings.parents).toEqual(['A', 'B']); // persisted
   });
 

@@ -75,6 +75,14 @@ No names, addresses or secrets in this file (the repository is public).
 - Research only **(owner request)**: how other apps handle more than one medicine; summary and recommendation in `BACKLOG.md` (F7).
 - Timeline **(owner request)**: "פיפי + קקי" now has its own mark, the pee ring with the poop dot inside (instead of a plain poop dot).
 - F7 spec **(owner)** recorded in `BACKLOG.md`; feedback given before any development.
+- F7 spec agreed **(owner)**: see `BACKLOG.md` "F7 agreed spec" (four stages).
+- F7 stage 1: Settings > "תרופות" > "ניהול תרופות" lists vitamin D (built in, always active) and the other medicines; add / edit
+  (name, dose, once a day / X times a day / every X hours / as needed, optional minimum gap and daily maximum, optional course of X doses
+  or X days), archive, restore, delete only before any dose. Fixed line "המינונים והמרווחים לפי הנחיית הרופא או העלון." Hours accept
+  "4.5" and "4,5". Server API 0.3.0: "Medicines" sheet tab, per-medicine saves, dose events of type `medicine`. Home does not change yet.
+  Tests: server rules, the Apps Script bundle (sheet rows, guide refresh), old saved settings, three browser tests.
+- Test tooling: the mock server dropped nothing that arrived before a reset, so under `MOCK_DELAY` a save still on its way landed in the
+  next test (seen as a flaky medicines test). Requests from before a reset are now discarded.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

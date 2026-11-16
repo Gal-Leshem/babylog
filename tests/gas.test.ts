@@ -34,7 +34,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
   it('setup creates sheets, a key and a decodable install code', () => {
     const { rt, g } = boot();
     g.setup!();
-    expect([...rt.sheets.keys()].sort()).toEqual(['Events', 'Settings', 'קרא אותי'].sort());
+    expect([...rt.sheets.keys()].sort()).toEqual(['Events', 'Medicines', 'Settings', 'קרא אותי'].sort());
     expect(rt.sheets.get('Events')![0]).toEqual(['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted']);
     const key = rt.props.get('API_KEY')!;
     expect(key).toHaveLength(64);
@@ -139,9 +139,31 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     g.setup!();
     const key = rt.props.get('API_KEY')!;
     const r = post({ key, action: 'settings', set: { babyName: 'Baby', parents: ['A', 'B'], mergeWindowMin: 25 } });
-    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'] });
+    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 25, parents: ['A', 'B'], medicines: [] });
     expect(post({ key, action: 'settings' }).settings).toEqual(r.settings);
     expect(rt.sheets.get('Settings')).toContainEqual(['mergeWindowMin', 25]);
+  });
+
+  it('keeps medicines in their own readable sheet, one row each, and reads them back', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    // a sheet set up before medicines existed: no Medicines tab and an older guide
+    rt.sheets.delete('Medicines');
+    rt.sheets.set('קרא אותי', [['old guide']]);
+    const med = { id: 'm1', name: 'אקמול', dose: '2.5 מ״ל', schedule: 'prn', minGapHours: 4, maxPerDay: 4 };
+    const r = post({ key, action: 'settings', set: { medicines: [med] } });
+    expect(r.ok).toBe(true);
+    const rows = rt.sheets.get('Medicines')!;
+    expect(rows[0]).toEqual(['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created']);
+    expect(rows[1]!.slice(0, 11)).toEqual(['m1', 'אקמול', '2.5 מ״ל', 'prn', '', '', 4, 4, 'none', '', 'active']);
+    expect(post({ key, action: 'settings' }).settings.medicines).toEqual(r.settings.medicines);
+    expect(JSON.stringify(rt.sheets.get('קרא אותי'))).toContain('Sheet \\"Medicines\\"');
+    expect(post({ key, action: 'log', id: 'd1', type: 'medicine', detail: 'm1', start: '2000-01-01 08:00', user: 'P', source: 'app' }).ok).toBe(true);
+    // archiving keeps the row, and a later names change does not lose the medicines
+    post({ key, action: 'settings', set: { medicines: [{ ...med, status: 'archived' }] } });
+    post({ key, action: 'settings', set: { babyName: 'B' } });
+    expect(post({ key, action: 'settings' }).settings.medicines.map((m: { status: string }) => m.status)).toEqual(['archived']);
   });
 
   it('rotateKey invalidates the old key', () => {

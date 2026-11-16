@@ -71,6 +71,12 @@ function localDeps(store: MemoryStore, now: () => number): Deps {
   return { store, now, checkKey: () => true, withLock: (fn) => fn() };
 }
 
+/** Settings saved by an older app version, or sent by an older server, lack newer fields (e.g. `medicines`). */
+export function withDefaults(s: Partial<Settings> | null | undefined): Settings {
+  if (!s || typeof s !== 'object') return DEFAULT_SETTINGS;
+  return { ...DEFAULT_SETTINGS, ...s, medicines: Array.isArray(s.medicines) ? s.medicines : [] };
+}
+
 export class Engine {
   private readonly storage: KV;
   private readonly fetchImpl: FetchLike;
@@ -112,7 +118,7 @@ export class Engine {
     const saved = this.storage.get<Persisted>(STATE_KEY);
     this.p = {
       serverEvents: Array.isArray(saved?.serverEvents) ? saved!.serverEvents : [],
-      settings: saved?.settings ?? DEFAULT_SETTINGS,
+      settings: withDefaults(saved?.settings),
       queue: Array.isArray(saved?.queue) ? saved!.queue : [],
       lastSync: saved?.lastSync ?? null,
       sheetUrl: saved?.sheetUrl ?? '',
@@ -170,7 +176,7 @@ export class Engine {
     this.config = cfg;
     this.storage.set(CONFIG_KEY, cfg);
     if (settings) {
-      this.p.settings = settings;
+      this.p.settings = withDefaults(settings);
       this.persist();
     }
     this.status = 'idle';
@@ -348,7 +354,7 @@ export class Engine {
       if (seq !== this.refreshSeq) return false; // a newer refresh started while this one was stuck
       if (startEpoch !== this.epoch || this.p.queue.length > 0) return false; // something changed meanwhile: that answer is stale
       this.merge(range, res.events ?? []);
-      if (res.settings) this.p.settings = res.settings;
+      if (res.settings) this.p.settings = withDefaults(res.settings);
       if (res.sheetUrl) this.p.sheetUrl = res.sheetUrl;
       if (res.rev !== undefined) this.lastRev = res.rev;
       this.p.lastSync = this.now();

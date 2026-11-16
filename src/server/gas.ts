@@ -1,4 +1,5 @@
 /// <reference types="google-apps-script" />
+import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION } from '../shared/protocol';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
@@ -17,6 +18,9 @@ declare const __EXEC_URL__: string;
 const EVENTS = 'Events';
 const SETTINGS = 'Settings';
 const README = 'קרא אותי';
+const MEDICINES = 'Medicines';
+/** One row per medicine besides vitamin D; numbers that do not apply to the schedule are left empty. */
+const MED_HEADER = ['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created'];
 const HEADER = ['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted'];
 const COLS = HEADER.length;
 const DATE_FORMAT = 'yyyy-mm-dd hh:mm';
@@ -103,7 +107,30 @@ class SheetStore implements Store {
       babyName: map.babyName || DEFAULT_SETTINGS.babyName,
       mergeWindowMin: Number.isFinite(win) && map.mergeWindowMin !== '' && map.mergeWindowMin !== undefined ? win : DEFAULT_SETTINGS.mergeWindowMin,
       parents: [map.parent1 || DEFAULT_SETTINGS.parents[0], map.parent2 || DEFAULT_SETTINGS.parents[1]],
+      medicines: this.readMedicines(),
     };
+  }
+  private readMedicines(): Medicine[] {
+    const sh = this.ss.getSheetByName(MEDICINES);
+    if (!sh || sh.getLastRow() < 2) return [];
+    const out: Medicine[] = [];
+    for (const r of sh.getRange(2, 1, sh.getLastRow() - 1, MED_HEADER.length).getValues()) {
+      const n = (v: unknown) => (v === '' || v === null ? 0 : Number(v));
+      const raw = { id: String(r[0]), name: String(r[1]), dose: String(r[2]), schedule: String(r[3]), timesPerDay: n(r[4]), everyHours: n(r[5]), minGapHours: n(r[6]), maxPerDay: n(r[7]), course: String(r[8] || 'none'), courseCount: n(r[9]), status: String(r[10] || 'active') };
+      const m = normalizeMedicine(raw);
+      if (m.ok) out.push({ ...m.medicine, created: toLocal(r[11]) }); // a row broken by hand is skipped rather than breaking the app
+    }
+    return out;
+  }
+  private writeMedicines(list: readonly Medicine[]): void {
+    const existing = this.ss.getSheetByName(MEDICINES);
+    const sh = existing ?? this.ss.insertSheet(MEDICINES);
+    if (!existing) writeReadme(this.ss); // a sheet set up before medicines existed gets the guide that explains them
+    const blank = (v: number) => (v === 0 ? '' : v);
+    const rows = list.map((m) => [m.id, m.name, m.dose, m.schedule, blank(m.timesPerDay), blank(m.everyHours), blank(m.minGapHours), blank(m.maxPerDay), m.course, blank(m.courseCount), m.status, toCell(m.created)]);
+    sh.clear();
+    sh.getRange(1, 1, 1, MED_HEADER.length).setValues([MED_HEADER]);
+    if (rows.length) sh.getRange(2, 1, rows.length, MED_HEADER.length).setValues(rows);
   }
   setSettings(s: Settings): void {
     const sh = this.ss.getSheetByName(SETTINGS) ?? this.ss.insertSheet(SETTINGS);
@@ -114,6 +141,7 @@ class SheetStore implements Store {
       ['parent2', s.parents[1]],
     ];
     sh.getRange(1, 1, rows.length, 2).setValues(rows);
+    this.writeMedicines(s.medicines);
   }
   sheetUrl(): string {
     return this.ss.getUrl();
@@ -202,6 +230,15 @@ export function printInstallCode(): void {
   console.log(encodeInstallCode(url, key, b64url));
 }
 
+function writeReadme(ss: GoogleAppsScript.Spreadsheet.Spreadsheet): void {
+  const readme = ss.getSheetByName(README) ?? ss.insertSheet(README);
+  readme.clear();
+  README_ROWS.forEach((r, i) => readme.getRange(i + 1, 1, 1, r.length).setValues([r]));
+  readme.getRange(1, 1).setFontWeight('bold').setFontSize(14);
+  readme.setColumnWidth(1, 120);
+  readme.setColumnWidth(2, 700);
+}
+
 /** One-time setup: creates the sheets, the secret key, and prints the setup code. */
 export function setup(): void {
   const ss = SpreadsheetApp.getActive();
@@ -219,12 +256,7 @@ export function setup(): void {
   if (first && first.getName() !== EVENTS && first.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(first);
   const store = new SheetStore();
   store.setSettings(store.getSettings());
-  const readme = ss.getSheetByName(README) ?? ss.insertSheet(README);
-  readme.clear();
-  README_ROWS.forEach((r, i) => readme.getRange(i + 1, 1, 1, r.length).setValues([r]));
-  readme.getRange(1, 1).setFontWeight('bold').setFontSize(14);
-  readme.setColumnWidth(1, 120);
-  readme.setColumnWidth(2, 700);
+  writeReadme(ss);
   if (!props().getProperty('API_KEY')) props().setProperty('API_KEY', newKey());
   printInstallCode();
 }

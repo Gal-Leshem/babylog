@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
+import { Medicines } from './Medicines';
 
 const NIGHT: [NightMode, string][] = [
   ['auto', 'אוטומטי'],
@@ -24,6 +25,7 @@ export function Settings() {
   const [msg, setMsg] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [medsOpen, setMedsOpen] = useState(false);
   const synced = useRef(JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]));
 
   // Pick up server changes (e.g. the other parent renamed something), but only when the values really
@@ -60,6 +62,15 @@ export function Settings() {
     setMsg('נשמר');
   };
 
+  if (medsOpen) {
+    return (
+      <section class="page" data-testid="settings">
+        <Medicines onBack={() => setMedsOpen(false)} />
+      </section>
+    );
+  }
+
+  const activeMeds = st.settings.medicines.filter((m) => m.status === 'active');
   return (
     <section class="page" data-testid="settings">
       <h2>הגדרות</h2>
@@ -87,6 +98,16 @@ export function Settings() {
           שמירה
         </button>
         {msg && <span data-testid="settings-msg">{msg}</span>}
+      </div>
+
+      <h3>תרופות</h3>
+      <p class="muted" data-testid="meds-summary">
+        ויטמין D{activeMeds.length ? `, ${activeMeds.map((m) => m.name).join(', ')}` : ''}
+      </p>
+      <div class="actions">
+        <button type="button" data-testid="open-medicines" onClick={() => setMedsOpen(true)}>
+          ניהול תרופות
+        </button>
       </div>
 
       <h3>מצב לילה</h3>

@@ -17,6 +17,8 @@ export function startMockServer(port = 8787, key = 'test-key') {
   const baseDelay = Number(process.env.MOCK_DELAY ?? 0);
   let delayMs = baseDelay;
   let offline = false;
+  // A write that is still on its way (MOCK_DELAY) when a test resets the server must not land in the next test's fresh store.
+  let generation = 0;
   const server = createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -27,6 +29,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
       if (q.has('delay')) delayMs = Number(q.get('delay'));
       if (q.has('reset')) {
         store = new MemoryStore();
+        generation++;
         calls.length = 0;
         offline = false;
         delayMs = baseDelay;
@@ -50,6 +53,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
     req.on('data', (c) => (body += c));
     req.on('end', () => {
       if (offline) return void req.socket.destroy();
+      const gen = generation;
       let parsed: unknown = null;
       try {
         parsed = JSON.parse(body);
@@ -57,6 +61,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
         /* handled below */
       }
       setTimeout(() => {
+        if (gen !== generation) return void req.socket.destroy(); // sent before a reset: belongs to the previous test
         calls.push(parsed);
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(handle(parsed, deps)));
       }, delayMs);

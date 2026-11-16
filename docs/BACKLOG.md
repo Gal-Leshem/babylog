@@ -34,7 +34,7 @@ other screens or into the existing tiles unless the owner asks otherwise.
 |---|---------|-----|------|-------|
 | F5 | ~~Optional nursing duration~~ not wanted for now **(owner)** | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
 | F6 | Bottle / expressed milk with amount (ml) | Common as soon as a bottle is introduced | M | New type, amount column in the sheet, Summary total per day. |
-| F7 | Medicines (more than one) | Fever and dosing come up in the first months; "when is the next dose allowed" | M | Research done, design to be agreed with the owner: see "F7 research" below. |
+| F7 | Medicines (more than one), in progress | Fever and dosing come up in the first months; "when is the next dose allowed" | M | Spec agreed (below); stage 1 done. |
 | F8 | ~~7-day trends and insights~~ done (first version) | Patterns and the last week at a glance | M | Reshape after the owner sees which parts get used. Ideas: cluster feeding in the evening, a trend note when the last 3 days differ from the week. |
 | F9 | Report for the pediatrician | Daily averages for the last 7 / 14 days on one page | M | Printable page (share / print to PDF from the phone). |
 | F10 | Growth: weight, length, head | Parents note clinic measurements; percentile vs. WHO tables | M-L | WHO tables are static data in the app. Lower priority for a newborn. |
@@ -59,14 +59,27 @@ Recommended for BabyLog (calm Home, two parents, iPhone web app):
 Data sketch: a "Medicines" list in the sheet (id, name, dose text, schedule type and its numbers, start/end, active) and dose rows as
 events (type `medicine`, which medicine, time, who, dose note, given/skipped). Open questions for the owner are in the session report.
 
-### F7 owner spec (draft, November 2026; open points under discussion)
-- Medicines are managed in Settings: a button opens a medicines screen (name, dose, times, schedule; a course counted by X doses or by
-  X days). A medicine always ends by hand: moved to the archive in Settings. Both parents can do everything.
-- Vitamin D is always there. The Home button reads "ויטמין D" while it is the only medicine and "תרופות" once others are defined.
-- With more than one medicine, the button opens a window to mark which one was given.
-- For a medicine taken twice a day or every X hours: a highlighted line in the window when it is too early (minimum gap) or today's doses
-  are done, and a confirmation after choosing it. This is the only case where logging takes an extra tap.
-- No reminders.
+### F7 agreed spec (owner, November 2026)
+- **Where:** medicines are managed in Settings ("תרופות" opens a medicines screen). Both parents can do everything. No reminders.
+- **Vitamin D** is built in and always there: it cannot be archived. The Home button reads "ויטמין D" while it is the only medicine and
+  "תרופות" once others are active; the tile then shows one line: "הכל ניתן" / "חסר: <name>" / "הבאה מ-HH:MM" (warning colour while
+  something is missing today).
+- **Schedules:** once a day; X times a day (optional minimum gap); every X hours (gap = X); as needed (optional minimum gap, optional
+  maximum per day). Clock times are not used for warnings (babies do not keep a clock). "Today" = midnight to midnight.
+- **Course** (optional): X doses or X days, counted from the first dose given; missed doses do not count (a dose course simply runs
+  longer). When the target is reached the row says so and offers "archive" or "extend by X doses / days". A medicine ends only when it
+  is archived by hand. Archived medicines keep their history and can be restored; full delete only before any dose was logged.
+- **Window** (Home button when more than vitamin D is active): one big row per active medicine with name, dose, who gave it and when,
+  and course progress ("מנה 5 מתוך 14" / "יום 3 מתוך 7"); a tap logs it; the window stays open to mark several; close button and tap
+  outside; undo for mistakes. Opening it refreshes from the server first.
+- **Warnings** (the only case with an extra tap): too early (within the minimum gap / every-X-hours), today's doses already given
+  (once a day, or X times a day reached, or the as-needed daily maximum), course already complete. Shown as a highlighted line in the
+  window and as a confirmation after the tap. Applies to vitamin D too (a second dose on the same day asks first), also as the only button.
+- **No medical advice:** every field starts empty; a fixed line on the medicines screen: "המינונים והמרווחים לפי הנחיית הרופא או העלון".
+- **Other screens:** add-after-the-fact / edit pick a medicine (no warnings for past entries); history shows the medicine's name and
+  the filter becomes "ויטמין D ותרופות"; the day summary gets a row per active medicine. Siri unchanged.
+- **Stages** (each shipped on its own): 1 medicines list in the sheet and server + the Settings screen (Home unchanged) **done**;
+  2 Home button, window and tile, without warnings (next); 3 warnings and confirmation; 4 history, summary and add-after-the-fact.
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.

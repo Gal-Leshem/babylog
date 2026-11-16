@@ -247,13 +247,75 @@ describe('settings', () => {
   it('reads defaults and applies validated changes', () => {
     expect(ok(call({ action: 'settings' })).settings).toMatchObject({ mergeWindowMin: 20 });
     const r = ok(call({ action: 'settings', set: { babyName: ' Baby ', mergeWindowMin: 30, parents: ['A', 'B'] } }));
-    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 30, parents: ['A', 'B'] });
+    expect(r.settings).toEqual({ babyName: 'Baby', mergeWindowMin: 30, parents: ['A', 'B'], medicines: [] });
     expect(ok(call({ action: 'settings' })).settings).toEqual(r.settings);
   });
   it('rejects invalid settings', () => {
     for (const set of [{ mergeWindowMin: -1 }, { mergeWindowMin: 20.5 }, { mergeWindowMin: 999 }, { babyName: '' }, { parents: ['only one'] }, { parents: ['a', ''] }]) {
       expect(call({ action: 'settings', set })).toMatchObject({ ok: false, error: 'bad_request' });
     }
+  });
+});
+
+describe('medicines (F7)', () => {
+  const med = (over: Record<string, unknown> = {}) => ({ id: 'm1', name: ' אנטיביוטיקה ', dose: '5 מ״ל', schedule: 'interval', everyHours: 8, course: 'days', courseCount: 7, ...over });
+  const save = (...changes: unknown[]) => call({ action: 'settings', set: { medicines: changes } });
+
+  it('saves a medicine with server-side created time, trims text and clears numbers that do not fit the schedule', () => {
+    const r = ok(save(med({ timesPerDay: 3, maxPerDay: 4 })));
+    expect(r.settings!.medicines).toEqual([
+      { id: 'm1', name: 'אנטיביוטיקה', dose: '5 מ״ל', schedule: 'interval', timesPerDay: 0, everyHours: 8, minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 7, status: 'active', created: '2026-11-14 12:00' },
+    ]);
+  });
+
+  it('saves medicines one by one: an edit keeps the others and the created time', () => {
+    ok(save(med(), med({ id: 'm2', name: 'אקמול', schedule: 'prn', minGapHours: 4, maxPerDay: 4, course: 'none' })));
+    minutesLater(30);
+    const r = ok(save(med({ status: 'archived' })));
+    expect(r.settings!.medicines.map((m) => [m.id, m.status, m.created])).toEqual([
+      ['m1', 'archived', '2026-11-14 12:00'],
+      ['m2', 'active', '2026-11-14 12:00'],
+    ]);
+  });
+
+  it('refuses invalid medicines and changes nothing', () => {
+    for (const bad of [
+      med({ name: '' }),
+      med({ schedule: 'weekly' }),
+      med({ schedule: 'times', timesPerDay: 1 }),
+      med({ schedule: 'interval', everyHours: 0 }),
+      med({ schedule: 'interval', everyHours: 1.1 }),
+      med({ schedule: 'prn', maxPerDay: 30 }),
+      med({ course: 'doses', courseCount: 0 }),
+      med({ dose: 'x'.repeat(41) }),
+    ]) {
+      expect(save(bad)).toMatchObject({ ok: false, error: 'bad_request' });
+    }
+    expect(ok(call({ action: 'settings' })).settings!.medicines).toEqual([]);
+  });
+
+  it('a dose is an event of type medicine naming a known medicine', () => {
+    ok(save(med()));
+    const r = ok(log('medicine', 'm1', '2026-11-14 11:00'));
+    expect(r.event).toMatchObject({ type: 'medicine', detail: 'm1' });
+    expect(log('medicine', 'nope', '2026-11-14 11:00')).toMatchObject({ ok: false, error: 'invalid_event', detail: 'unknown medicine' });
+    expect(log('medicine', '', '2026-11-14 11:00')).toMatchObject({ ok: false, error: 'invalid_event' });
+  });
+
+  it('a medicine can be removed only before any dose was logged; archived ones keep their doses', () => {
+    ok(save(med(), med({ id: 'm2', name: 'ב' })));
+    ok(save({ id: 'm2', remove: true }));
+    const e = ok(log('medicine', 'm1', '2026-11-14 11:00')).event!;
+    expect(save({ id: 'm1', remove: true })).toMatchObject({ ok: false, error: 'bad_request' });
+    ok(call({ action: 'delete', id: e.id })); // a deleted dose no longer blocks removal
+    ok(save({ id: 'm1', remove: true }));
+    expect(ok(call({ action: 'settings' })).settings!.medicines).toEqual([]);
+  });
+
+  it('a settings change without medicines leaves them alone', () => {
+    ok(save(med()));
+    ok(call({ action: 'settings', set: { babyName: 'B' } }));
+    expect(ok(call({ action: 'settings' })).settings!.medicines).toHaveLength(1);
   });
 });
 

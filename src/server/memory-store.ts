@@ -1,6 +1,12 @@
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
 import type { Store } from './core';
 
+const copySettings = (s: Settings): Settings => ({
+  ...s,
+  parents: [...s.parents] as [string, string],
+  medicines: (s.medicines ?? []).map((x) => ({ ...x })),
+});
+
 /** In-memory Store used by tests, the mock server and the app's optimistic layer. */
 export class MemoryStore implements Store {
   private rows: BabyEvent[];
@@ -9,7 +15,7 @@ export class MemoryStore implements Store {
 
   constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS) {
     this.rows = rows.map((r) => ({ ...r }));
-    this.settings = { ...settings, parents: [...settings.parents] as [string, string] };
+    this.settings = copySettings(settings);
   }
 
   recent(n: number): BabyEvent[] {
@@ -32,10 +38,10 @@ export class MemoryStore implements Store {
     return true;
   }
   getSettings(): Settings {
-    return { ...this.settings, parents: [...this.settings.parents] as [string, string] };
+    return copySettings(this.settings);
   }
   setSettings(s: Settings): void {
-    this.settings = { ...s, parents: [...s.parents] as [string, string] };
+    this.settings = copySettings(s);
   }
   sheetUrl(): string {
     return '';

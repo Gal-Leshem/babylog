@@ -1,4 +1,5 @@
 import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
+import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION, type ApiResponse, type EventPatch } from '../shared/protocol';
 import {
   speechAlreadyAsleep,
@@ -86,6 +87,7 @@ export function validateEvent(e: BabyEvent, now: number): void {
   if (e.type === 'feed' && !(FEED_DETAILS as readonly string[]).includes(e.detail)) fail('invalid_event', 'feed needs left or right');
   if (e.type === 'diaper' && !(DIAPER_DETAILS as readonly string[]).includes(e.detail)) fail('invalid_event', 'diaper needs wet, poop or both');
   if ((e.type === 'sleep' || e.type === 'vitamin_d') && e.detail !== '') fail('invalid_event', 'this type has no detail');
+  if (e.type === 'medicine' && (e.detail === '' || e.detail.length > 64)) fail('invalid_event', 'medicine needs the id of a medicine');
   if (e.note.length > 200) fail('invalid_event', 'note too long');
   if (e.user.length === 0 || e.user.length > 20) fail('invalid_event', 'user must be 1-20 characters');
 
@@ -120,9 +122,51 @@ function parsePatch(raw: unknown): EventPatch {
   return out;
 }
 
-function parseSettings(raw: unknown): Partial<Settings> {
+/** A dose must name a medicine that exists (active or archived). */
+function checkMedicineKnown(e: BabyEvent, store: Store): void {
+  if (e.type === 'medicine' && !store.getSettings().medicines.some((m) => m.id === e.detail)) fail('invalid_event', 'unknown medicine');
+}
+
+const MAX_MEDICINES = 30;
+
+type MedicinePatch = { id: string; remove: true } | Omit<Medicine, 'created'>;
+
+function parseMedicines(raw: unknown): MedicinePatch[] {
+  if (!Array.isArray(raw) || raw.length > 10) return fail('bad_request', 'medicines must be a list of up to 10 changes');
+  return raw.map((x): MedicinePatch => {
+    if (isObj(x) && x.remove === true) {
+      const id = str(x.id);
+      if (!id || id.length > 64) fail('bad_request', 'medicine id missing');
+      return { id, remove: true };
+    }
+    const r = normalizeMedicine(x);
+    if (!r.ok) return fail('bad_request', r.error);
+    return r.medicine;
+  });
+}
+
+/** Saves medicines one by one (by id), so two phones editing different medicines never overwrite each other. */
+function mergeMedicines(current: readonly Medicine[], changes: readonly MedicinePatch[], store: Store, now: number): Medicine[] {
+  let list = current.map((m) => ({ ...m }));
+  for (const ch of changes) {
+    const i = list.findIndex((m) => m.id === ch.id);
+    if ('remove' in ch) {
+      if (i < 0) continue;
+      if (live(store.all()).some((e) => e.type === 'medicine' && e.detail === ch.id)) fail('bad_request', 'medicine has doses: archive it instead');
+      list = list.filter((m) => m.id !== ch.id);
+    } else if (i >= 0) list[i] = { ...ch, created: list[i]!.created };
+    else {
+      if (list.length >= MAX_MEDICINES) fail('bad_request', 'too many medicines');
+      list.push({ ...ch, created: stamp(now) });
+    }
+  }
+  return list;
+}
+
+function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } {
   if (!isObj(raw)) return fail('bad_request', 'set must be an object');
-  const out: Partial<Settings> = {};
+  const out: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } = {};
+  if (raw.medicines !== undefined) out.medicines = parseMedicines(raw.medicines);
   if (raw.babyName !== undefined) {
     const v = raw.babyName;
     if (typeof v !== 'string' || v.trim() === '' || v.length > 40) fail('bad_request', 'babyName invalid');
@@ -203,9 +247,10 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
 
     case 'settings': {
       if (o.set === undefined) return { ok: true, settings: store.getSettings(), sheetUrl: store.sheetUrl() };
-      const patch = parseSettings(o.set);
+      const { medicines, ...patch } = parseSettings(o.set);
       return deps.withLock(() => {
-        const merged: Settings = { ...store.getSettings(), ...patch };
+        const current = store.getSettings();
+        const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
         store.setSettings(merged);
         store.bump();
         return { ok: true, settings: merged, sheetUrl: store.sheetUrl() } as const;
@@ -263,9 +308,10 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
 
   const type = o.type as BabyEvent['type'];
   // iOS shortcuts cannot send an empty field reliably, so "-" means "no detail".
-  const rawDetail = optString(o, 'detail', 20);
+  const rawDetail = optString(o, 'detail', 64);
   const e = newEvent(o, type, rawDetail === '-' ? '' : rawDetail, optString(o, 'start', 16), optString(o, 'end', 16), now);
   validateEvent(e, now);
+  checkMedicineKnown(e, store);
   const recent = store.recent(RECENT_ROWS);
 
   if (e.type === 'sleep' && e.start && !e.end && openSleep(recent)) fail('sleep_already_open');
@@ -339,6 +385,7 @@ function update(o: Obj, deps: Deps, now: number): ApiResponse {
   if (!base) return fail('not_found');
   const next = { ...applyPatch(base, parsePatch(o.patch)), edited: stamp(now) };
   validateEvent(next, now);
+  if (next.type === 'medicine' && next.detail !== base.detail) checkMedicineKnown(next, store);
   if (next.type === 'sleep' && next.start && !next.end && !base.deleted) {
     const other = openSleep(store.recent(RECENT_ROWS).filter((e) => e.id !== id));
     if (other) fail('sleep_already_open');

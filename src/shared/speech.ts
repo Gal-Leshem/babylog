@@ -32,6 +32,8 @@ export function speechForLogged(e: BabyEvent, all: readonly BabyEvent[]): string
           : `Full diaper logged, ${t}`;
     case 'vitamin_d':
       return 'Vitamin D logged for today';
+    case 'medicine':
+      return `Medicine logged, ${t}`;
     case 'sleep':
       return e.start ? `Asleep at ${t}` : 'Awake. Sleep length unknown';
   }

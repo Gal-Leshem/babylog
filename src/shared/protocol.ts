@@ -1,6 +1,7 @@
+import type { MedicineChange } from './medicines';
 import type { BabyEvent, EventType, Settings, Source } from './types';
 
-export const API_VERSION = '0.2.0';
+export const API_VERSION = '0.3.0';
 
 export interface EventPatch {
   type?: EventType;
@@ -32,7 +33,8 @@ export type ApiRequest =
   | { action: 'restore'; id: string }
   | { action: 'list'; from: string; to: string }
   | { action: 'status' }
-  | { action: 'settings'; set?: Partial<Settings> };
+  /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
+  | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
 
 /** What goes over the wire: the request plus the shared secret. */
 export type WireRequest = ApiRequest & { key: string };
