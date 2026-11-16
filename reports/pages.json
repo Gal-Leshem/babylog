@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "6ce1de3",
+  "sha": "fe4ee40",
   "ref": "main",
-  "at": "2026-11-16T09:39:11.999Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43840516935",
+  "at": "2026-11-16T10:15:13.396Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43846051931",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -20,14 +20,14 @@
       "dist/registerSW.js               0.13 kB",
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  1.77 kB │ gzip:  0.85 kB",
-      "dist/assets/index-CEix0md5.css  10.74 kB │ gzip:  2.93 kB",
-      "dist/assets/index-yHCu1QFM.js   73.55 kB │ gzip: 26.02 kB",
+      "dist/assets/index-IAxm2A1L.css  10.91 kB │ gzip:  2.96 kB",
+      "dist/assets/index-B7IjO76t.js   73.62 kB │ gzip: 26.04 kB",
       "",
-      "✓ built in 78ms",
+      "✓ built in 80ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (84.19 KiB)",
+      "precache  10 entries (84.42 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -69,14 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 6ce1de3 to gh-pages"
+      "published fe4ee40 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves bbe8fc0, waiting for 6ce1de3",
-      "attempt 2: serves bbe8fc0, waiting for 6ce1de3",
-      "attempt 3: serves bbe8fc0, waiting for 6ce1de3",
-      "site is live and serves 6ce1de3"
+      "attempt 1: serves 6ce1de3, waiting for fe4ee40",
+      "attempt 2: serves 6ce1de3, waiting for fe4ee40",
+      "attempt 3: serves 6ce1de3, waiting for fe4ee40",
+      "site is live and serves fe4ee40"
     ]
   }
 }
