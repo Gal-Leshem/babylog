@@ -88,6 +88,11 @@ No names, addresses or secrets in this file (the repository is public).
 - Recent list and History **(owner screenshot)**: "💧💩" wrapped onto two lines in the 24px icon column and made its row taller, and a
   single icon looked off-centre. The icon column is now 40px, icons stay on one line and are centred (`.ri`, `.hi`); the label keeps the
   rest. Browser test measures row heights and centring in both lists (failed with a 17px taller row before).
+- Settings **(owner)**: four sections, each a card with its own icon and title: 👤 אני והמשפחה (who am I, names), 💊 תרופות,
+  🌙 תצוגה והתנהגות (night mode, night colour, merge window with its own save), 🛠️ מתקדם (sync, sheet link, disconnect, version).
+  The medicine form has "חזרה להגדרות"; tapping the current tab again starts its screen over (Settings from anywhere inside it).
+  Tests for the sections and both ways back (the tab test fails without the re-tap behaviour).
+- Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

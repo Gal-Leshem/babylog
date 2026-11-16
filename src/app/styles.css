@@ -313,3 +313,10 @@ input, textarea, select {
 .med .ms { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .med .actions { margin-top: 8px; }
 .med.archived { opacity: 0.75; }
+
+/* ---- settings sections: each a card with its own icon and title ---- */
+.sect { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px 14px; margin: 12px 0; }
+.sect-h { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.sect-h .emo { font-size: 22px; }
+.sect h3 { margin-top: 12px; }
+.sect input { background: var(--bg); }

@@ -67,7 +67,7 @@ function save(change: Parameters<typeof engine.dispatch>[0]): string | null {
 }
 
 /** Add or edit one medicine. */
-function MedicineForm({ initial, onDone }: { initial?: Medicine; onDone: () => void }) {
+function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone: () => void; onBack: () => void }) {
   const [d, setD] = useState<Draft>(() => toDraft(initial));
   const [error, setError] = useState('');
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
@@ -93,7 +93,12 @@ function MedicineForm({ initial, onDone }: { initial?: Medicine; onDone: () => v
 
   return (
     <div class="medform" data-testid="med-form">
-      <h3>{initial ? 'עריכת תרופה' : 'תרופה חדשה'}</h3>
+      <div class="medhead">
+        <h2>{initial ? 'עריכת תרופה' : 'תרופה חדשה'}</h2>
+        <button type="button" class="link" data-testid="med-back-settings" onClick={onBack}>
+          חזרה להגדרות
+        </button>
+      </div>
       <label class="fl">שם</label>
       <input data-testid="med-name" value={d.name} maxLength={30} onInput={field('name')} />
       <label class="fl">מינון (לא חובה)</label>
@@ -181,7 +186,7 @@ export function Medicines({ onBack }: { onBack: () => void }) {
     setError(save({ action: 'settings', set: { medicines: [{ ...rest, status }] } }) ?? '');
   };
 
-  if (editing) return <MedicineForm initial={editing === 'new' ? undefined : editing} onDone={() => setEditing(null)} />;
+  if (editing) return <MedicineForm initial={editing === 'new' ? undefined : editing} onDone={() => setEditing(null)} onBack={onBack} />;
 
   return (
     <div data-testid="medicines">

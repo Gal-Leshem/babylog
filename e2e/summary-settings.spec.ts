@@ -79,7 +79,7 @@ test('settings: invalid values are refused', async ({ page }) => {
   await install(page);
   await page.getByTestId('tab-settings').click();
   await page.getByTestId('merge-window').fill('500');
-  await page.getByTestId('save-settings').click();
+  await page.getByTestId('save-merge').click();
   await expect(page.getByTestId('settings-msg')).toContainText('לא נשמר');
 });
 
@@ -93,7 +93,8 @@ test('settings: a merge window change affects how feedings are counted', async (
   await expect(page.getByTestId('sum-הנקות (האכלות)').locator('td').nth(0)).toHaveText('2');
   await page.getByTestId('tab-settings').click();
   await page.getByTestId('merge-window').fill('45');
-  await page.getByTestId('save-settings').click();
+  await page.getByTestId('save-merge').click();
+  await expect(page.getByTestId('sect-behaviour').getByTestId('settings-msg')).toHaveText('נשמר');
   await page.getByTestId('tab-summary').click();
   await expect(page.getByTestId('sum-הנקות (האכלות)').locator('td').nth(0)).toHaveText('1');
 });
@@ -135,4 +136,34 @@ test('settings: shows sync state and offers the sheet link when the server provi
   await page.getByTestId('tab-settings').click();
   await expect(page.getByTestId('sync-info')).toContainText('הכל מסונכרן');
   await expect(page.getByTestId('sync-now')).toBeVisible();
+});
+
+// Owner: settings split into sections, each with its own icon and title, so it is easy to find your way.
+test('settings: four sections with an icon and a title each, in order', async ({ page }) => {
+  await install(page);
+  await page.getByTestId('tab-settings').click();
+  const heads = page.locator('.sect-h');
+  await expect(heads).toHaveText(['👤אני והמשפחה', '💊תרופות', '🌙תצוגה והתנהגות', '🛠️מתקדם']);
+  await expect(page.getByTestId('sect-family').getByTestId('baby-name')).toBeVisible();
+  await expect(page.getByTestId('sect-medicines').getByTestId('open-medicines')).toBeVisible();
+  await expect(page.getByTestId('sect-behaviour').getByTestId('night-auto')).toBeVisible();
+  await expect(page.getByTestId('sect-behaviour').getByTestId('merge-window')).toBeVisible();
+  await expect(page.getByTestId('sect-advanced').getByTestId('sync-now')).toBeVisible();
+  await expect(page.getByTestId('sect-advanced').getByTestId('reset')).toBeVisible();
+});
+
+// Owner: the medicine form keeps a way back to Settings, and tapping the Settings tab always returns to Settings.
+test('settings: back from the medicine form, and the Settings tab returns to Settings from anywhere inside it', async ({ page }) => {
+  await install(page);
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('open-medicines').click();
+  await page.getByTestId('med-add').click();
+  await page.getByTestId('med-back-settings').click();
+  await expect(page.getByTestId('sect-family')).toBeVisible();
+  for (const deeper of [['open-medicines'], ['open-medicines', 'med-add']]) {
+    for (const id of deeper) await page.getByTestId(id).click();
+    await expect(page.getByTestId('sect-family')).toBeHidden();
+    await page.getByTestId('tab-settings').click();
+    await expect(page.getByTestId('sect-family')).toBeVisible();
+  }
 });

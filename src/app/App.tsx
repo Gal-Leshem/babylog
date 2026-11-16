@@ -87,7 +87,8 @@ function ToastView() {
 export function App() {
   useTheme();
   const st = useEngine();
-  const [tab, setTab] = useState<Tab>('home');
+  // `n` changes when the current tab is tapped again: its screen starts over (e.g. Settings > medicines back to Settings).
+  const [{ tab, n }, setNav] = useState<{ tab: Tab; n: number }>({ tab: 'home', n: 0 });
   const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent } | null>(null);
 
   if (!st.configured) return <Install />;
@@ -96,7 +97,7 @@ export function App() {
     <>
       <Banner />
       {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
-      <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={tab}>
+      <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={`${tab}-${n}`}>
         {tab === 'home' && <Home onEdit={(event) => setForm({ mode: 'edit', event })} onAddLate={() => setForm({ mode: 'add' })} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event })} />}
         {tab === 'summary' && <Summary />}
@@ -105,7 +106,7 @@ export function App() {
       <ToastView />
       <nav class="tabs" aria-label="ניווט">
         {TABS.map(([id, icon, label]) => (
-          <button type="button" key={id} class={tab === id ? 'on' : ''} data-testid={`tab-${id}`} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
+          <button type="button" key={id} class={tab === id ? 'on' : ''} data-testid={`tab-${id}`} aria-current={tab === id ? 'page' : undefined} onClick={() => setNav((v) => ({ tab: id, n: v.tab === id ? v.n + 1 : v.n }))}>
             <span class="ti">{icon}</span>
             <span>{label}</span>
           </button>

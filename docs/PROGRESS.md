@@ -10,7 +10,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 197 unit (Vitest) and 84 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 197 unit (Vitest) and 86 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -47,6 +47,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - When a trigger can arrive during work in progress, queue it; do not drop it.
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
+- Run one Playwright run at a time: parallel runs share the mock server and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
 - `dev` and `main` runs write the same report files on `ci-status`, so the current file may belong to the other branch. Find a commit's
   report by its own commit on `ci-status` (`git log origin/ci-status --format='%h %s' | grep "report: server <sha>"`, then

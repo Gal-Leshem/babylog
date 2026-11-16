@@ -61,6 +61,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 
 ## App structure and UI rules (keep these; each one came from a real bug)
 - **Screens** (`src/app/screens`): Home, History, Summary, Settings, plus the Install (first run) screen and the add/edit form (a bottom sheet).
+- **Tabs:** tapping the current tab again starts its screen over (`key` = tab + a counter), e.g. back to Settings from the medicines screen.
+- **Settings** is split into section cards with an icon and a title (`section()` in `Settings.tsx`): family, medicines, display and
+  behaviour, advanced.
 - **Home is a fixed screen.** `.main.fixed` has no scrolling and no overscroll, the button grid shrinks (never scrolls) on short
   screens, and only the recent-events list (last 10, about 3.5 rows visible) scrolls in its own box. iOS let a scrollable Home get dragged
   out of place and stay stuck. Every other tab scrolls normally; each tab has its own scroll container (`key={tab}`).
@@ -103,7 +106,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 ## Tests (what each layer is for)
 - `tests/` (Vitest, ~197): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~84): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~86): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

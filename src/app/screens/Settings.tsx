@@ -1,3 +1,4 @@
+import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
@@ -23,6 +24,7 @@ export function Settings() {
   const [p2, setP2] = useState(st.settings.parents[1]);
   const [win, setWin] = useState(String(st.settings.mergeWindowMin));
   const [msg, setMsg] = useState('');
+  const [msgWhere, setMsgWhere] = useState<'details' | 'behaviour'>('details');
   const [confirmReset, setConfirmReset] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [medsOpen, setMedsOpen] = useState(false);
@@ -47,7 +49,8 @@ export function Settings() {
     set((e.target as HTMLInputElement).value);
   };
 
-  const save = () => {
+  const save = (where: 'details' | 'behaviour') => {
+    setMsgWhere(where);
     const n = Number(win);
     const res = engine.dispatch({
       action: 'settings',
@@ -71,95 +74,135 @@ export function Settings() {
   }
 
   const activeMeds = st.settings.medicines.filter((m) => m.status === 'active');
+  const msgAt = (where: 'details' | 'behaviour') => msg && msgWhere === where && <span data-testid="settings-msg">{msg}</span>;
   return (
     <section class="page" data-testid="settings">
       <h2>הגדרות</h2>
 
-      <h3>מי אני (במכשיר הזה)</h3>
-      <div class="chips" role="radiogroup">
-        {st.settings.parents.map((p) => (
-          <button type="button" key={p} class={`chip ${p === me ? 'on' : ''}`} data-testid="me-option" onClick={() => engine.setMe(p)}>
-            {p}
+      {section('family', '👤', 'אני והמשפחה', [
+        <h3 key="h1">מי אני (במכשיר הזה)</h3>,
+        <div class="chips" role="radiogroup" key="me">
+          {st.settings.parents.map((p) => (
+            <button type="button" key={p} class={`chip ${p === me ? 'on' : ''}`} data-testid="me-option" onClick={() => engine.setMe(p)}>
+              {p}
+            </button>
+          ))}
+        </div>,
+        <h3 key="h2">פרטים (נשמרים בגיליון)</h3>,
+        <label class="fl" key="l1">
+          שם התינוק
+        </label>,
+        <input key="i1" data-testid="baby-name" value={baby} maxLength={40} onInput={edit(setBaby)} />,
+        <label class="fl" key="l2">
+          הורה 1
+        </label>,
+        <input key="i2" data-testid="parent-1" value={p1} maxLength={20} onInput={edit(setP1)} />,
+        <label class="fl" key="l3">
+          הורה 2
+        </label>,
+        <input key="i3" data-testid="parent-2" value={p2} maxLength={20} onInput={edit(setP2)} />,
+        <div class="actions" key="a">
+          <button type="button" class="primary" data-testid="save-settings" onClick={() => save('details')}>
+            שמירה
           </button>
-        ))}
-      </div>
+          {msgAt('details')}
+        </div>,
+      ])}
 
-      <h3>פרטים (נשמרים בגיליון)</h3>
-      <label class="fl">שם התינוק</label>
-      <input data-testid="baby-name" value={baby} maxLength={40} onInput={edit(setBaby)} />
-      <label class="fl">הורה 1</label>
-      <input data-testid="parent-1" value={p1} maxLength={20} onInput={edit(setP1)} />
-      <label class="fl">הורה 2</label>
-      <input data-testid="parent-2" value={p2} maxLength={20} onInput={edit(setP2)} />
-      <label class="fl">חלון איחוד הנקות (דקות)</label>
-      <input data-testid="merge-window" type="number" inputMode="numeric" min={0} max={180} value={win} onInput={edit(setWin)} />
-      <div class="actions">
-        <button type="button" class="primary" data-testid="save-settings" onClick={save}>
-          שמירה
-        </button>
-        {msg && <span data-testid="settings-msg">{msg}</span>}
-      </div>
-
-      <h3>תרופות</h3>
-      <p class="muted" data-testid="meds-summary">
-        ויטמין D{activeMeds.length ? `, ${activeMeds.map((m) => m.name).join(', ')}` : ''}
-      </p>
-      <div class="actions">
-        <button type="button" data-testid="open-medicines" onClick={() => setMedsOpen(true)}>
-          ניהול תרופות
-        </button>
-      </div>
-
-      <h3>מצב לילה</h3>
-      <div class="chips" role="radiogroup">
-        {NIGHT.map(([id, label]) => (
-          <button type="button" key={id} class={`chip ${prefs.nightMode === id ? 'on' : ''}`} data-testid={`night-${id}`} onClick={() => setNightMode(id)}>
-            {label}
+      {section('medicines', '💊', 'תרופות', [
+        <p class="muted" data-testid="meds-summary" key="s">
+          ויטמין D{activeMeds.length ? `, ${activeMeds.map((m) => m.name).join(', ')}` : ''}
+        </p>,
+        <div class="actions" key="a">
+          <button type="button" data-testid="open-medicines" onClick={() => setMedsOpen(true)}>
+            ניהול תרופות
           </button>
-        ))}
-      </div>
-      <p class="muted">אוטומטי: בין 21:00 ל-07:00, או כשהמכשיר במצב כהה.</p>
-      <h3>צבע מצב לילה</h3>
-      <div class="chips" role="radiogroup">
-        {TINT.map(([id, label]) => (
-          <button type="button" key={id} class={`chip ${prefs.nightTint === id ? 'on' : ''}`} data-testid={`tint-${id}`} onClick={() => setNightTint(id)}>
-            {label}
+        </div>,
+      ])}
+
+      {section('behaviour', '🌙', 'תצוגה והתנהגות', [
+        <h3 key="h1">מצב לילה</h3>,
+        <div class="chips" role="radiogroup" key="n">
+          {NIGHT.map(([id, label]) => (
+            <button type="button" key={id} class={`chip ${prefs.nightMode === id ? 'on' : ''}`} data-testid={`night-${id}`} onClick={() => setNightMode(id)}>
+              {label}
+            </button>
+          ))}
+        </div>,
+        <p class="muted" key="nm">
+          אוטומטי: בין 21:00 ל-07:00, או כשהמכשיר במצב כהה.
+        </p>,
+        <h3 key="h2">צבע מצב לילה</h3>,
+        <div class="chips" role="radiogroup" key="t">
+          {TINT.map(([id, label]) => (
+            <button type="button" key={id} class={`chip ${prefs.nightTint === id ? 'on' : ''}`} data-testid={`tint-${id}`} onClick={() => setNightTint(id)}>
+              {label}
+            </button>
+          ))}
+        </div>,
+        <p class="muted" key="tm">
+          אדום עמום: פחות אור בחדר חשוך. נשמר רק במכשיר הזה.
+        </p>,
+        <h3 key="h3">חלון איחוד הנקות (דקות)</h3>,
+        <input key="w" data-testid="merge-window" type="number" inputMode="numeric" min={0} max={180} value={win} onInput={edit(setWin)} />,
+        <p class="muted" key="wm">
+          הנקות בהפרש של עד כמה דקות נספרות כהאכלה אחת (נשמר בגיליון, לשני ההורים).
+        </p>,
+        <div class="actions" key="a">
+          <button type="button" class="primary" data-testid="save-merge" onClick={() => save('behaviour')}>
+            שמירה
           </button>
-        ))}
-      </div>
-      <p class="muted">אדום עמום: פחות אור בחדר חשוך. נשמר רק במכשיר הזה.</p>
+          {msgAt('behaviour')}
+        </div>,
+      ])}
 
-      <h3>סנכרון</h3>
-      <p class="muted" data-testid="sync-info">
-        {st.pending ? `${st.pending} ממתינים לסנכרון` : 'הכל מסונכרן'}
-        {st.lastSync ? ` · עודכן ${new Date(st.lastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}` : ''}
-      </p>
-      <div class="actions">
-        <button type="button" data-testid="sync-now" onClick={() => void engine.flush().then(() => engine.refresh())}>
-          סנכרן עכשיו
-        </button>
-        {st.sheetUrl && (
-          <a class="btnlike" href={st.sheetUrl} target="_blank" rel="noopener noreferrer" data-testid="sheet-link">
-            פתיחת הגיליון (במחשב)
-          </a>
-        )}
-      </div>
-
-      <h3>חיבור</h3>
-      <div class="actions">
-        <button
-          type="button"
-          class="danger"
-          data-testid="reset"
-          onClick={() => {
-            if (!confirmReset) return setConfirmReset(true);
-            engine.reset();
-          }}
-        >
-          {confirmReset ? 'לחצו שוב לאישור — ינתק ויימחק מהמכשיר' : 'ניתוק מהחשבון'}
-        </button>
-      </div>
-      <p class="muted">גרסה {__APP_COMMIT__}</p>
+      {section('advanced', '🛠️', 'מתקדם', [
+        <h3 key="h1">סנכרון</h3>,
+        <p class="muted" data-testid="sync-info" key="si">
+          {st.pending ? `${st.pending} ממתינים לסנכרון` : 'הכל מסונכרן'}
+          {st.lastSync ? ` · עודכן ${new Date(st.lastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}` : ''}
+        </p>,
+        <div class="actions" key="a1">
+          <button type="button" data-testid="sync-now" onClick={() => void engine.flush().then(() => engine.refresh())}>
+            סנכרן עכשיו
+          </button>
+          {st.sheetUrl && (
+            <a class="btnlike" href={st.sheetUrl} target="_blank" rel="noopener noreferrer" data-testid="sheet-link">
+              פתיחת הגיליון (במחשב)
+            </a>
+          )}
+        </div>,
+        <h3 key="h2">חיבור</h3>,
+        <div class="actions" key="a2">
+          <button
+            type="button"
+            class="danger"
+            data-testid="reset"
+            onClick={() => {
+              if (!confirmReset) return setConfirmReset(true);
+              engine.reset();
+            }}
+          >
+            {confirmReset ? 'לחצו שוב לאישור — ינתק ויימחק מהמכשיר' : 'ניתוק מהחשבון'}
+          </button>
+        </div>,
+        <p class="muted" key="v">
+          גרסה {__APP_COMMIT__}
+        </p>,
+      ])}
     </section>
+  );
+}
+
+/** A settings section: a card with its own icon and title (a plain function, not a component defined inside one). */
+function section(id: string, icon: string, title: string, children: JSX.Element[]): JSX.Element {
+  return (
+    <div class="sect" data-testid={`sect-${id}`}>
+      <div class="sect-h">
+        <span class="emo">{icon}</span>
+        <span>{title}</span>
+      </div>
+      {children}
+    </div>
   );
 }
