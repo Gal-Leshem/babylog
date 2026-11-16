@@ -23,7 +23,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Answered by the owner: the status bar is black at night on the phone (fixed); no total line on the medicines tile for now.
 - Open with the owner: (1) which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape
   F8; (2) the refactor plan for sync speed, performance and look, `docs/REFACTOR_PLAN.md`: a proposal, nothing built; the owner's
-  answers to its section 5 decide the order. Whoever implements it: read that file first and go phase by phase.
+  answers are in its section 5 (open first, no hand edits, polish plus own icons; server move undecided, section 6). Whoever implements it: read that file first and go phase by phase.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).

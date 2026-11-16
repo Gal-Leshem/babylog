@@ -193,9 +193,29 @@ Deployment note for phases 1 and 2: server and site ship from the same commit, b
 the site can publish even when the server job failed. So: the new server must keep serving every old action, and the new app must
 work against the old server (fallback). Check both directions in the browser suite (a mock flag that hides `sync`).
 
-## 5. Open questions for the owner
-1. Which hurts most in daily use: the "מסנכרן" strip after a tap, the other parent's entries arriving late, or stale data for a few
-   seconds on open? Roughly how many seconds? (Phase 0 will measure, but the order of work follows the pain.)
-2. Do you ever edit the sheet by hand? (Decides how much effort item 2.6 deserves.)
-3. Stay on Apps Script with the plan above (recommended), or is a move to a faster server with live push worth a second service?
-4. Phase 5: which of Q1 to Q6 are wanted, and for Q5: polish only, own icons, or leave the look as it is?
+## 5. Owner's answers (November 2026) and what is still open
+1. All three hurt; the worst is **opening the app after the other parent logged something** and waiting for it to catch up.
+   Consequence: the open path is the first target. Within phase 1 build the no-ops `sync` (open / poll) first, then batching of
+   ops; do item 3.2 (one request per open) together with phase 1, and items 2.1 and 2.3 (lazy sheet, tail read) right after.
+2. The sheet is never edited by hand. Consequence: skip item 2.6 (`onEdit`); relax the forced full sync to every 5 minutes as soon
+   as phase 1 is live.
+3. Apps Script or another server: still open; the owner asked what a move would mean (see section 6).
+4. Look: direction (b), polish plus an own icon set. Still to confirm: Q1 to Q4 and Q6 (assumed wanted unless the owner says no;
+   show screenshots before shipping each).
+
+## 6. What a move to a second server would mean (answer to the owner's question; not planned)
+- **What it is:** a small always-on API close to the phones (for example an edge worker with a small SQL database, or a hosted
+  realtime database), with a live channel so an entry appears on the other phone within about a second while the app is open.
+- **Speed:** a request in roughly 0.1 to 0.3 s instead of one to several seconds; opening the app catches up almost at once.
+- **Running cost:** the free tiers of the common providers cover two phones many times over; expected cost zero. The risk is not
+  money but dependence on one more provider's terms and free-tier limits.
+- **Development:** large (several sessions). The server rules (`core.ts` over the `Store` interface) and the app's engine carry
+  over; new work: a database `Store`, a deploy job and secrets for the new provider, a one-time copy of the existing rows, a live
+  channel in the app, a one-way export so the Google Sheet stays readable (it would lag by minutes), new setup codes on both
+  phones, the live test and docs. Siri shortcut files would need the new address.
+- **What changes for the owner:** an account at the provider and one token stored as a repository secret (owner-only steps); the
+  data's home is no longer only the private sheet: the baby's log sits with a third party (encrypted in transit, protected by the
+  same shared key); the sheet becomes a copy. Two places can now fail instead of one.
+- **Recommendation:** not now. Phases 0 to 3 are needed for any server (they fix the app's side) and are expected to bring opening
+  the app to one light request. Measure after them; move only if the remaining wait is still a daily annoyance. Thanks to the
+  `Store` interface the move does not get harder by waiting.
