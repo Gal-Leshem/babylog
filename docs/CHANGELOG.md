@@ -137,6 +137,9 @@ No names, addresses or secrets in this file (the repository is public).
   was not deployed although the same commit had passed on `dev` and the site was published (pages only wait for the tests). The live
   test now gives each request 90 s and sends it again up to three times on a timeout or lost connection (safe: writes carry ids and
   are recorded once). The following commit redeployed the production server.
+- Recent list **(owner screenshot)**: the time moved with the length of the parent's name (the name column sized to its text). The
+  time (48px) and the name (76px, cut with "…") have fixed columns now; checked at 375 and 393 px. Browser test: the time is at the
+  same place in rows with a one-letter name and a long one (failed before).
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

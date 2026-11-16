@@ -161,8 +161,9 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .rrow {
   width: 100%;
   display: grid;
-  /* the icon column fits two icons ("💧💩") on one line; the label takes what is left */
-  grid-template-columns: 40px 1fr auto auto;
+  /* the icon column fits two icons ("💧💩") on one line; the time and the name have fixed widths so the time never moves with
+     the length of a name (a long name is cut with "…"); the label takes what is left */
+  grid-template-columns: 40px minmax(0, 1fr) 48px 76px;
   gap: 6px;
   align-items: center;
   background: none;
@@ -175,7 +176,7 @@ h3 { font-size: 15px; color: var(--muted); margin-top: 18px; }
 .rt { font-variant-numeric: tabular-nums; }
 /* icons: one line, centred in their column, so one icon and two icons look balanced */
 .ri, .hi { white-space: nowrap; text-align: center; letter-spacing: -1px; }
-.rm { color: var(--muted); font-size: 12px; }
+.rm { color: var(--muted); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: end; }
 
 /* ---- tabs ---- */
 .tabs { display: flex; border-top: 1px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom); }

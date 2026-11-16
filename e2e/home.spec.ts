@@ -276,3 +276,28 @@ test('a feed or diaper while asleep offers "התעורר" in the confirmation; a
   await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
   await expect.poll(async () => (await serverEvents(request)).filter((e) => e.type === 'sleep').map((e) => Boolean(e.start && e.end))).toEqual([true]);
 });
+
+// Owner screenshot: in the recent list the time moved with the length of the parent's name. The time sits at a fixed place;
+// a long name is cut with "…" instead of pushing it.
+test('recent list: the time stays in place whatever the length of the name', async ({ page, request }) => {
+  const d = todayLocal();
+  await seed(request, [
+    { type: 'feed', detail: 'left', start: `${d} 00:01`, user: 'א' },
+    { type: 'feed', detail: 'right', start: `${d} 00:02`, user: 'שם ארוך מאוד מאוד' },
+    { type: 'diaper', detail: 'wet', start: `${d} 00:03`, user: 'Parent Two' },
+  ]);
+  await install(page);
+  await expect(page.getByTestId('recent-row')).toHaveCount(3);
+  const pos = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="recent-row"]')].map((row) => {
+      const t = row.querySelector('.rt')!.getBoundingClientRect();
+      const m = row.querySelector('.rm')!.getBoundingClientRect();
+      return { timeLeft: Math.round(t.left), timeRight: Math.round(t.right), nameRight: Math.round(m.right), nameLeft: Math.round(m.left), rowLeft: Math.round(row.getBoundingClientRect().left) };
+    }),
+  );
+  for (const p of pos) {
+    expect(p.timeRight).toBe(pos[0]!.timeRight);
+    expect(p.timeLeft).toBe(pos[0]!.timeLeft);
+    expect(p.nameLeft).toBeGreaterThanOrEqual(p.rowLeft); // a long name stays inside the row
+  }
+});
