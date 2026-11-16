@@ -3,7 +3,7 @@ import { openSleep } from '../../shared/domain';
 import { addDays, localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { deleteEvent } from '../actions';
-import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
+import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, eventLabel, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 
@@ -23,7 +23,7 @@ interface Props {
 }
 
 export function EventForm({ mode, event, onClose }: Props) {
-  const { events } = useEngine();
+  const { events, settings } = useEngine();
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
   const [kind, setKind] = useState<Kind>(event ? kindOf(event) : 'feed_left');
@@ -57,7 +57,9 @@ export function EventForm({ mode, event, onClose }: Props) {
     const start = isSleep && unknownStart ? '' : `${sDate} ${sTime}`;
     const end = isSleep && !stillAsleep ? `${eDate} ${eTime}` : '';
     if (Number.isNaN(parseLocal(start || end))) return setError('תאריך או שעה לא תקינים');
-    const { type, detail } = fromKind(kind);
+    const { type, detail: kindDetail } = fromKind(kind);
+    // a medicine dose keeps its medicine (choosing a medicine in this form comes later)
+    const detail = kind === 'medicine' && event ? event.detail : kindDetail;
     const me = engine.getConfig()?.me ?? '?';
     const res =
       mode === 'add'
@@ -73,6 +75,11 @@ export function EventForm({ mode, event, onClose }: Props) {
       <div class="sheet" role="dialog" aria-modal="true" aria-label={mode === 'add' ? 'הוספה בדיעבד' : 'עריכת אירוע'}>
         <h2>{mode === 'add' ? 'הוספה בדיעבד' : 'עריכת אירוע'}</h2>
 
+        {kind === 'medicine' ? (
+          <p class="muted" data-testid="form-medicine">
+            {event ? eventLabel(event, settings.medicines) : ''}
+          </p>
+        ) : (
         <div class="chips" role="radiogroup" aria-label="סוג">
           {KINDS.map((k) => (
             <button type="button" key={k} class={`chip ${k === kind ? 'on' : ''}`} data-testid={`kind-${k}`} onClick={() => setKind(k)}>
@@ -80,6 +87,7 @@ export function EventForm({ mode, event, onClose }: Props) {
             </button>
           ))}
         </div>
+        )}
 
         {isSleep && unknownStart ? null : (
           <>

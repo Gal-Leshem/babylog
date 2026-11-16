@@ -99,6 +99,15 @@ No names, addresses or secrets in this file (the repository is public).
   also run until a date (the last day counts). When a course is over, its row says so and offers "הארכה" (edit) or archive. Sheet:
   new columns icon, dose_unit, course_until appended at the end (rows from the first version still read). Tests: unit tests for course
   progress, icons, vitamin D defaults; server and sheet tests; five browser tests.
+- F7 stage 2 **(owner spec)**: Home follows the active medicines. None: no medicine button and no medicine tile (two tiles; the
+  other buttons take the space). One: its own icon and name, one tap logs it (undo toast; vitamin D as before). Several: their icons
+  side by side above "תרופות" (more than three: 🧸); a tap opens the medicines window: a big row per active medicine (icon, name,
+  dose, given today when and by whom, next allowed time, course progress); a tap logs a dose and the window stays open; "סיום" and a
+  tap outside close it; "ביטול הסימונים" takes back everything marked in it; opening it refreshes from the server first. The tile
+  shows what is missing today ("חסר: ...", warning colour), else the next allowed time, else "הכל ניתן". Medicine doses show the
+  medicine's name and icon in the lists; the History filter is "ויטמין D ותרופות"; editing a dose keeps its medicine. Names, doses
+  and parts of status lines are isolated (`<bdi>`) so right-to-left text cannot reorder them. Tests: unit tests for today's status;
+  nine browser tests incl. refresh on open (fails without it) and layout at 852/700/560.
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

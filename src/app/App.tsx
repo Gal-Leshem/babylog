@@ -6,6 +6,7 @@ import { History } from './screens/History';
 import { Home } from './screens/Home';
 import { Install } from './screens/Install';
 import { Settings } from './screens/Settings';
+import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { engine, hideToast, useEngine, useNow, usePrefs, useToast } from './state';
@@ -90,6 +91,7 @@ export function App() {
   // `n` changes when the current tab is tapped again: its screen starts over (e.g. Settings > medicines back to Settings).
   const [{ tab, n }, setNav] = useState<{ tab: Tab; n: number }>({ tab: 'home', n: 0 });
   const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent } | null>(null);
+  const [medsOpen, setMedsOpen] = useState(false);
 
   if (!st.configured) return <Install />;
 
@@ -98,7 +100,7 @@ export function App() {
       <Banner />
       {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
       <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={`${tab}-${n}`}>
-        {tab === 'home' && <Home onEdit={(event) => setForm({ mode: 'edit', event })} onAddLate={() => setForm({ mode: 'add' })} />}
+        {tab === 'home' && <Home onEdit={(event) => setForm({ mode: 'edit', event })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => setMedsOpen(true)} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event })} />}
         {tab === 'summary' && <Summary />}
         {tab === 'settings' && <Settings />}
@@ -112,6 +114,7 @@ export function App() {
           </button>
         ))}
       </nav>
+      {medsOpen && <MedsWindow onClose={() => setMedsOpen(false)} />}
       {form && <EventForm mode={form.mode} event={form.event} onClose={() => setForm(null)} />}
     </>
   );

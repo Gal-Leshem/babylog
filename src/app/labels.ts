@@ -1,9 +1,10 @@
 import { eventTime } from '../shared/domain';
 import { addDays, formatLocal, parseLocal } from '../shared/tz';
+import { type Medicine, VITAMIN_D_ID } from '../shared/medicines';
 import type { BabyEvent, EventType } from '../shared/types';
 
 /** The seven things a parent can record, as shown on buttons and in the add/edit form. */
-export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep' | 'vitamin_d';
+export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep' | 'vitamin_d' | 'medicine';
 
 export const KIND_LABEL: Record<Kind, string> = {
   feed_left: 'הנקה שמאל',
@@ -13,6 +14,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   both: 'פיפי + קקי',
   sleep: 'שינה',
   vitamin_d: 'ויטמין D',
+  medicine: 'תרופה',
 };
 
 export const KIND_ICON: Record<Kind, string> = {
@@ -23,14 +25,16 @@ export const KIND_ICON: Record<Kind, string> = {
   both: '💧💩',
   sleep: '🌙',
   vitamin_d: '☀️',
+  medicine: '💊',
 };
 
-export const KINDS = Object.keys(KIND_LABEL) as Kind[];
+/** The kinds offered as chips in the add/edit form (a medicine dose is picked by medicine, not offered here yet). */
+export const KINDS = (Object.keys(KIND_LABEL) as Kind[]).filter((k) => k !== 'medicine');
 
 export function kindOf(e: Pick<BabyEvent, 'type' | 'detail'>): Kind {
   if (e.type === 'feed') return e.detail === 'right' ? 'feed_right' : 'feed_left';
   if (e.type === 'diaper') return e.detail === 'poop' ? 'poop' : e.detail === 'both' ? 'both' : 'wet';
-  return e.type === 'sleep' ? 'sleep' : 'vitamin_d';
+  return e.type === 'sleep' ? 'sleep' : e.type === 'medicine' ? 'medicine' : 'vitamin_d';
 }
 
 export function fromKind(k: Kind): { type: EventType; detail: string } {
@@ -49,18 +53,24 @@ export function fromKind(k: Kind): { type: EventType; detail: string } {
       return { type: 'sleep', detail: '' };
     case 'vitamin_d':
       return { type: 'vitamin_d', detail: '' };
+    case 'medicine':
+      return { type: 'medicine', detail: '' };
   }
 }
 
-export const eventLabel = (e: BabyEvent): string => KIND_LABEL[kindOf(e)];
-export const eventIcon = (e: BabyEvent): string => KIND_ICON[kindOf(e)];
+/** The medicine a dose belongs to (vitamin D by its own type), if it is still in the list. */
+const medicineOf = (e: BabyEvent, meds: readonly Medicine[]) =>
+  e.type === 'vitamin_d' ? meds.find((m) => m.id === VITAMIN_D_ID) : e.type === 'medicine' ? meds.find((m) => m.id === e.detail) : undefined;
+/** Medicine doses show the medicine's own name and icon. */
+export const eventLabel = (e: BabyEvent, meds: readonly Medicine[] = []): string => medicineOf(e, meds)?.name ?? KIND_LABEL[kindOf(e)];
+export const eventIcon = (e: BabyEvent, meds: readonly Medicine[] = []): string => medicineOf(e, meds)?.icon ?? KIND_ICON[kindOf(e)];
 
 export const FILTERS: { id: 'all' | EventType; label: string }[] = [
   { id: 'all', label: 'הכל' },
   { id: 'feed', label: 'הנקה' },
   { id: 'diaper', label: 'חיתולים' },
   { id: 'sleep', label: 'שינה' },
-  { id: 'vitamin_d', label: 'ויטמין D' },
+  { id: 'vitamin_d', label: 'ויטמין D ותרופות' },
 ];
 
 const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];

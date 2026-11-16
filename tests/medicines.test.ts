@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, dosesOf, pickIcon, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, dosesOf, medicineToday, pickIcon, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -59,5 +59,50 @@ describe('course progress', () => {
   it('until a date: the last day still counts', () => {
     expect(courseProgress(med({ course: 'until', courseUntil: '2026-11-14' }), [], NOW)).toEqual({ text: 'עד 14.11.26', done: false });
     expect(courseProgress(med({ course: 'until', courseUntil: '2026-11-13' }), [], NOW)?.done).toBe(true);
+  });
+});
+
+describe('today', () => {
+  const at = (start: string, detail = 'm1') => ev({ type: 'medicine', detail, start });
+
+  it('once a day: missing until given today; yesterday does not count', () => {
+    const m = med({ schedule: 'daily' });
+    expect(medicineToday(m, [at('2026-11-13 08:00')], NOW)).toMatchObject({ count: 0, missing: true, nextAt: null });
+    expect(medicineToday(m, [at('2026-11-14 08:00')], NOW)).toMatchObject({ count: 1, missing: false });
+  });
+
+  it('vitamin D counts its own events', () => {
+    expect(medicineToday(DEFAULT_VITAMIN_D, [ev({ type: 'vitamin_d', start: '2026-11-14 08:00' })], NOW).missing).toBe(false);
+  });
+
+  it('X times a day: missing until the count is reached, but not while the minimum gap runs', () => {
+    const m = med({ schedule: 'times', timesPerDay: 2, minGapHours: 8 });
+    expect(medicineToday(m, [at('2026-11-14 03:00')], NOW)).toMatchObject({ count: 1, missing: true, nextAt: null }); // 03:00 + 8h has passed
+  });
+
+  it('X times a day with a gap still running: not missing yet, next allowed time given', () => {
+    const m = med({ schedule: 'times', timesPerDay: 2, minGapHours: 8 });
+    const r = medicineToday(m, [at('2026-11-14 10:00')], NOW);
+    expect(r.missing).toBe(false);
+    expect(r.nextAt).toBe(T('2026-11-14 18:00'));
+    expect(medicineToday(m, [at('2026-11-14 01:00'), at('2026-11-14 10:00')], T('2026-11-14 20:00')).missing).toBe(false); // both given
+  });
+
+  it('every X hours: next allowed time after the last dose; missing once it has passed', () => {
+    const m = med({ schedule: 'interval', everyHours: 8 });
+    expect(medicineToday(m, [at('2026-11-14 06:00')], NOW)).toMatchObject({ missing: false, nextAt: T('2026-11-14 14:00') });
+    expect(medicineToday(m, [at('2026-11-14 02:00')], NOW)).toMatchObject({ missing: true, nextAt: null });
+    expect(medicineToday(m, [at('2026-11-13 23:00')], NOW).missing).toBe(true); // the gap counts across midnight
+  });
+
+  it('as needed: never missing; a gap gives a next allowed time', () => {
+    const m = med({ schedule: 'prn', minGapHours: 6 });
+    expect(medicineToday(m, [], NOW)).toMatchObject({ missing: false, nextAt: null });
+    expect(medicineToday(m, [at('2026-11-14 09:00')], NOW).nextAt).toBe(T('2026-11-14 15:00'));
+  });
+
+  it('a finished course is never missing', () => {
+    const m = med({ schedule: 'daily', course: 'until', courseUntil: '2026-11-13' });
+    expect(medicineToday(m, [], NOW)).toMatchObject({ missing: false, course: { done: true } });
   });
 });

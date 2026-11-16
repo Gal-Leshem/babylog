@@ -277,7 +277,7 @@ export function Medicines({ onBack }: { onBack: () => void }) {
           return (
             <li class="med" key={m.id} data-testid="med-row" data-id={m.id}>
               <div class="mt">
-                <span class="emo">{m.icon}</span> {m.name}
+                <span class="emo">{m.icon}</span> <bdi>{m.name}</bdi>
               </div>
               <div class="ms">{medLine(m, !course)}</div>
               {course && (
@@ -316,7 +316,7 @@ export function Medicines({ onBack }: { onBack: () => void }) {
             {archived.map((m) => (
               <li class="med archived" key={m.id} data-testid="med-archived-row" data-id={m.id}>
                 <div class="mt">
-                  <span class="emo">{m.icon}</span> {m.name}
+                  <span class="emo">{m.icon}</span> <bdi>{m.name}</bdi>
                 </div>
                 <div class="ms">{medLine(m, true)}</div>
                 <div class="actions">

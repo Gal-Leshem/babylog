@@ -7,7 +7,7 @@ import { engine, useEngine, useNow } from '../state';
 import { DayNav } from './DayNav';
 
 export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
-  const { events } = useEngine();
+  const { events, settings } = useEngine();
   const now = useNow(60_000);
   const today = localDate(now);
   const [date, setDate] = useState(today);
@@ -21,7 +21,7 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
   }, [date]);
 
   const rows = events
-    .filter((e) => localDate(eventTime(e)) === date && (filter === 'all' || e.type === filter))
+    .filter((e) => localDate(eventTime(e)) === date && (filter === 'all' || e.type === filter || (filter === 'vitamin_d' && e.type === 'medicine')))
     .sort(byTimeDesc);
 
   return (
@@ -40,9 +40,9 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
           <li key={e.id}>
             <button type="button" class="hrow" data-testid="history-row" onClick={() => onEdit(e)}>
               <span class="ht">{eventTimeText(e)}</span>
-              <span class="hi">{eventIcon(e)}</span>
+              <span class="hi">{eventIcon(e, settings.medicines)}</span>
               <span class="hl">
-                {eventLabel(e)}
+                {eventLabel(e, settings.medicines)}
                 {e.type === 'sleep' && sleepDurationText(e) && <small> · {sleepDurationText(e)}</small>}
                 {e.type === 'sleep' && e.start && !e.end && <small> · ישן עכשיו</small>}
                 {e.note && <small class="note"> · {e.note}</small>}

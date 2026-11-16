@@ -5,7 +5,7 @@
  * The app gives no medical advice: every number here is what the parents entered, and every field may stay empty.
  */
 import { live } from './domain';
-import { addDays, isDateString, localDate } from './tz';
+import { addDays, isDateString, localDate, parseLocal } from './tz';
 import type { BabyEvent } from './types';
 
 export const VITAMIN_D_ID = 'vitamin_d';
@@ -220,4 +220,37 @@ export function courseProgress(m: Medicine, events: readonly BabyEvent[], nowEpo
   let day = 1;
   while (addDays(first, day) <= today && day <= m.courseCount) day++;
   return { text: `יום ${Math.min(day, m.courseCount)} מתוך ${m.courseCount}`, done: today > last };
+}
+
+export interface MedicineToday {
+  /** doses given today (midnight to midnight) */
+  count: number;
+  /** the latest dose, any day */
+  last: BabyEvent | undefined;
+  /** something is still owed today: once a day not given, X times a day not reached, every X hours and the time has come */
+  missing: boolean;
+  /** too early until then (every X hours, or a minimum gap), epoch ms; null when nothing is pending */
+  nextAt: number | null;
+  course: CourseProgress | null;
+}
+
+const HOUR = 3_600_000;
+
+/** Where a medicine stands today. Clock times are never used: only what was given, the gap and the daily count. */
+export function medicineToday(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): MedicineToday {
+  const doses = dosesOf(m, events);
+  const today = localDate(nowEpoch);
+  const count = doses.filter((e) => e.start.slice(0, 10) === today).length;
+  const last = doses[doses.length - 1];
+  const course = courseProgress(m, events, nowEpoch);
+  const gapHours = m.schedule === 'interval' ? m.everyHours : m.schedule === 'times' || m.schedule === 'prn' ? m.minGapHours : 0;
+  const lastAt = last ? parseLocal(last.start) : NaN;
+  const nextAt = gapHours > 0 && !Number.isNaN(lastAt) && lastAt + gapHours * HOUR > nowEpoch ? lastAt + gapHours * HOUR : null;
+  let missing = false;
+  if (!course?.done) {
+    if (m.schedule === 'daily') missing = count === 0;
+    else if (m.schedule === 'times') missing = count < m.timesPerDay && nextAt === null;
+    else if (m.schedule === 'interval') missing = nextAt === null;
+  }
+  return { count, last, missing, nextAt, course };
 }

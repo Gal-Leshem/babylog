@@ -66,6 +66,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **Tabs:** tapping the current tab again starts its screen over (`key` = tab + a counter), e.g. back to Settings from the medicines screen.
 - **Settings** is split into section cards with an icon and a title (`section()` in `Settings.tsx`): family, medicines, display and
   behaviour, advanced.
+- **Medicines on Home** (`Home.tsx`, `MedsWindow.tsx`, `medicineToday` in `src/shared/medicines.ts`): the button and tile follow the
+  active medicines (none: neither is shown and the grid drops a row; one: one tap logs it; several: a window to mark doses). Status
+  uses only what was given, the gap and the daily count, never clock times. Mixed Hebrew/Latin parts are wrapped in `<bdi>`.
 - **Home is a fixed screen.** `.main.fixed` has no scrolling and no overscroll, the button grid shrinks (never scrolls) on short
   screens, and only the recent-events list (last 10, about 3.5 rows visible) scrolls in its own box. iOS let a scrollable Home get dragged
   out of place and stay stuck. Every other tab scrolls normally; each tab has its own scroll container (`key={tab}`).
@@ -106,9 +109,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~207): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~214): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~88): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~97): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

@@ -1,15 +1,38 @@
 import { useState } from 'preact/hooks';
-import { byTimeDesc, elapsedHM, lastFeed, nextSide, sleepState, vitaminDOnDate } from '../../shared/domain';
+import { byTimeDesc, clock, elapsedHM, lastFeed, nextSide, sleepState } from '../../shared/domain';
+import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, medicineToday } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
-import { quickLog, toggleSleep } from '../actions';
+import { logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 
 const side = (s: string | null) => (s === 'left' ? 'שמאל' : s === 'right' ? 'ימין' : '');
 
-export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; onAddLate: () => void }) {
-  const { events } = useEngine();
+/** The medicines tile: one medicine shows its own state; several show what is missing, else the next allowed time, else "all given". */
+function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: number) {
+  const st = meds.map((m) => ({ m, t: medicineToday(m, events, now) }));
+  if (meds.length === 1) {
+    const { m, t } = st[0]!;
+    return {
+      title: m.name,
+      value: t.count > 0 ? 'ניתן היום' : 'עדיין לא',
+      sub: t.nextAt !== null ? `הבאה מ-${clock(t.nextAt)}` : t.count > 0 && t.last ? timeOf(t.last.start) : '',
+      warn: t.missing,
+    };
+  }
+  const missing = st.filter((x) => x.t.missing);
+  const next = st.map((x) => x.t.nextAt).filter((x): x is number => x !== null).sort((a, b) => a - b)[0];
+  return {
+    title: 'תרופות',
+    value: missing.length ? `חסר: ${missing[0]!.m.name}` : next !== undefined ? `הבאה מ-${clock(next)}` : 'הכל ניתן',
+    sub: missing.length > 1 ? `ועוד ${missing.length - 1}` : st.some((x) => x.t.course?.done) ? 'קורס הסתיים' : '',
+    warn: missing.length > 0,
+  };
+}
+
+export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent) => void; onAddLate: () => void; onOpenMeds: () => void }) {
+  const { events, settings } = useEngine();
   const now = useNow(15_000);
   const [locked, setLocked] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
@@ -27,7 +50,8 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
   const last = lastFeed(events);
   const next = nextSide(events);
   const sleep = sleepState(events);
-  const vit = vitaminDOnDate(events, today);
+  const meds = settings.medicines.filter((m) => m.status === 'active');
+  const tile = meds.length ? medsTile(meds, events, now) : null;
   const recent = [...events].sort(byTimeDesc).slice(0, 10);
 
   const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
@@ -50,10 +74,39 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
     </button>
   );
 
+  // One medicine: its own icon and name, one tap logs it. Several: their icons (more than three: one friendly icon) above
+  // "תרופות", and a tap opens the medicines window. None: no button at all.
+  const medsButton = (list: readonly Medicine[]) => {
+    if (list.length === 1) {
+      const m = list[0]!;
+      const id = m.id === VITAMIN_D_ID ? 'vitamin_d' : 'med';
+      return (
+        <button
+          type="button"
+          class={`big ${flash === id ? 'flash' : ''}`}
+          data-testid={`btn-${id}`}
+          disabled={locked}
+          onClick={() => press(id, () => (m.id === VITAMIN_D_ID ? quickLog('vitamin_d') : void logMedicine(m, true)))}
+        >
+          <span class="ico">{m.icon}</span>
+          <span class="lbl">{m.name}</span>
+        </button>
+      );
+    }
+    return (
+      <button type="button" class="big" data-testid="btn-meds" onClick={onOpenMeds}>
+        <span class="ico" data-testid="btn-meds-icons">
+          {list.length > 3 ? GENERIC_ICON : list.map((m) => m.icon).join('')}
+        </span>
+        <span class="lbl">תרופות</span>
+      </button>
+    );
+  };
+
   const asleep = sleep.state === 'asleep';
   return (
     <section class="home" data-testid="home">
-      <div class="status">
+      <div class={`status ${meds.length ? '' : 'two'}`}>
         <div class="tile" data-testid="tile-feed">
           <div class="tl">האכלה</div>
           <div class="tv">{feedValue}</div>
@@ -66,14 +119,16 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
             <span class="emo">{asleep ? '🌙' : '☀️'}</span>
           </div>
         </div>
-        <div class={`tile ${vit ? '' : 'warn'}`} data-testid="tile-vitamin">
-          <div class="tl">ויטמין D</div>
-          <div class="tv">{vit ? 'ניתן היום' : 'עדיין לא'}</div>
-          <div class="ts">{vit ? timeOf(vit.start) : ''}</div>
-        </div>
+        {tile && (
+          <div class={`tile ${tile.warn ? 'warn' : ''}`} data-testid="tile-vitamin">
+            <div class="tl">{tile.title}</div>
+            <div class="tv">{tile.value}</div>
+            <div class="ts">{tile.sub}</div>
+          </div>
+        )}
       </div>
 
-      <div class="grid">
+      <div class={`grid ${meds.length ? '' : 'nomeds'}`}>
         {/* feed buttons keep their physical side: left on the left */}
         <div class="feedrow">
           {kindButton('feed_left')}
@@ -96,9 +151,7 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
             <span class="lbl">{asleep ? 'התעורר' : 'נרדם'}</span>
           </button>
         </div>
-        <div class="row1">
-          {kindButton('vitamin_d')}
-        </div>
+        {meds.length > 0 && <div class="row1">{medsButton(meds)}</div>}
       </div>
 
       <button type="button" class="link" data-testid="add-late" onClick={onAddLate}>
@@ -109,8 +162,8 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
         {recent.map((e) => (
           <li key={e.id}>
             <button type="button" class="rrow" data-testid="recent-row" onClick={() => onEdit(e)}>
-              <span class="ri emo">{eventIcon(e)}</span>
-              <span class="rl">{eventLabel(e)}</span>
+              <span class="ri emo">{eventIcon(e, settings.medicines)}</span>
+              <span class="rl">{eventLabel(e, settings.medicines)}</span>
               <span class="rt">{timeOf(e.start || e.end)}</span>
               <span class="rm">
                 {e.user}
