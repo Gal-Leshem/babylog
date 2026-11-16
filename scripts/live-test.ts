@@ -98,10 +98,20 @@ check('awake closes the sleep', /^Awake\. /.test(wake.json?.speech ?? ''), JSON.
 
 check('status sentence', /ago, left side/.test((await call({ action: 'status' })).json?.speech ?? ''));
 
-// clean up what this run created (soft delete)
-for (const n of ['feed', 'asleep', 'awake']) await call({ action: 'delete', id: id(n) });
+// medicines (API 0.3.0): a "Medicines" sheet tab, saved one by one; a dose is an event of type medicine
+const med = { id: id('med'), name: 'LiveTest', dose: '1', schedule: 'prn', minGapHours: 4, maxPerDay: 4 };
+const savedMed = await call({ action: 'settings', set: { medicines: [med] } });
+check('medicine saved in the sheet', (savedMed.json?.settings?.medicines ?? []).some((m: R) => m.id === med.id && m.minGapHours === 4 && m.status === 'active'), JSON.stringify(savedMed.json));
+const dose = await call({ action: 'log', id: id('dose'), type: 'medicine', detail: med.id, start: now(), ...base });
+check('medicine dose logged', dose.json?.ok === true, JSON.stringify(dose.json));
+check('a medicine with a dose cannot be removed', (await call({ action: 'settings', set: { medicines: [{ id: med.id, remove: true }] } })).json?.error === 'bad_request');
+
+// clean up what this run created (soft delete; the test medicine is removed once its dose is deleted)
+for (const n of ['feed', 'asleep', 'awake', 'dose']) await call({ action: 'delete', id: id(n) });
 const after = await call({ action: 'list', from: today, to: today });
 check('cleanup removed this run from the list', !(after.json?.events ?? []).some((e: R) => String(e.id).startsWith(`live-${run}-`)));
+const removed = await call({ action: 'settings', set: { medicines: [{ id: med.id, remove: true }] } });
+check('cleanup removed the test medicine', removed.json?.ok === true && !(removed.json?.settings?.medicines ?? []).some((m: R) => m.id === med.id), JSON.stringify(removed.json));
 
 console.log(failures === 0 ? 'LIVE TEST PASSED' : `LIVE TEST FAILED (${failures})`);
 process.exit(failures === 0 ? 0 : 1);

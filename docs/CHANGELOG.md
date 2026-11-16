@@ -83,6 +83,8 @@ No names, addresses or secrets in this file (the repository is public).
   Tests: server rules, the Apps Script bundle (sheet rows, guide refresh), old saved settings, three browser tests.
 - Test tooling: the mock server dropped nothing that arrived before a reset, so under `MOCK_DELAY` a save still on its way landed in the
   next test (seen as a flaky medicines test). Requests from before a reset are now discarded.
+- Live test (real Google test server): also saves a medicine, logs a dose, checks that removal is refused while the dose exists, and
+  cleans both up (exercises the real "Medicines" sheet calls).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
