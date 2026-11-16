@@ -198,6 +198,11 @@ No names, addresses or secrets in this file (the repository is public).
   provably covers the range (falls back to everything for older days, short or hand-sorted sheets). Tests: a 5,000-row sheet
   (same events as a full read, no full read; proven to fail without the tail read), the pace (a browser test that fails at the
   old 10 s), the spread.
+- Phase 4 (client housekeeping): the engine keeps the same events / settings objects while nothing changed (before, every status
+  change and every check rebuilt them and every screen recomputed); Insights and the recent list are memoized on them; the copy
+  stored on the phone drops days from before the usual window at start (it only ever grew); a new app version no longer reloads
+  the page in the middle of a form or while a field has the cursor. Tests: object identity across checks and status changes,
+  pruning (both proven to fail without the change), the reload rule.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

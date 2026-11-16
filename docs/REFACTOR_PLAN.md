@@ -1,6 +1,7 @@
 # Refactor plan: sync speed, performance, quality of life
 
-Status: **phases 0 and 1 and item 3.2 are built** (see `CHANGELOG.md`, "Refactor of the sync path"); the rest is planned.
+Status: **phases 0 to 4 are built** (left out on purpose after measuring: 2.1 lazy spreadsheet, 2.6 hand edits, 2.7 list cache); phase 5 is next.
+Earlier status line: phases 0 and 1 and item 3.2 are built (see `CHANGELOG.md`, "Refactor of the sync path"); the rest is planned.
 Measured numbers: section 7. Written from a full read of the code (November 2026) so that any model or person can
 implement it phase by phase. Every phase is shippable on its own and follows the normal routine (small step, regression test proven
 to fail without the change, unit + browser tests incl. `MOCK_DELAY=250`, dev, green CI, main, live check). Privacy rule as everywhere.
@@ -247,3 +248,6 @@ What the numbers say for phase 2 (re-ordered by measured cost):
 4. Opening the spreadsheet costs 2 to 4 ms: item 2.1 (lazy spreadsheet) is not worth much; do it only because it is trivial.
 5. Events read is about 100 ms on the small test sheet; the tail read (item 2.3) matters for the real, growing sheet.
 Seen once: right after a deploy a few answers came back without `ms` (probably still served by the previous version for a moment).
+| After the settings copy | `sync` with the list | 900-1300 | 340-460 | events read 80-100; no settings read |
+| After the settings copy | `sync`, nothing new | 570-860 | 26-32 | one properties call |
+| After the settings copy | `sync`, one tap | 2300-4200 | 1500-3500 | find 700-780, write 170-1500 (very variable) |

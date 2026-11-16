@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 266 unit (Vitest) and 117 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 269 unit (Vitest) and 117 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -26,9 +26,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   request per open), from phase 2: settings copy in a property, properties once per request, no whole-sheet duplicate lookup
   for first attempts, one row search per edit; all of phase 3 (`keepalive`, the beacon when the app is left, adaptive polling, retry spread), tail read of the events.
   Left out on purpose: server-side caching of the list (2.7; the list is already near the floor) and the lazy spreadsheet (2.1;
-  opening it costs 2 ms). Next, in order: phase 4 (client
-  housekeeping, incl. pruning old events from the stored copy), phase 5 (quiet sync indicator, freshness on open, highlight of
-  the other parent's entries, shorter tap lock, polish plus own icons: screenshots to the owner before shipping). Ask the owner
+  opening it costs 2 ms). Phase 4 (client housekeeping) is done too. Next: phase 5 (quiet sync indicator instead
+  of the banner, freshness on open, highlight of the other parent's entries, shorter tap lock, polish plus own icons): show the
+  owner screenshots before shipping each. Ask the owner
   what Settings > מתקדם shows as "סנכרון אחרון" on the phones (real numbers from real use).
   After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
 - Open with the owner: which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape F8.

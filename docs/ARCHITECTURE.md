@@ -67,6 +67,9 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   created at least two days before the range; otherwise, and for older days, everything). Known limit: a sleep left open for
   longer than the tail reaches back is no longer reported as open.
 - Retries after a failure wait 3, 6, 12, 30, 60 s, each up to a fifth longer at random (two phones do not come back in step).
+- The view (`events`, `allEvents`, `settings` in the engine's state) is rebuilt only when data changed; a check that found nothing
+  new or a status change hands the screens the very same objects, so `useMemo` on them works (Insights, the recent list).
+  At start the stored copy drops days from before the usual window (History fetches an older day again when it is opened).
 - Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
   work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.
@@ -130,6 +133,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
   bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
+- **App update:** a new version reloads the page only when nothing can be lost (`update.ts`: the app is in the background, or
+  no sheet / form is open and no field has the cursor).
 - **Sync:** see "Sync engine" above (one `sync` request; a check every 5 or 15 s, a full list every 5 minutes, a check on resume).
 
 ## Server deployment details
@@ -148,7 +153,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   Settings / Medicines tabs is taken in by running `setup()` again (the owner does not edit by hand).
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~266): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~269): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
 - `e2e/` (Playwright, ~117): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
