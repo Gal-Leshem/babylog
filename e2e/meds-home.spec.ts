@@ -183,3 +183,64 @@ test('a single medicine button asks first when its period is over', async ({ pag
   await page.getByTestId('confirm-yes').click();
   await expect.poll(() => doses(request)).toEqual(['m1']);
 });
+
+// F7 stage 4: medicines in the add/edit form and in the daily summary.
+test('add after the fact: a medicine is its own choice; no confirmation for something that already happened', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'ברזל', icon: '🍓', schedule: 'daily' }, { id: 'm2', name: 'ישן', icon: '🍋', schedule: 'daily', status: 'archived' }]);
+  await install(page);
+  await page.getByTestId('btn-meds').click();
+  await row(page, 'm1').click(); // given today already
+  await page.getByTestId('meds-done').click();
+  await page.getByTestId('add-late').click();
+  await expect(page.getByTestId('kind-vitamin_d')).toContainText('ויטמין D');
+  await expect(page.getByTestId('kind-med-m2')).toHaveCount(0); // archived medicines are not offered for new entries
+  await page.getByTestId('kind-med-m1').click();
+  await page.getByTestId('back-30').click();
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('confirm-dose')).toHaveCount(0);
+  await expect(page.getByTestId('toast-text')).toContainText('נוסף: ברזל');
+  await expect.poll(() => doses(request)).toEqual(['m1', 'm1']);
+});
+
+test('edit: a vitamin D entry can become another medicine and back; an archived medicine stays choosable for its own entries', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'ברזל', icon: '🍓', schedule: 'daily' }]);
+  await install(page);
+  await page.getByTestId('btn-meds').click();
+  await row(page, 'vitamin_d').click();
+  await page.getByTestId('meds-done').click();
+  await page.getByTestId('recent-row').first().click();
+  await expect(page.getByTestId('kind-vitamin_d')).toHaveClass(/\bon\b/);
+  await page.getByTestId('kind-med-m1').click();
+  await page.getByTestId('save').click();
+  await expect.poll(() => doses(request)).toEqual(['m1']);
+  await setMeds(request, [{ id: 'm1', name: 'ברזל', icon: '🍓', schedule: 'daily', status: 'archived' }]);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByTestId('btn-vitamin_d')).toBeVisible(); // only vitamin D is active now
+  await page.getByTestId('recent-row').first().click();
+  await expect(page.getByTestId('kind-med-m1')).toHaveClass(/\bon\b/);
+  await page.getByTestId('kind-vitamin_d').click();
+  await page.getByTestId('save').click();
+  await expect.poll(() => doses(request)).toEqual(['vitamin_d']);
+});
+
+test('daily summary: a row per medicine; once a day says given or not, others count; an archived one shows only on days it was given', async ({ page, request }) => {
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }).slice(0, 10);
+  await setMeds(request, [
+    VIT,
+    { id: 'm1', name: 'אקמול', icon: '🍓', schedule: 'prn' },
+    { id: 'm2', name: 'ברזל', icon: '🍋', schedule: 'daily', status: 'archived' },
+    { id: 'm3', name: 'סירופ', icon: '🌸', schedule: 'daily', status: 'archived' },
+  ]);
+  await api(request, { action: 'log', id: 'p1', type: 'medicine', detail: 'm1', start: `${today} 00:01`, user: 'Parent Two', source: 'app' });
+  await api(request, { action: 'log', id: 'p2', type: 'medicine', detail: 'm1', start: `${today} 00:02`, user: 'Parent Two', source: 'app' });
+  await api(request, { action: 'log', id: 'p3', type: 'medicine', detail: 'm2', start: `${today} 00:03`, user: 'Parent Two', source: 'app' });
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  const cell = (row: string, col: number) => page.getByTestId(`sum-${row}`).locator('td').nth(col);
+  await expect(cell('ויטמין D', 0)).toHaveText('לא ניתן');
+  await expect(cell('אקמול', 0)).toHaveText('2');
+  await expect(cell('אקמול', 1)).toHaveText('0');
+  await expect(cell('ברזל', 0)).toHaveText('ניתן'); // archived, but given today
+  await expect(page.getByTestId('sum-סירופ')).toHaveCount(0); // archived and not given on these days
+  await expect(page.getByTestId('sum-אקמול').locator('th')).toContainText('🍓');
+});

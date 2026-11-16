@@ -3,7 +3,8 @@ import { openSleep } from '../../shared/domain';
 import { addDays, localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { deleteEvent } from '../actions';
-import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, eventLabel, fromKind, kindOf, nowLocal, timeOf } from '../labels';
+import { VITAMIN_D_ID } from '../../shared/medicines';
+import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 
@@ -26,7 +27,12 @@ export function EventForm({ mode, event, onClose }: Props) {
   const { events, settings } = useEngine();
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
-  const [kind, setKind] = useState<Kind>(event ? kindOf(event) : 'feed_left');
+  // what is being recorded: one of the kinds, or a medicine ("med:<id>"; vitamin D is "med:vitamin_d")
+  const [sel, setSel] = useState<string>(() => (event?.type === 'vitamin_d' ? `med:${VITAMIN_D_ID}` : event?.type === 'medicine' ? `med:${event.detail}` : event ? kindOf(event) : 'feed_left'));
+  const medId = sel.startsWith('med:') ? sel.slice(4) : null;
+  const kind: Kind = medId === null ? (sel as Kind) : medId === VITAMIN_D_ID ? 'vitamin_d' : 'medicine';
+  // active medicines, plus the one this entry belongs to even if it was archived since
+  const medChoices = settings.medicines.filter((m) => m.status === 'active' || m.id === medId);
   const [sDate, setSDate] = useState(initStart.slice(0, 10));
   const [sTime, setSTime] = useState(timeOf(initStart));
   // which "X minutes ago" button is active (cleared as soon as the time or date is changed by hand)
@@ -58,15 +64,15 @@ export function EventForm({ mode, event, onClose }: Props) {
     const end = isSleep && !stillAsleep ? `${eDate} ${eTime}` : '';
     if (Number.isNaN(parseLocal(start || end))) return setError('תאריך או שעה לא תקינים');
     const { type, detail: kindDetail } = fromKind(kind);
-    // a medicine dose keeps its medicine (choosing a medicine in this form comes later)
-    const detail = kind === 'medicine' && event ? event.detail : kindDetail;
+    const detail = kind === 'medicine' ? medId! : kindDetail;
+    const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : KIND_LABEL[kind];
     const me = engine.getConfig()?.me ?? '?';
     const res =
       mode === 'add'
         ? engine.dispatch({ action: 'log', id: uid(), type, detail, start, ...(end ? { end } : {}), user: me, source: 'app', note })
         : engine.dispatch({ action: 'update', id: event!.id, patch: { type, detail, start, end, note } });
     if (!res.ok) return setError(errorText(res.error, res.detail));
-    showToast({ text: mode === 'add' ? `נוסף: ${KIND_LABEL[kind]} ${timeOf(start || end)}` : 'השינויים נשמרו' }, 3000);
+    showToast({ text: mode === 'add' ? `נוסף: ${label} ${timeOf(start || end)}` : 'השינויים נשמרו' }, 3000);
     onClose();
   };
 
@@ -75,19 +81,19 @@ export function EventForm({ mode, event, onClose }: Props) {
       <div class="sheet" role="dialog" aria-modal="true" aria-label={mode === 'add' ? 'הוספה בדיעבד' : 'עריכת אירוע'}>
         <h2>{mode === 'add' ? 'הוספה בדיעבד' : 'עריכת אירוע'}</h2>
 
-        {kind === 'medicine' ? (
-          <p class="muted" data-testid="form-medicine">
-            {event ? eventLabel(event, settings.medicines) : ''}
-          </p>
-        ) : (
         <div class="chips" role="radiogroup" aria-label="סוג">
-          {KINDS.map((k) => (
-            <button type="button" key={k} class={`chip ${k === kind ? 'on' : ''}`} data-testid={`kind-${k}`} onClick={() => setKind(k)}>
+          {KINDS.filter((k) => k !== 'vitamin_d').map((k) => (
+            <button type="button" key={k} class={`chip ${k === sel ? 'on' : ''}`} data-testid={`kind-${k}`} onClick={() => setSel(k)}>
               <span class="emo">{KIND_ICON[k]}</span> {KIND_LABEL[k]}
             </button>
           ))}
+          {/* every medicine is its own choice (no warnings here: this is something that already happened) */}
+          {medChoices.map((m) => (
+            <button type="button" key={m.id} class={`chip ${sel === `med:${m.id}` ? 'on' : ''}`} data-testid={m.id === VITAMIN_D_ID ? 'kind-vitamin_d' : `kind-med-${m.id}`} onClick={() => setSel(`med:${m.id}`)}>
+              <span class="emo">{m.icon}</span> <bdi>{m.name}</bdi>
+            </button>
+          ))}
         </div>
-        )}
 
         {isSleep && unknownStart ? null : (
           <>

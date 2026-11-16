@@ -128,6 +128,11 @@ No names, addresses or secrets in this file (the repository is public).
 - Vitamin D **(owner)**: an ordinary medicine in every way, its schedule too; "once a day" is only how it starts (the default made
   with a new account). The server's "already given today" hint shows only while vitamin D is once a day. Test: twice a day, the second
   dose needs no confirmation, the third asks.
+- F7 stage 4 **(owner spec)**: the add-after-the-fact / edit form offers every active medicine as its own chip (vitamin D included;
+  an archived medicine stays choosable for its own entries; no warnings for something that already happened); a dose can be moved
+  between medicines. The daily summary has a row per medicine that is active or was given on one of the two days: once a day shows
+  "ניתן" / "לא ניתן", other schedules the number of doses. Browser tests for both.
+- Backlog **(owner idea)**: F14, other families with their own sheet in their own Google account (possible later).
 - Lesson: never run two Playwright runs at once; they share one mock server and reset each other (looked like random failures).
 
 ## Habits that paid off

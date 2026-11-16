@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type DailySummary, dailySummary } from '../../shared/domain';
+import { type Medicine, dosesOf } from '../../shared/medicines';
 import { addDays, localDate } from '../../shared/tz';
+import type { BabyEvent } from '../../shared/types';
 import { KIND_LABEL, dayName, hm } from '../labels';
 import { engine, setSummaryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
@@ -17,8 +19,13 @@ const ROWS: Row[] = [
   [KIND_LABEL.both, (s) => String(s.diapers.both)],
   ['שינה סה״כ', (s) => (s.sleep.totalMin ? hm(s.sleep.totalMin) : '—')],
   ['הרצף הארוך ביותר', (s) => (s.sleep.longestMin ? hm(s.sleep.longestMin) : '—')],
-  ['ויטמין D', (s) => (s.vitaminD ? 'ניתן' : 'לא ניתן')],
 ];
+
+/** A medicine's day: once a day says given or not; other schedules count the doses. */
+function medValue(m: Medicine, events: readonly BabyEvent[], date: string): string {
+  const n = dosesOf(m, events).filter((e) => e.start.slice(0, 10) === date).length;
+  return m.schedule === 'daily' ? (n ? 'ניתן' : 'לא ניתן') : String(n);
+}
 
 /** The summary tab: the day table ("סיכום") or the pattern insights ("תובנות"); the choice is remembered on the device. */
 export function Summary() {
@@ -52,6 +59,8 @@ function DaySummary() {
   const prev = addDays(date, -1);
   const a = dailySummary(events, date, now, settings.mergeWindowMin);
   const b = dailySummary(events, prev, now, settings.mergeWindowMin);
+  // a row per medicine that is active, or was given on one of the two days (an archived one keeps its history here)
+  const meds = settings.medicines.filter((m) => m.status === 'active' || dosesOf(m, events).some((e) => [date, prev].includes(e.start.slice(0, 10))));
 
   return (
     <div data-testid="day-summary">
@@ -70,6 +79,15 @@ function DaySummary() {
               <th scope="row">{label}</th>
               <td>{value(a)}</td>
               <td class="dim">{value(b)}</td>
+            </tr>
+          ))}
+          {meds.map((m) => (
+            <tr key={m.id} data-testid={`sum-${m.name}`}>
+              <th scope="row">
+                <span class="emo">{m.icon}</span> <bdi>{m.name}</bdi>
+              </th>
+              <td>{medValue(m, events, date)}</td>
+              <td class="dim">{medValue(m, events, prev)}</td>
             </tr>
           ))}
         </tbody>

@@ -34,7 +34,7 @@ other screens or into the existing tiles unless the owner asks otherwise.
 |---|---------|-----|------|-------|
 | F5 | ~~Optional nursing duration~~ not wanted for now **(owner)** | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
 | F6 | Bottle / expressed milk with amount (ml) | Common as soon as a bottle is introduced | M | New type, amount column in the sheet, Summary total per day. |
-| F7 | Medicines (more than one), in progress | Fever and dosing come up in the first months; "when is the next dose allowed" | M | Spec agreed (below); stage 1 done. |
+| F7 | ~~Medicines (more than one)~~ done | Fever and dosing come up in the first months; "when is the next dose allowed" | M | All four stages live; spec below. |
 | F8 | ~~7-day trends and insights~~ done (first version) | Patterns and the last week at a glance | M | Reshape after the owner sees which parts get used. Ideas: cluster feeding in the evening, a trend note when the last 3 days differ from the week. |
 | F9 | Report for the pediatrician | Daily averages for the last 7 / 14 days on one page | M | Printable page (share / print to PDF from the phone). |
 | F10 | Growth: weight, length, head | Parents note clinic measurements; percentile vs. WHO tables | M-L | WHO tables are static data in the app. Lower priority for a newborn. |
@@ -87,11 +87,19 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   medicine shows its own icon and name (one tap logs it); several show their icons side by side above "תרופות" (more than three: 🧸);
   none: the button leaves Home.
 - **Stages** (each shipped on its own): 1 medicines list in the sheet and server + the Settings screen (Home unchanged) **done**;
-  2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation **done**; 4 history, summary and add-after-the-fact.
+  2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation **done**; 4 history, summary and add-after-the-fact **done**. F7 is complete; next changes come from use.
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.
 - F12 Wake windows / next nap estimate: only meaningful from about two months; often criticized as inaccurate elsewhere.
+- F14 Other families (possible later, **owner idea**; for now only the owner uses the app): friends would use the same app with their
+  own sheet in their own Google account. The app is already generic (it talks to whatever server its setup code names; no data
+  lives with us), so the work is in the server side: today the owner's Apps Script and sheet are created and deployed by this
+  repository's pipeline with the owner's credential. Options: (a) a "make a copy" template sheet with the script inside plus a short
+  guide (each family deploys it once and gets their own setup code; simplest, no shared infrastructure); (b) a one-click installer
+  page using Google sign-in that creates the sheet and script in the friend's account (much more work, Google app verification).
+  To check first: the privacy word list and docs assume one family; the setup guide (`INSTALL.he.md`) would need a family-neutral
+  version; each family's key and data stay theirs.
 - F13 Push notifications ("the other parent logged a feed", vitamin D reminder): iPhone home-screen apps can receive web push, but
   someone must send it; that needs a small extra server with signing keys. Not planned unless the owner accepts that.
 
