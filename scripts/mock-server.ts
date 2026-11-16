@@ -14,9 +14,13 @@ export function startMockServer(port = 8787, key = 'test-key') {
     withLock: (fn) => fn(),
   };
   const calls: unknown[] = [];
+  /** What each request was, for tests: the action; a `sync` also says how many operations it carried and whether the list came back. */
+  const kinds: string[] = [];
   const baseDelay = Number(process.env.MOCK_DELAY ?? 0);
   let delayMs = baseDelay;
   let offline = false;
+  /** Behave like a server from before `sync` (API 0.3.0). */
+  let old = false;
   // A write that is still on its way (MOCK_DELAY) when a test resets the server must not land in the next test's fresh store.
   let generation = 0;
   const server = createServer((req, res) => {
@@ -27,23 +31,29 @@ export function startMockServer(port = 8787, key = 'test-key') {
       const q = new URL(req.url, 'http://x').searchParams;
       if (q.has('offline')) offline = q.get('offline') === '1';
       if (q.has('delay')) delayMs = Number(q.get('delay'));
+      if (q.has('old')) old = q.get('old') === '1';
+      if (q.has('forget')) kinds.length = 0;
       if (q.has('reset')) {
-        store = new MemoryStore();
+        // a real server's revision never starts over: keep it climbing, or a phone could hold the "same" number from before
+        store = new MemoryStore([], undefined, Number(store.revision()) + 1000);
         generation++;
         calls.length = 0;
+        kinds.length = 0;
         offline = false;
+        old = false;
         delayMs = baseDelay;
       }
       return void res.writeHead(200).end('ok');
     }
     if (req.url?.startsWith('/__calls')) {
-      return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify((calls as { action?: string }[]).map((c) => c?.action ?? '?')));
+      return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(kinds));
     }
     if (req.method === 'POST' && req.url?.startsWith('/__seed')) {
       let raw = '';
       req.on('data', (c) => (raw += c));
       req.on('end', () => {
         for (const e of JSON.parse(raw) as import('../src/shared/types').BabyEvent[]) store.append(e);
+        store.bump(); // like every real write
         res.writeHead(200).end('ok');
       });
       return;
@@ -63,7 +73,12 @@ export function startMockServer(port = 8787, key = 'test-key') {
       setTimeout(() => {
         if (gen !== generation) return void req.socket.destroy(); // sent before a reset: belongs to the previous test
         calls.push(parsed);
-        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(handle(parsed, deps)));
+        const t0 = Date.now();
+        const answer = old && (parsed as { action?: string } | null)?.action === 'sync' ? { ok: false, error: 'unknown_action', detail: 'sync' } : handle(parsed, deps);
+        const p = parsed as { action?: string; ops?: unknown[] } | null;
+        const a = answer as { unchanged?: boolean; events?: unknown };
+        kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}` : (p?.action ?? '?'));
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ...answer, ms: Date.now() - t0 }));
       }, delayMs);
     });
   });

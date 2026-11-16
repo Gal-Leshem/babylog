@@ -118,7 +118,7 @@ for (const height of [852, 700, 560]) {
     expect(s.minButton).toBeGreaterThanOrEqual(56);
     await setMeds(request, [{ ...VIT, status: 'archived' }, { id: 'm1', name: 'ברזל', icon: '🍓', schedule: 'daily', status: 'archived' }]);
     await page.getByTestId('tab-settings').click(); // a tab change refreshes nothing by itself; the next poll or a resume does
-    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
     await page.getByTestId('tab-home').click();
     await expect(page.getByTestId('btn-meds')).toHaveCount(0);
     s = await sizes();
@@ -215,7 +215,7 @@ test('edit: a vitamin D entry can become another medicine and back; an archived 
   await page.getByTestId('save').click();
   await expect.poll(() => doses(request)).toEqual(['m1']);
   await setMeds(request, [{ id: 'm1', name: 'ברזל', icon: '🍓', schedule: 'daily', status: 'archived' }]);
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByTestId('btn-vitamin_d')).toBeVisible(); // only vitamin D is active now
   await page.getByTestId('recent-row').first().click();
   await expect(page.getByTestId('kind-med-m1')).toHaveClass(/\bon\b/);

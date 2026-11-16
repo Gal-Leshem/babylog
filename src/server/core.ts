@@ -1,6 +1,6 @@
 import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
-import { API_VERSION, type ApiResponse, type EventPatch } from '../shared/protocol';
+import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
 import {
   speechAlreadyAsleep,
   speechAwake,
@@ -227,27 +227,11 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       const from = str(o.from);
       const to = str(o.to);
       if (!isDateString(from) || !isDateString(to) || to < from) return fail('bad_request', 'from/to must be dates');
-      const lo = dayStart(from);
-      const hi = dayStart(addDays(to, 1));
-      const all = live(store.all());
-      const open = openSleep(all);
-      const events = all.filter((e) => {
-        if (e === open) return true;
-        const s = e.start ? parseLocal(e.start) : NaN;
-        const t = e.end ? parseLocal(e.end) : NaN;
-        if (e.type === 'sleep' && e.start) return s < hi && (Number.isNaN(t) ? now : t) > lo;
-        const at = Number.isNaN(s) ? t : s;
-        return at >= lo && at < hi;
-      });
-      return {
-        ok: true,
-        rev,
-        events: events.sort(byTimeAsc),
-        settings: settingsOf(store),
-        serverNow: stamp(now),
-        sheetUrl: store.sheetUrl(),
-      };
+      return { ...listRange(store, from, to, now), rev };
     }
+
+    case 'sync':
+      return sync(o, deps, now);
 
     case 'status': {
       const recent = store.recent(RECENT_ROWS);
@@ -256,13 +240,10 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
 
     case 'settings': {
       if (o.set === undefined) return { ok: true, settings: settingsOf(store), sheetUrl: store.sheetUrl() };
-      const { medicines, ...patch } = parseSettings(o.set);
       return deps.withLock(() => {
-        const current = settingsOf(store);
-        const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
-        store.setSettings(merged);
+        const r = saveSettings(o.set, deps, now);
         store.bump();
-        return { ok: true, settings: merged, sheetUrl: store.sheetUrl() } as const;
+        return r;
       });
     }
 
@@ -280,6 +261,105 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
     default:
       return fail('unknown_action', typeof o.action === 'string' ? o.action : undefined);
   }
+}
+
+/** Everything a phone shows for a range of days (the open sleep always included), plus settings. */
+function listRange(store: Store, from: string, to: string, now: number): ApiOk {
+  const lo = dayStart(from);
+  const hi = dayStart(addDays(to, 1));
+  const all = live(store.all());
+  const open = openSleep(all);
+  const events = all.filter((e) => {
+    if (e === open) return true;
+    const s = e.start ? parseLocal(e.start) : NaN;
+    const t = e.end ? parseLocal(e.end) : NaN;
+    if (e.type === 'sleep' && e.start) return s < hi && (Number.isNaN(t) ? now : t) > lo;
+    const at = Number.isNaN(s) ? t : s;
+    return at >= lo && at < hi;
+  });
+  return { ok: true, events: events.sort(byTimeAsc), settings: settingsOf(store), serverNow: stamp(now), sheetUrl: store.sheetUrl() };
+}
+
+/** The write actions without lock and revision handling (the callers do both). Returns null for anything that is not a write. */
+function applyWrite(o: Obj, deps: Deps, now: number): ApiResponse | null {
+  switch (o.action) {
+    case 'log':
+      return logEvent(o, deps, now);
+    case 'asleep':
+      return asleep(o, deps, now);
+    case 'awake':
+      return awake(o, deps, now);
+    case 'update':
+      return update(o, deps, now);
+    case 'delete':
+    case 'restore':
+      return setDeleted(str(o.id), o.action === 'delete', deps, now);
+    case 'settings':
+      return o.set === undefined ? null : saveSettings(o.set, deps, now);
+    default:
+      return null;
+  }
+}
+
+function saveSettings(set: unknown, deps: Deps, now: number): ApiResponse {
+  const { store } = deps;
+  const { medicines, ...patch } = parseSettings(set);
+  const current = settingsOf(store);
+  const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
+  store.setSettings(merged);
+  return { ok: true, settings: merged, sheetUrl: store.sheetUrl() };
+}
+
+export const MAX_SYNC_OPS = 25;
+
+/**
+ * One round trip for a phone: applies its pending operations (in order, under one lock) and tells it whether anything else
+ * changed since the revision it holds. "unchanged" costs no data read at all; otherwise the answer carries the list.
+ * A refused operation gets its own error and the rest go on; an unexpected failure stops the batch (the phone sends the rest again).
+ */
+function sync(o: Obj, deps: Deps, now: number): ApiResponse {
+  const { store } = deps;
+  const from = str(o.from);
+  const to = str(o.to);
+  if (!isDateString(from) || !isDateString(to) || to < from) return fail('bad_request', 'from/to must be dates');
+  const ops = o.ops === undefined ? [] : o.ops;
+  if (!Array.isArray(ops) || ops.length > MAX_SYNC_OPS) return fail('bad_request', `ops must be a list of up to ${MAX_SYNC_OPS} operations`);
+  const clientRev = typeof o.rev === 'string' ? o.rev : null;
+
+  let results: ApiResponse[] | undefined;
+  let revBefore: string;
+  if (ops.length) {
+    const done = deps.withLock(() => {
+      const before = store.revision();
+      const out: ApiResponse[] = [];
+      let changed = false;
+      for (const raw of ops as unknown[]) {
+        let r: ApiResponse;
+        try {
+          if (!isObj(raw)) fail('bad_request', 'an operation must be an object');
+          r = applyWrite(raw as Obj, deps, now) ?? fail('bad_request', 'only write actions can be sent in ops');
+        } catch (e) {
+          r = e instanceof ApiException ? { ok: false, error: e.code, ...(e.detail ? { detail: e.detail } : {}) } : { ok: false, error: 'server_error', detail: e instanceof Error ? e.message : String(e) };
+        }
+        if (r.ok) {
+          if (!r.duplicate && !r.noop) changed = true;
+          delete r.speech; // only Siri needs sentences
+        }
+        out.push(r);
+        if (!r.ok && r.error === 'server_error') break;
+      }
+      if (changed) store.bump();
+      return { out, before };
+    });
+    results = done.out;
+    revBefore = done.before;
+  } else revBefore = store.revision();
+
+  // Read the revision before the data (as `list` does): a write landing in between is noticed by the next sync.
+  const rev = results ? store.revision() : revBefore;
+  const extra = results ? { results } : {};
+  if (clientRev !== null && clientRev === revBefore) return { ok: true, rev, serverNow: stamp(now), unchanged: true, ...extra };
+  return { ...listRange(store, from, to, now), rev, ...extra };
 }
 
 /** Runs a write under the lock and bumps the revision only when something actually changed. */

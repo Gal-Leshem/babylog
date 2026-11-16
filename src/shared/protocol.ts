@@ -1,7 +1,7 @@
 import type { MedicineChange } from './medicines';
 import type { BabyEvent, EventType, Settings, Source } from './types';
 
-export const API_VERSION = '0.3.0';
+export const API_VERSION = '0.4.0';
 
 export interface EventPatch {
   type?: EventType;
@@ -10,6 +10,9 @@ export interface EventPatch {
   end?: string;
   note?: string;
 }
+
+/** The actions that change data; only these may travel inside `sync`. */
+export type WriteRequest = Extract<ApiRequest, { action: 'log' | 'asleep' | 'awake' | 'update' | 'delete' | 'restore' | 'settings' }>;
 
 export type ApiRequest =
   | { action: 'ping' }
@@ -32,6 +35,11 @@ export type ApiRequest =
   | { action: 'delete'; id: string }
   | { action: 'restore'; id: string }
   | { action: 'list'; from: string; to: string }
+  /**
+   * One round trip (API 0.4.0): applies `ops` in order, then answers `unchanged` when nothing else changed since `rev`
+   * (the revision the phone holds), otherwise the list for the range. Without `rev` the list is always returned.
+   */
+  | { action: 'sync'; from: string; to: string; rev?: string; ops?: ApiRequest[] }
   | { action: 'status' }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
@@ -71,6 +79,14 @@ export interface ApiOk {
   rev?: string;
   sheetUrl?: string;
   version?: string;
+  /** `sync`: one answer per operation sent, in order (shorter when the batch stopped on a server error). */
+  results?: ApiResponse[];
+  /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
+  unchanged?: true;
+  /** Time the server spent on the request, in milliseconds (the real server only). */
+  ms?: number;
+  /** With `debug: true` in the request: where the server spent its time (milliseconds and calls per kind of work). */
+  t?: Record<string, number>;
 }
 
 export type ApiResponse = ApiOk | ApiError;

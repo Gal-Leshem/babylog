@@ -11,9 +11,10 @@ const copySettings = (s: Settings): Settings => ({
 export class MemoryStore implements Store {
   private rows: BabyEvent[];
   private settings: Settings;
-  private rev = 0;
+  private rev: number;
 
-  constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS) {
+  constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS, rev = 0) {
+    this.rev = rev;
     this.rows = rows.map((r) => ({ ...r }));
     this.settings = copySettings(settings);
   }

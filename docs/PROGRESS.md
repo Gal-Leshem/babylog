@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 222 unit (Vitest) and 109 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 242 unit (Vitest) and 115 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -21,9 +21,14 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   Home button / window / tile, warnings with confirmation, add/edit and summary); Settings in sections; many layout fixes from the
   owner's screenshots; CI hardening (report race, live-test retry).
 - Answered by the owner: the status bar is black at night on the phone (fixed); no total line on the medicines tile for now.
-- Open with the owner: (1) which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape
-  F8; (2) the refactor plan for sync speed, performance and look, `docs/REFACTOR_PLAN.md`: a proposal, nothing built; the owner's
-  answers are in its section 5 (open first, no hand edits, polish plus own icons; server move undecided, section 6). Whoever implements it: read that file first and go phase by phase.
+- In progress: the sync / performance refactor, `docs/REFACTOR_PLAN.md` (owner: the full plan on the current Apps Script server;
+  a move to another server is decided later). Done: phase 0 (timings), phase 1 (`sync`, one round trip) and item 3.2 (one
+  request per open). Next, in order: the rest of phase 3 (send while leaving the app with `keepalive` / `sendBeacon` and a
+  `sent` / `retry` flag, adaptive polling, retry jitter), phase 2 (lazy spreadsheet, properties once, tail read, cheaper
+  duplicate check, caching), phase 4 (client housekeeping, incl. pruning old events from the stored copy), phase 5 (quiet sync
+  indicator, freshness on open, highlight of the other parent's entries, shorter tap lock, polish plus own icons: screenshots
+  to the owner before shipping). After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
+- Open with the owner: which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape F8.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
@@ -60,6 +65,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
 - After pushing to `main`, check that the `main` server report says "prod server deployed" (the site can be published while the
   server job failed: pages wait only for the tests).
+- Never push to `dev` while a `main` run is still going (or the other way round) unless you must: the server jobs now queue
+  (`concurrency: test-server`), but only one can wait; a third push cancels the waiting one.
 - Run one Playwright run at a time: parallel runs share the mock server and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
 - `dev` and `main` runs write the same report files on `ci-status`, so the current file may belong to the other branch. Find a commit's

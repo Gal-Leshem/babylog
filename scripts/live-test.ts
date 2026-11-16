@@ -24,13 +24,15 @@ const ATTEMPTS = 3;
  */
 async function call(body: Record<string, unknown>, k = key): Promise<{ status: number; raw: string; json?: R }> {
   let res: Response | undefined;
+  let started = Date.now();
   for (let attempt = 1; ; attempt++) {
+    started = Date.now();
     try {
       res = await fetch(url, {
         method: 'POST',
         redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ key: k, ...body }),
+        body: JSON.stringify({ key: k, debug: true, ...body }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       break;
@@ -42,11 +44,25 @@ async function call(body: Record<string, unknown>, k = key): Promise<{ status: n
   }
   const raw = await res.text();
   try {
-    return { status: res.status, raw, json: JSON.parse(raw) as R };
+    const json = JSON.parse(raw) as R;
+    record(body, Date.now() - started, json);
+    return { status: res.status, raw, json };
   } catch {
     return { status: res.status, raw };
   }
 }
+
+/** Timings of every call (the whole trip, and the server's own share), printed as a table at the end. Numbers only. */
+const timings: { what: string; total: number; server: number | null; t?: Record<string, number> }[] = [];
+let label = '';
+function record(body: Record<string, unknown>, total: number, json: R): void {
+  const ops = Array.isArray(body.ops) ? ` ops=${body.ops.length}` : '';
+  const kind = body.action === 'sync' ? (json.unchanged ? ' unchanged' : ' list') : '';
+  timings.push({ what: `${label || String(body.action)}${label ? '' : ops + kind}`, total, server: typeof json.ms === 'number' ? json.ms : null, t: json.t });
+  label = '';
+}
+/** Names the next call in the timing table. */
+const as = (name: string) => void (label = name);
 
 let failures = 0;
 const check = (name: string, cond: boolean, detail = '') => {
@@ -125,12 +141,50 @@ const dose = await call({ action: 'log', id: id('dose'), type: 'medicine', detai
 check('medicine dose logged', dose.json?.ok === true, JSON.stringify(dose.json));
 check('a medicine with a dose cannot be removed', (await call({ action: 'settings', set: { medicines: [{ id: med.id, remove: true }] } })).json?.error === 'bad_request');
 
+// sync (API 0.4.0): a phone's whole exchange in one request
+const range = { from: today, to: today };
+as('sync: first (list)');
+const s0 = await call({ action: 'sync', ...range, debug: true });
+check('sync without a revision returns the list', Array.isArray(s0.json?.events) && typeof s0.json?.rev === 'string', JSON.stringify(s0.json).slice(0, 200));
+as('sync: nothing new');
+const s1 = await call({ action: 'sync', ...range, rev: s0.json?.rev, debug: true });
+check('sync with the current revision says unchanged and carries no list', s1.json?.unchanged === true && s1.json?.events === undefined, JSON.stringify(s1.json).slice(0, 200));
+as('sync: one tap');
+const s2 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true, ops: [{ action: 'log', id: id('sync1'), type: 'diaper', detail: 'wet', start: now(), ...base }] });
+check('sync applies an operation and stays "unchanged" for an up-to-date phone', s2.json?.unchanged === true && s2.json?.results?.[0]?.ok === true && s2.json?.rev !== s1.json?.rev, JSON.stringify(s2.json).slice(0, 300));
+as('sync: three taps');
+const s3 = await call({
+  action: 'sync',
+  ...range,
+  rev: s2.json?.rev,
+  debug: true,
+  ops: [
+    { action: 'log', id: id('sync2'), type: 'feed', detail: 'right', start: now(), ...base },
+    { action: 'update', id: id('sync2'), patch: { note: 'live' } },
+    { action: 'log', id: id('sync1'), type: 'diaper', detail: 'wet', start: now(), ...base },
+  ],
+});
+check('sync answers every operation in order (the repeated one as a duplicate)', s3.json?.results?.length === 3 && s3.json?.results?.[1]?.event?.note === 'live' && s3.json?.results?.[2]?.duplicate === true, JSON.stringify(s3.json).slice(0, 400));
+as('sync: after a foreign write (list)');
+const s4 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true });
+check('sync with an older revision brings the list', (s4.json?.events ?? []).some((e: R) => e.id === id('sync2')), JSON.stringify(s4.json).slice(0, 200));
+for (const n of ['sync1', 'sync2']) await call({ action: 'delete', id: id(n) });
+
 // clean up what this run created (soft delete; the test medicine is removed once its dose is deleted)
 for (const n of ['feed', 'asleep', 'awake', 'dose']) await call({ action: 'delete', id: id(n) });
 const after = await call({ action: 'list', from: today, to: today });
 check('cleanup removed this run from the list', !(after.json?.events ?? []).some((e: R) => String(e.id).startsWith(`live-${run}-`)));
 const removed = await call({ action: 'settings', set: { medicines: [{ id: med.id, remove: true }] } });
 check('cleanup removed the test medicine', removed.json?.ok === true && !(removed.json?.settings?.medicines ?? []).some((m: R) => m.id === med.id), JSON.stringify(removed.json));
+
+// The timing table: "total" is the whole trip as a client sees it, "server" the part spent in our code.
+console.log('TIMING  call | total ms | server ms | where the server time went (ms, and #calls)');
+for (const x of timings) {
+  const where = x.t ? Object.entries(x.t).map(([k, v]) => `${k}=${v}`).join(' ') : '';
+  console.log(`TIMING  ${x.what} | ${x.total} | ${x.server ?? '?'} | ${where}`);
+}
+const med50 = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
+console.log(`TIMING  median of ${timings.length} calls: total ${med50(timings.map((x) => x.total))} ms, server ${med50(timings.filter((x) => x.server !== null).map((x) => x.server as number))} ms`);
 
 console.log(failures === 0 ? 'LIVE TEST PASSED' : `LIVE TEST FAILED (${failures})`);
 process.exit(failures === 0 ? 0 : 1);

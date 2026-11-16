@@ -8,7 +8,7 @@
 
 ## One set of rules, three places
 `src/server/core.ts` is the whole API: `log`, `asleep`, `awake`, `update`, `delete`, `restore`, `list`,
-`status`, `settings`, `ping`. It works on a `Store` interface:
+`status`, `settings`, `ping`, `poll`, and `sync` (what the app uses: see "Sync engine"). It works on a `Store` interface:
 - `SheetStore` (`gas.ts`) in production,
 - `MemoryStore` in tests, in the mock server, and **inside the app**.
 
@@ -35,16 +35,28 @@ Medicines tab is first created, so an existing sheet explains the new data witho
 Operations queue in `localStorage`; the view is `server copy + queue replayed`. Refused operations are dropped with a
 visible message; connection problems retry with back-off.
 
-Staying current (the other parent's entries must show up by themselves):
-- The server keeps a **data revision** (a script property `REV`, bumped under the lock on every real write; not by reads,
-  duplicates, no-ops or rejected writes). `poll` returns only that number, `list` returns the revision it was read at.
-- While the app is open and visible it sends a `poll` every 10 s and downloads the list only when the revision differs from
-  the one it holds; a full refresh still runs every 60 s (catches edits made by hand in the sheet).
-- Coming back to the foreground (visibilitychange, focus, pageshow) or regaining the network triggers an immediate refresh.
-- Nothing is sent while the app is hidden (saves battery and Apps Script quota).
-- A refresh requested while another is running is remembered and runs right after it (never dropped).
-- A refresh older than 30 s is declared dead (iOS can freeze requests while a phone sleeps) and stops blocking new ones;
-  its late answer is ignored (sequence token). A refresh answer that raced with a send is discarded.
+One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
+- The app talks to the server with ONE request type. `sync` carries the phone's waiting operations (up to 25, in order) and the
+  **data revision** the phone holds; the server applies the operations under one lock (one answer each; a refused one does not stop
+  the rest, an unexpected failure does) and answers `unchanged` when nobody else wrote since that revision (no data is read at all
+  when there were no operations), otherwise the list for the last 14 days. So a tap is one request, a check is one tiny request,
+  and the other parent's news arrive in the same request that asked.
+- The revision is a script property `REV`, bumped under the lock on every real write (not by reads, duplicates, no-ops or refused
+  writes). The phone stores the revision with its copy of the data (`rev` in `bl.state.v1`), so opening the app with nothing new
+  is one tiny request.
+- The engine runs one exchange at a time (`Engine.sync`). A request made meanwhile is remembered and runs right after (never
+  dropped); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
+  requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
+  because every operation has an id. The answer's events replace the phone's guesses (server time stamps).
+- While the app is open and visible: a check every 10 s, a forced full list every 5 minutes (safety net), an immediate check on
+  return to the foreground (visibilitychange, focus, pageshow: the several events of one return within 0.4 s count as one) and
+  when the network returns. Nothing is sent while the app is hidden.
+- Older days (History, Summary) are fetched with `list` and merged; a slower answer is dropped if the local copy changed meanwhile.
+- A server from before `sync` answers `unknown_action`: the engine then talks the old way for that session (one request per
+  operation, `poll`, `list`). The old actions stay on the server for Siri shortcuts and for phones still running an older app.
+- Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
+  work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
+  a `TIMING` table into the server report.
 
 ## Security
 Every request carries a secret key (a script property). The web app is anonymous-accessible (Siri cannot sign
@@ -53,7 +65,8 @@ shortcut files created locally on the owner's Mac. The test server accepts a key
 
 ## Pipeline (`.github/workflows/pipeline.yml`)
 Tests, privacy check, build, e2e → deploy test server (clasp) → live test → (main) deploy production server and
-publish the site to `gh-pages`. Reports (sanitized) go to the `ci-status` branch because the build sandbox
+publish the site to `gh-pages`. The server job runs one at a time across branches (`concurrency: test-server`): `dev` and `main`
+share the one test server, and two live tests at once fail each other. Reports (sanitized) go to the `ci-status` branch because the build sandbox
 cannot read Actions logs: `scripts/read-ci.sh`.
 
 ## Shortcuts
@@ -104,7 +117,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
   bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
-- **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
+- **Sync:** see "Sync engine" above (one `sync` request; a check every 10 s, a full list every 5 minutes, a check on resume).
 
 ## Server deployment details
 - `scripts/deploy-server.ts` creates the sheet and bound script on first run (ids saved on `ci-status:envs/`), pushes the bundle with clasp, and
@@ -116,10 +129,10 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~222): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~242): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~109): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
-  two phones syncing with no manual trigger, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
+- `e2e/` (Playwright, ~115): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+  two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.
 - Habit that found real bugs: after adding a regression test, temporarily break the fix and confirm the test fails.

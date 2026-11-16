@@ -409,3 +409,128 @@ describe('data revision and polling', () => {
     expect(call({ action: 'poll' }, 'bad')).toEqual({ ok: false, error: 'unauthorized' });
   });
 });
+
+describe('sync: one round trip for a phone (API 0.4.0)', () => {
+  const range = { from: '2026-11-01', to: '2026-11-14' };
+  const feedOp = (i: string, detail = 'left') => ({ action: 'log', id: i, type: 'feed', detail, start: '2026-11-14 12:00', user: 'Parent 1', source: 'app' });
+  const sync = (extra: Record<string, unknown> = {}) => ok(call({ action: 'sync', ...range, ...extra }));
+  /** Counts data reads, to prove that "unchanged" touches no data at all. */
+  const countReads = () => {
+    let reads = 0;
+    for (const m of ['all', 'recent', 'find', 'getSettings'] as const) {
+      const orig = (store[m] as (...a: unknown[]) => unknown).bind(store);
+      (store as unknown as Record<string, unknown>)[m] = (...a: unknown[]) => {
+        reads++;
+        return orig(...a);
+      };
+    }
+    return () => reads;
+  };
+
+  it('without a revision it answers like list', () => {
+    log('feed', 'left', '2026-11-14 11:00');
+    const r = sync();
+    expect(r.events).toHaveLength(1);
+    expect(r).toMatchObject({ rev: store.revision(), serverNow: '2026-11-14 12:00' });
+    expect(r.settings?.medicines).toEqual([DEFAULT_VITAMIN_D]);
+    expect(r.unchanged).toBeUndefined();
+  });
+
+  it('with the current revision it says "unchanged" and reads no data', () => {
+    log('feed', 'left', '2026-11-14 11:00');
+    const reads = countReads();
+    const r = sync({ rev: store.revision() });
+    expect(r).toEqual({ ok: true, rev: store.revision(), serverNow: '2026-11-14 12:00', unchanged: true });
+    expect(reads()).toBe(0);
+  });
+
+  it('with an older revision it brings the list', () => {
+    const rev = store.revision();
+    log('feed', 'left', '2026-11-14 11:00');
+    const r = sync({ rev });
+    expect(r.unchanged).toBeUndefined();
+    expect(r.events).toHaveLength(1);
+    expect(r.rev).toBe(store.revision());
+  });
+
+  it("applies the phone's operations in order and answers each; nothing else changed means no list", () => {
+    const rev = store.revision();
+    const r = sync({ rev, ops: [feedOp('a'), { action: 'asleep', id: 's', user: 'Parent 1', source: 'app', start: '2026-11-14 12:00' }, { action: 'update', id: 'a', patch: { note: 'x' } }] });
+    expect(r.unchanged).toBe(true);
+    expect(r.events).toBeUndefined();
+    expect(r.results).toHaveLength(3);
+    expect(r.results!.map((x) => x.ok)).toEqual([true, true, true]);
+    expect((r.results![2] as ApiOk).event).toMatchObject({ id: 'a', note: 'x' });
+    expect((r.results![0] as ApiOk).speech).toBeUndefined(); // sentences are for Siri only
+    expect(store.all().map((e) => e.id)).toEqual(['a', 's']);
+    expect(r.rev).toBe(store.revision());
+    expect(r.rev).not.toBe(rev);
+    expect(sync({ rev: r.rev }).unchanged).toBe(true); // the phone is up to date with its own writes
+  });
+
+  it("brings the list when someone else wrote since the phone's revision", () => {
+    const rev = store.revision();
+    log('diaper', 'wet', '2026-11-14 11:30', { user: 'Parent 2' });
+    const r = sync({ rev, ops: [feedOp('a')] });
+    expect(r.unchanged).toBeUndefined();
+    expect(r.events!.map((e) => e.type).sort()).toEqual(['diaper', 'feed']); // theirs and ours
+    expect(r.results).toHaveLength(1);
+  });
+
+  it('a refused operation gets its error and the rest go on', () => {
+    const r = sync({ rev: store.revision(), ops: [feedOp('a'), feedOp('bad', 'up'), { action: 'delete', id: 'ghost' }, feedOp('c', 'right')] });
+    expect(r.results!.map((x) => (x.ok ? 'ok' : x.error))).toEqual(['ok', 'invalid_event', 'not_found', 'ok']);
+    expect(store.all().map((e) => e.id)).toEqual(['a', 'c']);
+  });
+
+  it('an unexpected failure stops the batch; what was done stays done and the revision moves', () => {
+    const rev = store.revision();
+    const append = store.append.bind(store);
+    store.append = (e) => {
+      if (e.id === 'b') throw new Error('sheet hiccup');
+      append(e);
+    };
+    const r = sync({ rev, ops: [feedOp('a'), feedOp('b'), feedOp('c')] });
+    expect(r.results!.map((x) => (x.ok ? 'ok' : x.error))).toEqual(['ok', 'server_error']);
+    expect(store.all().map((e) => e.id)).toEqual(['a']);
+    expect(store.revision()).not.toBe(rev);
+  });
+
+  it('sending the same batch again writes nothing twice and leaves the revision alone', () => {
+    const ops = [feedOp('a'), { action: 'asleep', id: 's', user: 'Parent 1', source: 'app', start: '2026-11-14 12:00' }];
+    const first = sync({ ops });
+    const again = sync({ rev: first.rev, ops });
+    expect(again.results!.map((x) => (x as ApiOk).duplicate)).toEqual([true, true]);
+    expect(again).toMatchObject({ unchanged: true, rev: first.rev });
+    expect(store.all()).toHaveLength(2);
+  });
+
+  it('saves settings and medicines inside a batch', () => {
+    const r = sync({ rev: store.revision(), ops: [{ action: 'settings', set: { babyName: 'Baby' } }] });
+    expect((r.results![0] as ApiOk).settings).toMatchObject({ babyName: 'Baby' });
+    expect(store.getSettings().babyName).toBe('Baby');
+  });
+
+  it('takes the lock once for the whole batch and not at all without operations', () => {
+    let locks = 0;
+    deps.withLock = (fn) => {
+      locks++;
+      return fn();
+    };
+    sync({ rev: store.revision() });
+    expect(locks).toBe(0);
+    sync({ ops: [feedOp('a'), feedOp('b', 'right')] });
+    expect(locks).toBe(1);
+  });
+
+  it('accepts only write actions, at most 25, and a valid range', () => {
+    expect(ok(call({ action: 'sync', ...range, ops: [{ action: 'list', ...range }] })).results![0]).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(ok(call({ action: 'sync', ...range, ops: [{ action: 'settings' }] })).results![0]).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(ok(call({ action: 'sync', ...range, ops: ['x'] })).results![0]).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(call({ action: 'sync', ...range, ops: Array.from({ length: 26 }, (_, i) => feedOp(`m${i}`)) })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(call({ action: 'sync', ...range, ops: 'x' })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(call({ action: 'sync', from: 'x', to: 'y' })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(call({ action: 'sync', ...range }, 'nope')).toEqual({ ok: false, error: 'unauthorized' });
+    expect(store.all()).toHaveLength(0);
+  });
+});

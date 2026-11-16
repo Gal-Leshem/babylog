@@ -53,8 +53,20 @@ function eventToRow(e: BabyEvent): unknown[] {
   return [e.id, e.type, e.detail, toCell(e.start), toCell(e.end), e.user, e.source, e.note, toCell(e.created), toCell(e.edited), e.deleted];
 }
 
+/** Where this request spent its time: milliseconds per kind of work, and "<kind>#" = number of calls. Sent back with `debug: true`. */
+let spent: Record<string, number> = {};
+function timed<T>(kind: string, fn: () => T): T {
+  const t0 = Date.now();
+  try {
+    return fn();
+  } finally {
+    spent[kind] = (spent[kind] ?? 0) + (Date.now() - t0);
+    spent[`${kind}#`] = (spent[`${kind}#`] ?? 0) + 1;
+  }
+}
+
 class SheetStore implements Store {
-  private ss = SpreadsheetApp.getActive();
+  private ss = timed('open', () => SpreadsheetApp.getActive());
 
   private events(): GoogleAppsScript.Spreadsheet.Sheet {
     return this.ss.getSheetByName(EVENTS) ?? fatal('Events sheet missing: run setup()');
@@ -64,9 +76,7 @@ class SheetStore implements Store {
     const last = sh.getLastRow();
     if (last < 2) return [];
     const start = Math.max(2, fromRow);
-    return sh
-      .getRange(start, 1, last - start + 1, COLS)
-      .getValues()
+    return timed('read', () => sh.getRange(start, 1, last - start + 1, COLS).getValues())
       .filter((r) => r[0] !== '')
       .map(rowToEvent);
   }
@@ -77,7 +87,7 @@ class SheetStore implements Store {
     return this.read(2);
   }
   private rowOf(id: string): number {
-    const hit = this.events().getRange('A2:A').createTextFinder(id).matchEntireCell(true).matchCase(true).findNext();
+    const hit = timed('find', () => this.events().getRange('A2:A').createTextFinder(id).matchEntireCell(true).matchCase(true).findNext());
     return hit ? hit.getRow() : 0;
   }
   find(id: string): BabyEvent | undefined {
@@ -86,17 +96,24 @@ class SheetStore implements Store {
     return rowToEvent(this.events().getRange(row, 1, 1, COLS).getValues()[0]!);
   }
   append(e: BabyEvent): void {
-    this.events().appendRow(eventToRow(e));
-    SpreadsheetApp.flush();
+    timed('write', () => {
+      this.events().appendRow(eventToRow(e));
+      SpreadsheetApp.flush();
+    });
   }
   replace(e: BabyEvent): boolean {
     const row = this.rowOf(e.id);
     if (!row) return false;
-    this.events().getRange(row, 1, 1, COLS).setValues([eventToRow(e)]);
-    SpreadsheetApp.flush();
+    timed('write', () => {
+      this.events().getRange(row, 1, 1, COLS).setValues([eventToRow(e)]);
+      SpreadsheetApp.flush();
+    });
     return true;
   }
   getSettings(): Settings {
+    return timed('settings', () => this.readSettings());
+  }
+  private readSettings(): Settings {
     const sh = this.ss.getSheetByName(SETTINGS);
     const map: Record<string, string> = {};
     if (sh && sh.getLastRow() >= 1) {
@@ -136,6 +153,9 @@ class SheetStore implements Store {
     if (rows.length) sh.getRange(2, 1, rows.length, MED_HEADER.length).setValues(rows);
   }
   setSettings(s: Settings): void {
+    timed('write', () => this.writeSettings(s));
+  }
+  private writeSettings(s: Settings): void {
     const sh = this.ss.getSheetByName(SETTINGS) ?? this.ss.insertSheet(SETTINGS);
     const rows = [
       ['babyName', s.babyName],
@@ -150,10 +170,10 @@ class SheetStore implements Store {
     return this.ss.getUrl();
   }
   revision(): string {
-    return props().getProperty('REV') ?? '0';
+    return timed('props', () => props().getProperty('REV') ?? '0');
   }
   bump(): void {
-    props().setProperty('REV', String(Number(props().getProperty('REV') ?? '0') + 1));
+    timed('props', () => props().setProperty('REV', String(Number(props().getProperty('REV') ?? '0') + 1)));
   }
 }
 
@@ -164,14 +184,14 @@ function fatal(msg: string): never {
 const props = () => PropertiesService.getScriptProperties();
 
 function deps(): Deps {
-  const checkKey = makeCheckKey(props().getProperty('API_KEY'), __FIXED_KEY__);
+  const checkKey = makeCheckKey(timed('props', () => props().getProperty('API_KEY')), __FIXED_KEY__);
   return {
     store: new SheetStore(),
     now: () => Date.now(),
     checkKey,
     withLock: (fn) => {
       const lock = LockService.getScriptLock();
-      lock.waitLock(10_000);
+      timed('lock', () => lock.waitLock(10_000));
       try {
         return fn();
       } finally {
@@ -192,7 +212,12 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
   } catch {
     body = null;
   }
-  return json(handle(body, deps()));
+  const t0 = Date.now();
+  spent = {};
+  const answer = handle(body, deps());
+  const debug = typeof body === 'object' && body !== null && (body as { debug?: unknown }).debug === true;
+  // `ms`: our own time, so a phone can tell it from the time the trip itself takes
+  return json({ ...answer, ms: Date.now() - t0, ...(debug ? { t: spent } : {}) });
 }
 
 export function doGet(): GoogleAppsScript.Content.TextOutput {

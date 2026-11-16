@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { actionsSeen, api, install, installExisting, nowLocal, resetServer, serverEvents } from './helpers';
+import { actionsSeen, api, control, install, installExisting, nowLocal, resetCalls, resetServer, serverEvents } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -22,13 +22,89 @@ test('the other parent logs something: it appears by itself within seconds (noth
   await ctx2.close();
 });
 
-test('checking for changes is cheap: tiny polls, no repeated list downloads while nothing changes', async ({ page, request }) => {
+test('checking for changes is cheap: tiny checks, no repeated list downloads while nothing changes', async ({ page, request }) => {
   await install(page);
   await resetServer(request); // forget the setup traffic (also clears data; the app keeps its local copy)
   await page.waitForTimeout(23_000);
   const seen = await actionsSeen(request);
-  expect(seen.filter((a) => a === 'poll').length, JSON.stringify(seen)).toBeGreaterThanOrEqual(2);
-  expect(seen.filter((a) => a === 'list').length, 'idle app must not keep downloading the list').toBeLessThanOrEqual(1);
+  expect(seen.filter((a) => a === 'sync').length, JSON.stringify(seen)).toBeGreaterThanOrEqual(1); // light checks
+  expect(seen.filter((a) => a.includes('list')).length, 'idle app must not keep downloading the list').toBeLessThanOrEqual(1);
+  expect(seen.every((a) => a.startsWith('sync')), JSON.stringify(seen)).toBe(true); // one kind of request does everything
+});
+
+// The refactor's main promise (docs/REFACTOR_PLAN.md, phase 1): fewer round trips.
+test('opening the app with nothing new is ONE small request (no list, not two)', async ({ page, request }) => {
+  await install(page);
+  await api(request, { action: 'log', id: 'pre-1', type: 'feed', detail: 'left', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await expect(page.getByTestId('tile-feed')).toContainText('שמאל', { timeout: 15_000 }); // the phone is up to date
+  await resetCalls(request);
+  await page.reload(); // the app is opened again
+  await expect(page.getByTestId('tile-feed')).toContainText('שמאל'); // shown from the phone's own copy
+  await page.waitForTimeout(2_500);
+  expect(await actionsSeen(request)).toEqual(['sync']);
+});
+
+test('opening the app after the other parent logged something: one request brings it', async ({ page, request }) => {
+  await install(page);
+  await page.goto('about:blank'); // the app is closed
+  await api(request, { action: 'log', id: 'while-away', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await resetCalls(request);
+  await page.goto('/');
+  await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 5_000 });
+  await page.waitForTimeout(1_500);
+  expect(await actionsSeen(request)).toEqual(['sync+list']);
+});
+
+test('a tap is one request and downloads no list', async ({ page, request }) => {
+  await install(page);
+  await page.waitForTimeout(600);
+  await resetCalls(request);
+  await page.getByTestId('btn-wet').click();
+  await expect.poll(async () => (await serverEvents(request)).length).toBe(1);
+  await expect(page.getByTestId('banner-sync')).toBeHidden();
+  const seen = (await actionsSeen(request)).filter((a) => a !== 'list'); // "list" here is this test's own look at the server
+  expect(seen[0]).toBe('sync:1');
+  expect(seen.filter((a) => a.includes('list')), JSON.stringify(seen)).toEqual([]);
+});
+
+test('taps made without a connection travel together in one request when it is back', async ({ page, request }) => {
+  await install(page);
+  await control(request, 'offline=1');
+  await page.getByTestId('btn-wet').click();
+  await page.waitForTimeout(1_600); // the buttons unlock
+  await page.getByTestId('btn-poop').click();
+  await page.waitForTimeout(1_600);
+  await page.getByTestId('btn-feed_left').click();
+  await expect(page.getByTestId('banner-sync')).toContainText('3 ממתינים');
+  await control(request, 'offline=0');
+  await resetCalls(request);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 10_000 });
+  expect((await actionsSeen(request))[0]).toBe('sync:3');
+  expect((await serverEvents(request)).map((e) => e.type).sort()).toEqual(['diaper', 'diaper', 'feed']);
+});
+
+test('an older server (before "sync") still works: taps arrive and the other parent shows up', async ({ page, request }) => {
+  await install(page);
+  await page.waitForTimeout(600);
+  await control(request, 'old=1'); // e.g. the site was published but the server deploy failed
+  await resetCalls(request);
+  await page.reload();
+  await page.getByTestId('btn-wet').click();
+  await expect.poll(async () => (await serverEvents(request)).length).toBe(1);
+  await expect(page.getByTestId('banner-sync')).toBeHidden();
+  await api(request, { action: 'log', id: 'old-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 20_000 });
+  const seen = await actionsSeen(request);
+  expect(seen.filter((a) => a.startsWith('sync')).length, `sync is tried once per session, then the old way: ${JSON.stringify(seen)}`).toBe(1);
+  expect(seen).toContain('poll');
+});
+
+test('settings show how long the last sync took', async ({ page }) => {
+  await install(page);
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('sync-now').click();
+  await expect(page.getByTestId('sync-timing')).toContainText(/סנכרון אחרון: \d+\.\d ש׳ \(מתוכן שרת \d+\.\d\)/);
 });
 
 test('a hidden app does not talk to the server; coming back refreshes at once', async ({ page, request }) => {

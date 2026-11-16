@@ -47,7 +47,7 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
     if (r) setMarks([...marks, r]);
   };
   useEffect(() => {
-    void engine.refresh(); // the other parent may have just given something
+    void engine.resume(); // the other parent may have just given something (one small request)
   }, []);
   const meds = settings.medicines.filter((m) => m.status === 'active');
 

@@ -162,8 +162,14 @@ export function Settings() {
           {st.pending ? `${st.pending} ממתינים לסנכרון` : 'הכל מסונכרן'}
           {st.lastSync ? ` · עודכן ${new Date(st.lastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' })}` : ''}
         </p>,
+        st.timing && (
+          <p class="muted" data-testid="sync-timing" key="st">
+            סנכרון אחרון: {secs(st.timing.totalMs)} ש׳{st.timing.serverMs !== null ? ` (מתוכן שרת ${secs(st.timing.serverMs)})` : ''}
+            {st.timing.list ? ' · עם נתונים חדשים' : ' · בלי שינוי'}
+          </p>
+        ),
         <div class="actions" key="a1">
-          <button type="button" data-testid="sync-now" onClick={() => void engine.flush().then(() => engine.refresh())}>
+          <button type="button" data-testid="sync-now" onClick={() => void engine.refresh()}>
             סנכרן עכשיו
           </button>
           {st.sheetUrl && (
@@ -194,8 +200,11 @@ export function Settings() {
   );
 }
 
+/** Milliseconds as seconds with one decimal ("1.4"). */
+const secs = (ms: number): string => (ms / 1000).toFixed(1);
+
 /** A settings section: a card with its own icon and title (a plain function, not a component defined inside one). */
-function section(id: string, icon: string, title: string, children: JSX.Element[]): JSX.Element {
+function section(id: string, icon: string, title: string, children: (JSX.Element | null | false)[]): JSX.Element {
   return (
     <div class="sect" data-testid={`sect-${id}`}>
       <div class="sect-h">

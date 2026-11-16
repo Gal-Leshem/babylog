@@ -153,6 +153,29 @@ No names, addresses or secrets in this file (the repository is public).
 - Plan only **(owner request)**: `docs/REFACTOR_PLAN.md`, a code review of the sync path with a phased refactor plan (one `sync`
   round trip instead of several, cheaper sheet reads, sending while the app is being left, a quiet sync indicator, look and feel
   options). Nothing built.
+- Owner decisions on the plan: all three waits hurt, opening the app after the other parent logged something most; the sheet is
+  never edited by hand; stay on Apps Script for now (a move is decided later); the full plan, not a minimal one; look: polish plus
+  an own icon set.
+- CI incident (my doing): a `dev` push while a `main` run was still going made two live tests hit the shared test server together
+  (one saw the other's open sleep, one got a lock timeout); both runs failed although nothing was wrong. The server job now runs
+  one at a time across branches (`concurrency: test-server`).
+
+## Refactor of the sync path (plan: `REFACTOR_PLAN.md`)
+- Phase 0, measuring: the real server reports its own time for every request (`ms`) and, on request, where it went (`t`); the
+  live test prints a `TIMING` table (old actions and the new `sync`) into the server report; Settings > מתקדם shows how long the
+  last sync took and how much of it was the server.
+- Phase 1, one round trip (API 0.4.0): new action `sync` = the phone's waiting operations + "did anything else change since my
+  revision?" in one request. Before: a tap was a `log` and then a full `list`; a check was a `poll` and then a `list`; opening the
+  app downloaded the full list twice (several "I am back" events, the second one queued). Now: a tap is one request and brings no
+  list unless the other parent wrote; opening the app with nothing new is one tiny request that reads no data on the server; news
+  arrive in the request that asked. Taps made while a request is on its way, or offline, travel together (up to 25 a request).
+  The phone keeps the revision with its data across restarts. The full safety refresh went from every minute to every 5 minutes
+  (the sheet is not edited by hand). The engine's separate flush / refresh / poll paths became one exchange with the same
+  guarantees (queue, never drop; dead-request rule; ids make re-sending safe). A server from before `sync` is still served the
+  old way (the site can publish while a server deploy fails). `MedsWindow` and "סנכרן עכשיו" use the same exchange.
+  Tests: 12 server tests, 1 through the built Apps Script bundle, 9 new and 6 adapted engine tests (three of them proven to fail
+  when the feature is broken: revision not kept, server always sending the list, a failed operation dropped), 6 new browser tests
+  counting requests (one per tap, one per open, one for three offline taps, old server), live test for `sync`.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

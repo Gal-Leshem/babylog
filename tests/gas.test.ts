@@ -77,8 +77,42 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
   it('rejects calls without the right key and bad JSON', () => {
     const { g, post } = boot();
     g.setup!();
-    expect(post({ key: 'wrong', action: 'ping' })).toEqual({ ok: false, error: 'unauthorized' });
-    expect(JSON.parse(g.doPost!({ postData: { contents: 'not json' } }).getContent())).toEqual({ ok: false, error: 'bad_request' });
+    expect(post({ key: 'wrong', action: 'ping' })).toMatchObject({ ok: false, error: 'unauthorized' });
+    expect(JSON.parse(g.doPost!({ postData: { contents: 'not json' } }).getContent())).toMatchObject({ ok: false, error: 'bad_request' });
+  });
+
+  // API 0.4.0: a phone's whole exchange in one request, through the real sheet code
+  it('sync: applies a batch through the sheet, answers "unchanged" to an up-to-date phone, and reports its own time', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const day = '2026-01-10';
+    const range = { from: day, to: day };
+    const first = post({ key, action: 'sync', ...range });
+    expect(first.events).toEqual([]);
+    const ops = [
+      { action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' },
+      { action: 'asleep', id: 's1', start: `${day} 02:00`, user: 'P', source: 'app' },
+      { action: 'awake', id: 's2', end: `${day} 03:30`, user: 'P', source: 'app' },
+    ];
+    const r = post({ key, action: 'sync', ...range, rev: first.rev, ops });
+    expect(r).toMatchObject({ ok: true, unchanged: true });
+    expect(r.results.map((x: { ok: boolean }) => x.ok)).toEqual([true, true, true]);
+    expect(r.rev).not.toBe(first.rev);
+    expect(rt.sheets.get('Events')!.slice(1).map((row) => row[0])).toEqual(['f1', 's1']);
+    expect(rt.openLocks()).toBe(0);
+
+    const idleCheck = post({ key, action: 'sync', ...range, rev: r.rev });
+    expect(idleCheck).toMatchObject({ ok: true, unchanged: true, rev: r.rev });
+    expect(idleCheck.events).toBeUndefined();
+    expect(typeof idleCheck.ms).toBe('number');
+    expect(idleCheck.t).toBeUndefined(); // the breakdown only on request
+
+    const other = post({ key, action: 'log', id: 'd1', type: 'diaper', detail: 'wet', start: `${day} 04:00`, user: 'Q', source: 'app' });
+    expect(other.ok).toBe(true);
+    const news = post({ key, action: 'sync', ...range, rev: r.rev, debug: true });
+    expect(news.events.map((e: { id: string }) => e.id)).toEqual(['f1', 's1', 'd1']);
+    expect(news.t['read#']).toBeGreaterThan(0);
   });
 
   it('runs a full day of logging through the sheet and releases the lock', () => {

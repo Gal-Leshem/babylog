@@ -1,6 +1,7 @@
 # Refactor plan: sync speed, performance, quality of life
 
-Status: **proposal, nothing built yet.** Written from a full read of the code (November 2026) so that any model or person can
+Status: **phases 0 and 1 and item 3.2 are built** (see `CHANGELOG.md`, "Refactor of the sync path"); the rest is planned.
+Measured numbers: section 7. Written from a full read of the code (November 2026) so that any model or person can
 implement it phase by phase. Every phase is shippable on its own and follows the normal routine (small step, regression test proven
 to fail without the change, unit + browser tests incl. `MOCK_DELAY=250`, dev, green CI, main, live check). Privacy rule as everywhere.
 
@@ -223,3 +224,9 @@ work against the old server (fallback). Check both directions in the browser sui
 - **Recommendation:** not now. Phases 0 to 3 are needed for any server (they fix the app's side) and are expected to bring opening
   the app to one light request. Measure after them; move only if the remaining wait is still a daily annoyance. Thanks to the
   `Store` interface the move does not get harder by waiting.
+
+## 7. Measurements (from the live test's `TIMING` table in the server report; real Google test server)
+Fill in after each phase. "total" = the whole trip seen by a client in the CI runner (a phone on mobile data adds its own
+latency); "server" = time inside our code.
+| When | Call | total ms | server ms | Notes |
+|------|------|----------|-----------|-------|

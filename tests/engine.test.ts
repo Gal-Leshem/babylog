@@ -27,7 +27,7 @@ const fetchImpl = (async (_url: string, init: { body: string }) => {
   if (offline) throw new TypeError('Failed to fetch');
   const body = JSON.parse(init.body);
   seen.push(body);
-  if (gate && body.action === 'list') {
+  if (gate && (body.action === 'list' || body.action === 'sync')) {
     if (answerEarly) {
       const early = JSON.stringify(handle(body, deps()));
       await gate;
@@ -58,6 +58,9 @@ function makeEngine(key = KEY, store = storage): Engine {
 const nowStr = () => formatLocal(clock);
 const feed = (id: string, detail = 'left') => ({ action: 'log' as const, id, type: 'feed' as const, detail, start: nowStr(), user: 'P1', source: 'app' as const });
 const idle = () => new Promise((r) => setTimeout(r, 15));
+/** The ids of the operations the server was sent, in order (inside `sync` batches or as single requests). */
+const sentIds = () => seen.flatMap((x) => (x.action === 'sync' ? (x.ops ?? []) : x.action === 'list' || x.action === 'poll' ? [] : [x])).map((o: any) => o.id);
+const syncs = () => seen.filter((x) => x.action === 'sync');
 
 beforeEach(() => {
   clock = T('2026-11-14 12:00');
@@ -91,7 +94,7 @@ describe('optimistic updates and sending', () => {
     e.dispatch({ action: 'log', id: 'b', type: 'diaper', detail: 'wet', start: nowStr(), user: 'P1', source: 'app' });
     e.dispatch({ action: 'asleep', id: 'c', user: 'P1', source: 'app', start: nowStr() });
     await idle();
-    expect(seen.filter((x) => x.action !== 'list').map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    expect(sentIds()).toEqual(['a', 'b', 'c']);
     expect(server.all()).toHaveLength(3);
   });
 
@@ -295,28 +298,39 @@ describe('refreshing', () => {
     expect(e.getState().events).toHaveLength(0);
   });
 
-  it('does not refresh while operations are pending (so they are never overwritten)', async () => {
+  it('a refresh takes pending operations along, so they are never overwritten by the list', async () => {
     offline = true;
     const e = makeEngine();
     e.dispatch(feed('a'));
     await idle();
     offline = false;
-    expect(await e.refresh()).toBe(false);
+    seen = [];
+    expect(await e.refresh()).toBe(true);
+    expect(seen.map((x) => x.action)).toEqual(['sync']); // one request: the operation and the list
+    expect(server.all().map((x) => x.id)).toEqual(['a']);
+    expect(e.getState()).toMatchObject({ pending: 0 });
     expect(e.getState().events.map((x) => x.id)).toEqual(['a']);
   });
 
-  it('discards a stale answer when something was sent meanwhile', async () => {
+  it('a tap made while a list is on its way is never wiped by that (older) list', async () => {
     const e = makeEngine();
+    answerEarly = true; // the server answers "empty" at once; the answer arrives only after we release it
     let release!: () => void;
     gate = new Promise<void>((r) => (release = r));
-    const slow = e.refresh(); // server answers "empty" but only after we release it
+    const slow = e.refresh();
     await idle();
     gate = null;
+    answerEarly = false;
     e.dispatch(feed('a'));
     await idle();
+    expect(e.getState().events.map((x) => x.id)).toEqual(['a']);
     release();
-    expect(await slow).toBe(false);
-    expect(e.getState().events.map((x) => x.id)).toEqual(['a']); // not wiped by the stale answer
+    await slow;
+    expect(e.getState().events.map((x) => x.id)).toEqual(['a']); // the empty list arrived: the tap is still shown
+    await idle();
+    expect(server.all().map((x) => x.id)).toEqual(['a']); // and it was sent right after
+    expect(e.getState()).toMatchObject({ pending: 0, status: 'idle' });
+    expect(e.getState().events.map((x) => x.id)).toEqual(['a']);
   });
 
   it('loads older days on demand without dropping newer ones', async () => {
@@ -387,28 +401,183 @@ describe('robustness', () => {
 });
 
 describe('polling for changes made on the other phone', () => {
-  const listCalls = () => seen.filter((x) => x.action === 'list').length;
-  const pollCalls = () => seen.filter((x) => x.action === 'poll').length;
+  /** How many answers carried the list (the heavy kind). */
+  let lists = 0;
+  const listCalls = () => lists;
+  const counting = ((url: string, init: { body: string }) =>
+    fetchImpl(url as never, init as never).then(async (r) => {
+      const text = await r.text();
+      try {
+        if (Array.isArray(JSON.parse(text).events)) lists++;
+      } catch {
+        /* not JSON */
+      }
+      return new Response(text);
+    })) as unknown as typeof fetch;
+  const makeCounted = (store = storage) => {
+    lists = 0;
+    const e = new Engine({ storage: store, fetchImpl: counting, now: () => clock, newId: () => `op${++n}`, setTimer: (fn, ms) => timers.push({ fn, ms }), clearTimer: () => undefined });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    return e;
+  };
   const theirFeed = (id: string) => server.append(ev({ id, type: 'feed', detail: 'right', start: '2026-11-14 11:00', user: 'P2' }));
   const bumped = () => server.bump(); // the real server bumps on every API write; here we write behind its back
 
-  it('fetches the list only when the server revision changed', async () => {
-    const e = makeEngine();
+  it('fetches the list only when the server revision changed, in the same single request', async () => {
+    const e = makeCounted();
     await e.refresh();
     seen = [];
+    lists = 0;
     expect(await e.pollOnce()).toBe(false);
     expect(await e.pollOnce()).toBe(false);
-    expect([pollCalls(), listCalls()]).toEqual([2, 0]); // two tiny checks, no list
+    expect([seen.length, listCalls()]).toEqual([2, 0]); // two tiny checks, no list
 
     theirFeed('x');
     bumped();
+    seen = [];
     expect(await e.pollOnce()).toBe(true);
-    expect(listCalls()).toBe(1);
+    expect([seen.length, listCalls()]).toEqual([1, 1]); // one round trip brought the news (not a check and then a list)
     expect(e.getState().events.map((v) => v.id)).toEqual(['x']);
 
-    seen = [];
+    lists = 0;
     expect(await e.pollOnce()).toBe(false); // caught up again
     expect(listCalls()).toBe(0);
+  });
+
+  it('a tap is one request and brings no list when nothing else changed', async () => {
+    const e = makeCounted();
+    await e.refresh();
+    seen = [];
+    lists = 0;
+    e.dispatch(feed('a'));
+    await idle();
+    expect(seen.map((x) => x.action)).toEqual(['sync']);
+    expect(listCalls()).toBe(0);
+    expect(e.getState()).toMatchObject({ pending: 0, status: 'idle' });
+    expect(await e.pollOnce()).toBe(false); // and the revision we hold already includes our own write
+    expect(listCalls()).toBe(0);
+  });
+
+  it("a tap brings the other parent's news in the same request", async () => {
+    const e = makeCounted();
+    await e.refresh();
+    theirFeed('x');
+    bumped();
+    seen = [];
+    e.dispatch(feed('a'));
+    await idle();
+    expect(seen.map((x) => x.action)).toEqual(['sync']);
+    expect(e.getState().events.map((v) => v.id).sort()).toEqual(['a', 'x']);
+  });
+
+  it('taps made while a request is on its way travel together in the next one', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    seen = [];
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('a'));
+    await idle();
+    e.dispatch(feed('b', 'right'));
+    e.dispatch({ action: 'log', id: 'c', type: 'diaper', detail: 'wet', start: nowStr(), user: 'P1', source: 'app' });
+    gate = null;
+    release();
+    await idle();
+    await idle();
+    expect(syncs().map((x) => (x.ops ?? []).map((o: any) => o.id))).toEqual([['a'], ['b', 'c']]);
+    expect(server.all().map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    expect(e.getState()).toMatchObject({ pending: 0, status: 'idle' });
+  });
+
+  it('sends a long queue in batches of 25', async () => {
+    offline = true;
+    const e = makeEngine();
+    for (let i = 0; i < 30; i++) e.dispatch({ action: 'log', id: `d${i}`, type: 'diaper', detail: 'wet', start: nowStr(), user: 'P1', source: 'app' });
+    await idle();
+    offline = false;
+    seen = [];
+    await e.flush();
+    await idle();
+    expect(syncs().map((x) => (x.ops ?? []).length)).toEqual([25, 5]);
+    expect(server.all()).toHaveLength(30);
+    expect(e.getState().pending).toBe(0);
+  });
+
+  it('remembers the revision across restarts: opening the app with nothing new is one tiny request', async () => {
+    const first = makeCounted();
+    theirFeed('x');
+    await first.refresh();
+    const reopened = makeCounted(); // same storage: the app was closed and opened again
+    seen = [];
+    await reopened.resume();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ action: 'sync', rev: server.revision() });
+    expect(listCalls()).toBe(0);
+    expect(reopened.getState().events.map((v) => v.id)).toEqual(['x']);
+  });
+
+  it("keeps the server's version of what it recorded", async () => {
+    serverClock = clock + 60_000; // the server stamps its own time
+    const e = makeEngine();
+    await e.refresh();
+    e.dispatch(feed('a'));
+    await idle();
+    expect(e.getState().events[0]).toMatchObject({ id: 'a', created: formatLocal(serverClock) });
+  });
+
+  it('an answer lost after the server applied the operations: sending again writes nothing twice', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    let lose = true;
+    const lossy = ((url: string, init: { body: string }) =>
+      fetchImpl(url as never, init as never).then((r) => {
+        if (lose && JSON.parse(init.body).ops) {
+          lose = false;
+          throw new TypeError('connection lost');
+        }
+        return r;
+      })) as unknown as typeof fetch;
+    const l = new Engine({ storage, fetchImpl: lossy, now: () => clock, newId: () => `op${++n}`, setTimer: (fn, ms) => timers.push({ fn, ms }), clearTimer: () => undefined });
+    offline = true;
+    l.dispatch(feed('a'));
+    l.dispatch({ action: 'asleep', id: 's', user: 'P1', source: 'app', start: nowStr() });
+    await idle();
+    offline = false;
+    timers.shift()!.fn(); // the retry reaches the server, but its answer is lost on the way back
+    await idle();
+    expect(l.getState()).toMatchObject({ status: 'offline', pending: 2 });
+    expect(server.all()).toHaveLength(2); // the server did record them
+    timers.at(-1)!.fn(); // the next retry
+    await idle();
+    expect(server.all()).toHaveLength(2);
+    expect(l.getState()).toMatchObject({ status: 'idle', pending: 0 });
+    expect(l.getState().events).toHaveLength(2);
+  });
+
+  it('an operation the server failed on stays queued and is sent again', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    const append = server.append.bind(server);
+    let fail = true;
+    server.append = (x) => {
+      if (fail && x.id === 'b') {
+        fail = false;
+        throw new Error('sheet hiccup');
+      }
+      append(x);
+    };
+    e.dispatch(feed('a'));
+    e.dispatch(feed('b', 'right'));
+    e.dispatch(feed('c'));
+    await idle();
+    await idle();
+    expect(server.all().map((x) => x.id)).toEqual(['a']); // the batch stopped at the failure
+    expect(e.getState()).toMatchObject({ status: 'error', pending: 2 });
+    expect(e.getState().events).toHaveLength(3); // still shown
+    timers.shift()!.fn();
+    await idle();
+    expect(server.all().map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    expect(e.getState()).toMatchObject({ status: 'idle', pending: 0 });
   });
 
   it('picks up a change that arrives between the check and the fetch on the next check', async () => {
@@ -431,7 +600,8 @@ describe('polling for changes made on the other phone', () => {
     offline = false;
     seen = [];
     await e.pollOnce();
-    expect(seen.map((x) => x.action)[0]).toBe('log');
+    expect(sentIds()).toEqual(['mine']);
+    expect(seen).toHaveLength(1);
     expect(server.all().map((x) => x.id)).toContain('mine');
   });
 
@@ -446,20 +616,34 @@ describe('polling for changes made on the other phone', () => {
     expect(e.getState().status).toBe('idle');
   });
 
-  it('works against an older server that does not know "poll" by refreshing fully', async () => {
-    const e = makeEngine();
+  it('works against an older server that does not know "sync": single requests, a revision check, then the list', async () => {
     theirFeed('old');
-    // an older server answers "unknown_action" to poll
+    // a server from before API 0.4.0 answers "unknown_action" to sync
     const oldFetch = ((url: string, init: { body: string }) => {
       const body = JSON.parse(init.body);
-      if (body.action === 'poll') return Promise.resolve(new Response(JSON.stringify({ ok: false, error: 'unknown_action', detail: 'poll' })));
+      if (body.action === 'sync') {
+        seen.push(body);
+        return Promise.resolve(new Response(JSON.stringify({ ok: false, error: 'unknown_action', detail: 'sync' })));
+      }
       return fetchImpl(url as never, init as never);
     }) as unknown as typeof fetch;
     const legacy = new Engine({ storage: memoryStorage(), fetchImpl: oldFetch, now: () => clock, newId: () => `op${++n}` });
     legacy.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
     expect(await legacy.pollOnce()).toBe(true);
     expect(legacy.getState().events.map((v) => v.id)).toEqual(['old']);
-    expect(e.getState().events).toEqual([]);
+    expect(seen.map((x) => x.action)).toEqual(['sync', 'list']);
+
+    seen = [];
+    expect(await legacy.pollOnce()).toBe(false); // nothing new: only the small check, and `sync` is not tried again
+    expect(seen.map((x) => x.action)).toEqual(['poll']);
+
+    seen = [];
+    legacy.dispatch(feed('mine'));
+    await idle();
+    expect(seen.map((x) => x.action)).toEqual(['log', 'list']);
+    expect(server.all().map((x) => x.id).sort()).toEqual(['mine', 'old']);
+    expect(legacy.getState()).toMatchObject({ pending: 0, status: 'idle' });
+    expect(legacy.getState().events.map((v) => v.id).sort()).toEqual(['mine', 'old']);
   });
 
   it('stops and reports a wrong key', async () => {
@@ -500,7 +684,7 @@ describe('polling for changes made on the other phone', () => {
     await first;
     await idle();
     await idle();
-    expect(listCalls(), 'the remembered request must produce a second list request').toBe(2);
+    expect(syncs(), 'the remembered request must produce a second request').toHaveLength(2);
     expect(e.getState().events.map((v) => v.id)).toEqual(['late']); // ... but not forgotten: the new event arrives at once
   });
 

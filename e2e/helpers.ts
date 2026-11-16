@@ -80,7 +80,15 @@ export async function installExisting(page: Page, who: 1 | 2 = 2): Promise<void>
   await expect(page.getByTestId('home')).toBeVisible();
 }
 
-/** The API actions the mock server received since the last reset, in order. */
+/** Forgets the requests seen so far (the data stays). */
+export async function resetCalls(request: APIRequestContext): Promise<void> {
+  await request.get(`${MOCK}/__control?forget=1`);
+}
+
+/**
+ * What the mock server received since the last reset, in order: the action; a `sync` also says how many operations it carried
+ * and whether the answer carried the list ("sync", "sync:2", "sync+list", "sync:1+list").
+ */
 export async function actionsSeen(request: APIRequestContext): Promise<string[]> {
   return (await (await request.get(`${MOCK}/__calls`)).json()) as string[];
 }

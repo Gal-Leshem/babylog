@@ -8,8 +8,8 @@ No names or private details here (public repository).
 ## Track 1: fixes and quality of life
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
 - (no bug open)
-- Slow sync and performance **(owner report)**: diagnosis and a phased plan in `docs/REFACTOR_PLAN.md` (proposal; waiting for the
-  owner's go-ahead and answers). Phases 0 to 4 are fixes-track work; phase 5 (look and feel) needs the owner's choices first.
+- Slow sync and performance **(owner report)**: diagnosis and a phased plan in `docs/REFACTOR_PLAN.md` (owner: the full plan).
+  Phases 0 and 1 are done; the order of the rest is in `PROGRESS.md`. Phase 5 (look and feel): screenshots to the owner first.
 
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 

@@ -63,6 +63,11 @@ jobs:
   server:
     needs: test
     runs-on: ubuntu-latest
+    # dev and main share ONE test server: two live tests at once trip over each other (same open sleep, lock timeouts),
+    # and two deploys would race. One server job at a time, whatever the branch.
+    concurrency:
+      group: test-server
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
