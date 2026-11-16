@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "9462f2a",
+  "sha": "e5574bf",
   "ref": "main",
-  "at": "2026-11-16T19:46:20.464Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43941210276",
+  "at": "2026-11-16T21:08:05.963Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43955339750",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,9 +21,9 @@
       "dist/manifest.webmanifest        0.46 kB",
       "dist/index.html                  1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-BG0UZVul.css  13.44 kB │ gzip:  3.43 kB",
-      "dist/assets/index-Cbu97oH8.js   98.49 kB │ gzip: 33.11 kB",
+      "dist/assets/index-CKr7DRnT.js   98.49 kB │ gzip: 33.11 kB",
       "",
-      "✓ built in 93ms",
+      "✓ built in 71ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -44,12 +44,12 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
       "",
-      "12 vulnerabilities (2 low, 8 moderate, 2 high)",
+      "10 vulnerabilities (8 moderate, 2 high)",
       "",
       "To address issues that do not require attention, run:",
       "  npm audit fix",
@@ -69,14 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 9462f2a to gh-pages"
+      "published e5574bf to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves a9a853c, waiting for 9462f2a",
-      "attempt 2: serves a9a853c, waiting for 9462f2a",
-      "attempt 3: serves a9a853c, waiting for 9462f2a",
-      "site is live and serves 9462f2a"
+      "attempt 1: serves 9462f2a, waiting for e5574bf",
+      "attempt 2: serves 9462f2a, waiting for e5574bf",
+      "attempt 3: serves 9462f2a, waiting for e5574bf",
+      "site is live and serves e5574bf"
     ]
   }
 }
