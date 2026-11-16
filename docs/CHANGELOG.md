@@ -44,6 +44,11 @@ No names, addresses or secrets in this file (the repository is public).
   only when a sleep is already open (the added one must be over) does the form ask for the wake time. Two browser tests, both proven to
   fail without the fix. Owner decisions: no nursing duration for now; keep the app uncluttered; next look at F4 (red night theme) and
   F8 (trends and pattern insights, research and a proposal first).
+- F4 **(owner pick)**: optional dim red night colour, chosen per phone in Settings ("צבע מצב לילה": ענבר / אדום עמום); amber stays the
+  default and night mode itself (auto / always / never) is unchanged. Colour emoji are tinted red with a CSS filter on their own spans
+  (`.ico`, `.hi`, `.ti`, `.emo`), otherwise they were the brightest things on a dark screen. The test checks every visible colour is
+  red-dominant and dim; it fails without the red palette. Found on the way: on opening at night the app first paints in day colours and
+  the buttons fade to dark (a short white flash); logged as a fix in `BACKLOG.md`.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

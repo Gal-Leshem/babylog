@@ -7,11 +7,15 @@ export interface Config {
 
 export type NightMode = 'auto' | 'always' | 'never';
 
+/** Colour of the night theme: the original amber, or a dim red for a dark room. */
+export type NightTint = 'amber' | 'red';
+
 export interface Prefs {
   nightMode: NightMode;
+  nightTint: NightTint;
 }
 
-export const DEFAULT_PREFS: Prefs = { nightMode: 'auto' };
+export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber' };
 
 /** An address the app may talk to: https, or plain http only for local development. */
 export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^http:\/\/(127\.0\.0\.1|localhost)/.test(u);

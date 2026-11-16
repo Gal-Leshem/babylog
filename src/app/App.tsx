@@ -25,8 +25,9 @@ function useTheme(): void {
     const h = localHour(now);
     const night = prefs.nightMode === 'always' || (prefs.nightMode === 'auto' && (h >= 21 || h < 7 || systemDark));
     document.documentElement.dataset.theme = night ? 'night' : 'day';
+    document.documentElement.dataset.tint = prefs.nightTint;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#000000' : '#f7f2ea');
-  }, [now, prefs.nightMode]);
+  }, [now, prefs.nightMode, prefs.nightTint]);
 }
 
 function Banner() {

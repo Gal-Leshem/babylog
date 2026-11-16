@@ -62,7 +62,9 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
         <div class="tile" data-testid="tile-sleep">
           <div class="tl">שינה</div>
           <div class="tv">{sleepValue}</div>
-          <div class="ts">{asleep ? '🌙' : '☀️'}</div>
+          <div class="ts">
+            <span class="emo">{asleep ? '🌙' : '☀️'}</span>
+          </div>
         </div>
         <div class={`tile ${vit ? '' : 'warn'}`} data-testid="tile-vitamin">
           <div class="tl">ויטמין D</div>
@@ -107,7 +109,7 @@ export function Home({ onEdit, onAddLate }: { onEdit: (e: BabyEvent) => void; on
         {recent.map((e) => (
           <li key={e.id}>
             <button type="button" class="rrow" data-testid="recent-row" onClick={() => onEdit(e)}>
-              <span>{eventIcon(e)}</span>
+              <span class="emo">{eventIcon(e)}</span>
               <span class="rl">{eventLabel(e)}</span>
               <span class="rt">{timeOf(e.start || e.end)}</span>
               <span class="rm">

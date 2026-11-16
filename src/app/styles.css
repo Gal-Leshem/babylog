@@ -28,6 +28,23 @@
   --toast-fg: #c8a87c;
   color-scheme: dark;
 }
+/* Optional dim red night theme (per device): less light in a dark room. Colour emoji are tinted to match, otherwise they are the
+   brightest things on the screen. */
+:root[data-theme='night'][data-tint='red'] {
+  --fg: #c4473a;
+  --muted: #8c3128;
+  --surface: #120403;
+  --line: #2b0b08;
+  --accent: #7e2219;
+  --accent-fg: #000000;
+  --warn: #a5401b;
+  --danger: #d0503f;
+  --toast-bg: #2b0b08;
+  --toast-fg: #c4473a;
+}
+:root[data-theme='night'][data-tint='red'] :is(.ico, .hi, .ti, .emo) {
+  filter: grayscale(1) brightness(0.5) sepia(1) saturate(10) hue-rotate(-32deg) brightness(0.8);
+}
 
 * { box-sizing: border-box; }
 html, body {

@@ -7,7 +7,8 @@ No names or private details here (public repository).
 
 ## Track 1: fixes and quality of life
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
-- (nothing open; the last report, a sleep added after the fact not flipping the home button, is fixed: see `CHANGELOG.md`)
+- Opening the app at night paints day colours for a moment and the buttons fade to dark over 0.2 s (a short flash of light). Found while
+  building F4; the theme should be applied before the first paint. Size S.
 
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 
@@ -27,7 +28,7 @@ other screens or into the existing tiles unless the owner asks otherwise.
 | F1 | Double-entry guard between parents | Both parents logging the same feed or diaper at night is a top sync complaint elsewhere | S | When a tap repeats the same kind the other parent logged in the last few minutes, the toast says so ("כבר נרשם ע״י ... לפני 2 דק׳") with undo. No blocking dialog. |
 | F2 | "Since last diaper / last poop" | Asked for in every tracker; useful for newborn checks (enough wet diapers) | S | Fits as a line in an existing tile or on Summary; Home must not grow or scroll. |
 | F3 | Diaper and feed counts so far today, on Home | Answers "is it enough today?" without opening Summary | S | One short line; test at heights 852/700/560. |
-| F4 | Dim red "nursery" night theme (option next to black) | Less light in a dark room; niche apps sell on it | S | Setting choice only; contrast must stay readable. |
+| F4 | ~~Dim red night theme~~ done (Settings, per phone) | Less light in a dark room | S | See `CHANGELOG.md`. |
 
 ### Then (medium; may change the sheet)
 | # | Feature | Why | Size | Notes |

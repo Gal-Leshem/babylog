@@ -76,7 +76,7 @@ export function EventForm({ mode, event, onClose }: Props) {
         <div class="chips" role="radiogroup" aria-label="סוג">
           {KINDS.map((k) => (
             <button type="button" key={k} class={`chip ${k === kind ? 'on' : ''}`} data-testid={`kind-${k}`} onClick={() => setKind(k)}>
-              {KIND_ICON[k]} {KIND_LABEL[k]}
+              <span class="emo">{KIND_ICON[k]}</span> {KIND_LABEL[k]}
             </button>
           ))}
         </div>

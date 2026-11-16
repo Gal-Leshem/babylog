@@ -76,3 +76,43 @@ test('the page declares a Hebrew right-to-left document', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'he');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 });
+
+// F4: an optional dim red night theme, per device. Every colour on screen must be red-dominant and dim, including the colour emoji.
+test('night colour: dim red can be chosen, tints the emoji, survives a reload and leaves day mode alone', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-14T21:00:00Z')); // 23:00 in Israel
+  await install(page);
+  const fg = () => page.evaluate(() => getComputedStyle(document.body).color);
+  const amber = await fg();
+  await page.getByTestId('tab-settings').click();
+  await expect(page.getByTestId('tint-amber')).toHaveClass(/\bon\b/); // amber stays the default
+  await page.getByTestId('tint-red').click();
+  await expect(page.locator('html')).toHaveAttribute('data-tint', 'red');
+  await page.reload();
+  await expect(page.getByTestId('home')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-tint', 'red');
+  const red = await fg();
+  expect(red).not.toBe(amber);
+  // colours not red-dominant or not dim (polled: buttons fade between themes)
+  const offenders = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('body, .big, .tile, .tv, .tl, .ts, .tabs, .rrow, .link')].flatMap((e) => {
+        const s = getComputedStyle(e);
+        return [s.color, s.backgroundColor]
+          .filter((c) => !c.endsWith(', 0)'))
+          .filter((c) => {
+            const [r, g, b] = c.match(/\d+/g)!.map(Number) as [number, number, number];
+            return g > r * 0.45 + 1 || b > r * 0.45 + 1 || r >= 220;
+          })
+          .map((c) => `${c} ${e.className}`);
+      }),
+    );
+  await expect.poll(offenders).toEqual([]);
+  const emoji = await page.evaluate(() => [...document.querySelectorAll('.ico, .ti, .emo')].map((e) => getComputedStyle(e).filter));
+  expect(emoji.length).toBeGreaterThan(8);
+  for (const f of emoji) expect(f).toContain('hue-rotate');
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('night-never').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'day');
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.ti')!).filter)).toBe('none');
+  expect(await bg(page)).not.toBe('rgb(0, 0, 0)');
+});

@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { NightMode } from '../config';
-import { engine, setNightMode, useEngine, usePrefs } from '../state';
+import type { NightMode, NightTint } from '../config';
+import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 
 const NIGHT: [NightMode, string][] = [
   ['auto', 'אוטומטי'],
   ['always', 'תמיד'],
   ['never', 'אף פעם'],
+];
+
+const TINT: [NightTint, string][] = [
+  ['amber', 'ענבר'],
+  ['red', 'אדום עמום'],
 ];
 
 export function Settings() {
@@ -93,6 +98,15 @@ export function Settings() {
         ))}
       </div>
       <p class="muted">אוטומטי: בין 21:00 ל-07:00, או כשהמכשיר במצב כהה.</p>
+      <h3>צבע מצב לילה</h3>
+      <div class="chips" role="radiogroup">
+        {TINT.map(([id, label]) => (
+          <button type="button" key={id} class={`chip ${prefs.nightTint === id ? 'on' : ''}`} data-testid={`tint-${id}`} onClick={() => setNightTint(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <p class="muted">אדום עמום: פחות אור בחדר חשוך. נשמר רק במכשיר הזה.</p>
 
       <h3>סנכרון</h3>
       <p class="muted" data-testid="sync-info">

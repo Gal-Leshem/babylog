@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'preact/compat';
 import { useEffect, useState } from 'preact/hooks';
-import { DEFAULT_PREFS, type NightMode, type Prefs } from './config';
+import { DEFAULT_PREFS, type NightMode, type NightTint, type Prefs } from './config';
 import { Engine } from './engine';
 import { browserStorage } from './storage';
 
@@ -24,11 +24,13 @@ const PREFS_KEY = 'bl.prefs.v1';
 let prefs: Prefs = { ...DEFAULT_PREFS, ...(browserStorage.get<Partial<Prefs>>(PREFS_KEY) ?? {}) };
 const prefListeners = new Set<() => void>();
 
-export function setNightMode(mode: NightMode): void {
-  prefs = { ...prefs, nightMode: mode };
+function setPrefs(patch: Partial<Prefs>): void {
+  prefs = { ...prefs, ...patch };
   browserStorage.set(PREFS_KEY, prefs);
   for (const l of prefListeners) l();
 }
+export const setNightMode = (mode: NightMode): void => setPrefs({ nightMode: mode });
+export const setNightTint = (tint: NightTint): void => setPrefs({ nightTint: tint });
 export const usePrefs = (): Prefs =>
   useSyncExternalStore(
     (fn) => {
