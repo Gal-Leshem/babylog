@@ -65,6 +65,10 @@ No names, addresses or secrets in this file (the repository is public).
   left like the text; sleep blocks, feed ticks, pee and poop dots) and four small daily count cards for the same 7 full days (feeds, pee
   including "both", poop including "both", hours of sleep), oldest day on the right. Pure CSS, no chart library. Unit tests for the rows,
   a browser test that measures a sleep's position from the right edge and the bar order.
+- CI fix: two pipeline reports were lost (a `dev` server report each time `dev` and `main` finished together). Both runs write the same
+  `reports/<job>.json`, the retry's rebase conflicted, was aborted and gave up. `scripts/status-branch.sh publish` now restarts from the
+  newest branch and puts its own files on top; every run keeps its own commit, the latest report wins. Test with two clones racing
+  (`tests/status-branch.test.ts`), failing on the old script.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

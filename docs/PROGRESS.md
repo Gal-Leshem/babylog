@@ -10,7 +10,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 188 unit (Vitest) and 79 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 189 unit (Vitest) and 79 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -48,8 +48,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
-- `dev` and `main` runs write the same report files on `ci-status`: wait for the `dev` **server** report of the commit (live test) before
-  pushing it to `main`, or the `main` run of the previous commit can overwrite it and the check is skipped by mistake.
+- `dev` and `main` runs write the same report files on `ci-status`, so the current file may belong to the other branch. Find a commit's
+  report by its own commit on `ci-status` (`git log origin/ci-status --format='%h %s' | grep "report: server <sha>"`, then
+  `git show <that>:reports/server.json`) and wait for the `dev` server report (live test) before pushing to `main`.
 
 ## Open risks (cannot be tested in the sandbox)
 - Whether `shortcuts sign` accepts the generated files and iOS imports them (only simulated). Whether a network shortcut runs on a locked phone.

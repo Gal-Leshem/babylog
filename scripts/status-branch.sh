@@ -28,11 +28,22 @@ case "$cmd" in
     cd "$DIR"
     git add -A
     if git diff --cached --quiet; then exit 0; fi
+    # Keep a copy of what this run writes: the dev and main pipelines write the same report files, so a rebase after a lost race
+    # conflicts. On a lost race, start again from the newest branch and put this run's files on top (the latest report wins).
+    keep="$(mktemp -d)"
+    git diff --cached --name-only -z | while IFS= read -r -d '' f; do
+      if [ -e "$f" ]; then mkdir -p "$keep/$(dirname "$f")" && cp "$f" "$keep/$f"; fi
+    done
     git commit -q -m "$msg"
     for i in 1 2 3 4 5 6; do
       if git push -q origin "HEAD:refs/heads/$BRANCH"; then exit 0; fi
-      git fetch -q origin "$BRANCH" && { git rebase -q FETCH_HEAD || git rebase --abort; }
       sleep $((i * 2))
+      git fetch -q origin "$BRANCH" || continue
+      git reset -q --hard FETCH_HEAD
+      cp -R "$keep/." .
+      git add -A
+      if git diff --cached --quiet; then exit 0; fi
+      git commit -q -m "$msg"
     done
     echo "could not publish $BRANCH" >&2
     exit 1
