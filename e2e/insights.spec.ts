@@ -97,9 +97,9 @@ test('insights: a timeline row per day from 06:00, right to left, and daily coun
   await expect(page.getByTestId('cnt-sleep').locator('.bn').nth(1)).toHaveText('7'); // 1:40 + 3:05 + 2:00
 });
 
-// Owner: pee and poop dots were hard to tell apart. Pee is a yellow ring, poop a brown filled dot (shape works in the red theme too);
-// "פיפי + קקי" is drawn as poop.
-test('timeline: pee and poop look different, and pee + poop is drawn as poop', async ({ page, request }) => {
+// Owner: pee and poop dots were hard to tell apart. Pee is a yellow ring, poop a brown filled dot, and pee + poop a yellow ring with a
+// brown dot inside (shapes keep them apart in the red theme too).
+test('timeline: pee is a ring, poop a dot, pee + poop a ring with a dot inside', async ({ page, request }) => {
   await seed(request, [
     { type: 'diaper', detail: 'wet', start: '2026-11-14 09:00' },
     { type: 'diaper', detail: 'poop', start: '2026-11-14 12:00' },
@@ -114,14 +114,29 @@ test('timeline: pee and poop look different, and pee + poop is drawn as poop', a
   const look = (i: number) =>
     dots.nth(i).evaluate((e) => {
       const s = getComputedStyle(e);
-      return { kind: e.getAttribute('data-kind'), fill: s.backgroundColor, ring: s.borderTopColor, ringWidth: s.borderTopWidth };
+      const inner = getComputedStyle(e, '::after');
+      return {
+        kind: e.getAttribute('data-kind'),
+        fill: s.backgroundColor,
+        ring: s.borderTopColor,
+        ringWidth: s.borderTopWidth,
+        innerDot: inner.content !== 'none' && inner.content !== 'normal' ? inner.backgroundColor : null,
+      };
     });
   const [pee, poop, both] = [await look(0), await look(1), await look(2)];
-  expect([pee.kind, poop.kind, both.kind]).toEqual(['pee', 'poop', 'poop']);
-  expect(both).toEqual(poop);
-  expect(pee.fill).toBe('rgba(0, 0, 0, 0)'); // a ring
+  expect([pee.kind, poop.kind, both.kind]).toEqual(['pee', 'poop', 'both']);
+  const clear = 'rgba(0, 0, 0, 0)';
+  // pee: ring only
+  expect(pee.fill).toBe(clear);
   expect(pee.ringWidth).not.toBe('0px');
-  expect(poop.fill).not.toBe('rgba(0, 0, 0, 0)'); // filled
+  expect(pee.innerDot).toBeNull();
+  // poop: filled dot, no ring
+  expect(poop.fill).not.toBe(clear);
+  expect(poop.ringWidth).toBe('0px');
+  // both: the pee ring with the poop colour as a dot inside
+  expect(both.fill).toBe(clear);
+  expect(both.ring).toBe(pee.ring);
+  expect(both.innerDot).toBe(poop.fill);
   const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number);
   const [pr, pg, pb] = rgb(pee.ring);
   const [kr, kg, kb] = rgb(poop.fill);

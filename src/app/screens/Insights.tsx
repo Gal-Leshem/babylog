@@ -64,6 +64,8 @@ function nightCard(n: NightSleepInsight): JSX.Element {
 
 const WEEKDAY_LETTER = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUTCDay()]!;
+/** pee: ring, poop: filled dot, pee + poop: ring with a dot inside */
+const DOT_CLASS = { pee: 'w', poop: 'p', both: 'b' } as const;
 const pct = (f: number) => `${(f * 100).toFixed(2)}%`;
 
 /** One day from 06:00 to 06:00; time runs right to left like the text. */
@@ -81,7 +83,7 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
           <div key={`f${f}`} class="f" data-testid="tl-feed" style={{ right: pct(f) }} />
         ))}
         {r.diapers.map((d) => (
-          <div key={`d${d.at}`} class={`d ${d.poop ? 'p' : 'w'}`} data-kind={d.poop ? 'poop' : 'pee'} data-testid="tl-diaper" style={{ right: pct(d.at) }} />
+          <div key={`d${d.at}`} class={`d ${DOT_CLASS[d.kind]}`} data-kind={d.kind} data-testid="tl-diaper" style={{ right: pct(d.at) }} />
         ))}
       </div>
     </div>
@@ -156,7 +158,10 @@ export function Insights() {
           <i class="d w" /> פיפי
         </span>
         <span>
-          <i class="d p" /> קקי (גם פיפי + קקי)
+          <i class="d p" /> קקי
+        </span>
+        <span>
+          <i class="d b" /> פיפי + קקי
         </span>
       </div>
 

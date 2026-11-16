@@ -59,6 +59,15 @@ Recommended for BabyLog (calm Home, two parents, iPhone web app):
 Data sketch: a "Medicines" list in the sheet (id, name, dose text, schedule type and its numbers, start/end, active) and dose rows as
 events (type `medicine`, which medicine, time, who, dose note, given/skipped). Open questions for the owner are in the session report.
 
+### F7 owner spec (draft, November 2026; open points under discussion)
+- Medicines are managed in Settings: a button opens a medicines screen (name, dose, times, schedule; a course counted by X doses or by
+  X days). A medicine always ends by hand: moved to the archive in Settings. Both parents can do everything.
+- Vitamin D is always there. The Home button reads "ויטמין D" while it is the only medicine and "תרופות" once others are defined.
+- With more than one medicine, the button opens a window to mark which one was given.
+- For a medicine taken twice a day or every X hours: a highlighted line in the window when it is too early (minimum gap) or today's doses
+  are done, and a confirmation after choosing it. This is the only case where logging takes an extra tap.
+- No reminders.
+
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.
 - F12 Wake windows / next nap estimate: only meaningful from about two months; often criticized as inaccurate elsewhere.

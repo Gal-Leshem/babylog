@@ -190,8 +190,8 @@ describe('timeline rows (06:00 to 06:00)', () => {
   it('places feeds (merged), diapers and sleeps as fractions of the day', () => {
     expect(rows[1]!.feeds).toEqual([3 / 24]);
     expect(rows[1]!.diapers).toEqual([
-      { at: 6 / 24, poop: true },
-      { at: 23 / 24, poop: false },
+      { at: 6 / 24, kind: 'both' },
+      { at: 23 / 24, kind: 'pee' },
     ]);
     expect(rows[1]!.sleeps).toEqual([{ from: 21 / 24, to: 1, open: false }]);
     expect(rows[0]!.sleeps[0]).toEqual({ from: 0, to: 2 / 24, open: false });

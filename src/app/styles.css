@@ -282,9 +282,12 @@ input, textarea, select {
 .rib .s, .tl-legend .s { position: absolute; top: 4px; bottom: 4px; background: var(--accent); opacity: 0.45; border-radius: 4px; }
 .rib .f, .tl-legend .f { position: absolute; top: 0; height: 10px; width: 2px; margin-right: -1px; background: var(--warn); }
 .rib .d, .tl-legend .d { position: absolute; bottom: 1px; width: 8px; height: 8px; margin-right: -4px; border-radius: 50%; box-sizing: border-box; }
-/* pee: a yellow ring; poop (and pee + poop): a brown filled dot. The shapes differ too, so they stay apart in the red theme. */
-.rib .d.w, .tl-legend .d.w { background: transparent; border: 2px solid var(--pee); }
+/* pee: a yellow ring; poop: a brown filled dot; pee + poop: the ring with a brown dot inside. Shapes, not only colours, so they stay
+   apart in the red theme. */
+.rib .d, .tl-legend .d { width: 10px; height: 10px; margin-right: -5px; }
+.rib .d.w, .tl-legend .d.w, .rib .d.b, .tl-legend .d.b { background: transparent; border: 2px solid var(--pee); }
 .rib .d.p, .tl-legend .d.p { background: var(--poop); border: 0; }
+.rib .d.b::after, .tl-legend .d.b::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--poop); }
 .tl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--muted); margin: 6px 0 4px; }
 .tl-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .tl-legend i { position: relative !important; display: inline-block; top: auto !important; bottom: auto !important; margin: 0 !important; }

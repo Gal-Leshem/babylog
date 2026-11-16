@@ -73,6 +73,8 @@ No names, addresses or secrets in this file (the repository is public).
   per theme, `--pee` / `--poop`; the shapes keep them apart in the red theme); "פיפי + קקי" is drawn as poop (legend says so). Browser test
   checks shape, colour difference and the "both" mapping; it failed on the old dots.
 - Research only **(owner request)**: how other apps handle more than one medicine; summary and recommendation in `BACKLOG.md` (F7).
+- Timeline **(owner request)**: "פיפי + קקי" now has its own mark, the pee ring with the poop dot inside (instead of a plain poop dot).
+- F7 spec **(owner)** recorded in `BACKLOG.md`; feedback given before any development.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

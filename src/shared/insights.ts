@@ -256,7 +256,7 @@ export interface TimelineRow {
   /** positions are fractions of the row, 0 = 06:00, 1 = 06:00 the next day */
   sleeps: { from: number; to: number; open: boolean }[];
   feeds: number[];
-  diapers: { at: number; poop: boolean }[];
+  diapers: { at: number; kind: 'pee' | 'poop' | 'both' }[];
   /** for today's row: how far the row has run (0..1); 1 for past rows */
   until: number;
 }
@@ -292,7 +292,7 @@ export function timeline(events: readonly BabyEvent[], nowEpoch: number, mergeWi
       feeds: feeds.filter(inRow).map(pos),
       diapers: evs
         .filter((e) => e.type === 'diaper' && e.start && inRow(parseLocal(e.start)))
-        .map((e) => ({ at: pos(parseLocal(e.start)), poop: e.detail === 'poop' || e.detail === 'both' }))
+        .map((e) => ({ at: pos(parseLocal(e.start)), kind: e.detail === 'poop' ? ('poop' as const) : e.detail === 'both' ? ('both' as const) : ('pee' as const) }))
         .sort((x, y) => x.at - y.at),
       until: Math.min(1, Math.max(0, pos(nowEpoch))),
     });

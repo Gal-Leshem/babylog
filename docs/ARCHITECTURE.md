@@ -79,7 +79,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   (never means), a minimum amount of data per card (otherwise no card), "after a feed" patterns only when at least 20 points more often
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
-  bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop and "both" a filled dot (`--poop`): shape, not only colour.
+  bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
 - **Sync:** see "Sync engine" above (poll every 10 s with a data revision, full refresh every 60 s, refresh on resume).
 
 ## Server deployment details
