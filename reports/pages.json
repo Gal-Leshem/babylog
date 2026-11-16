@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "a781555",
+  "sha": "dd60713",
   "ref": "main",
-  "at": "2026-11-16T21:43:28.577Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43961330417",
+  "at": "2026-11-16T22:31:15.441Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/43969133416",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,11 +19,11 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-BG0UZVul.css   13.44 kB │ gzip:  3.43 kB",
-      "dist/assets/index-Cw7MBAUV.js   102.39 kB │ gzip: 34.32 kB",
+      "dist/assets/index-Bhuax9Ih.js   102.39 kB │ gzip: 34.32 kB",
       "",
-      "✓ built in 81ms",
+      "✓ built in 85ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -44,7 +44,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -69,13 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published a781555 to gh-pages"
+      "published dd60713 to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves e5574bf, waiting for a781555",
-      "attempt 2: serves e5574bf, waiting for a781555",
-      "site is live and serves a781555"
+      "attempt 1: serves a781555, waiting for dd60713",
+      "attempt 2: serves a781555, waiting for dd60713",
+      "attempt 3: serves a781555, waiting for dd60713",
+      "site is live and serves dd60713"
     ]
   }
 }
