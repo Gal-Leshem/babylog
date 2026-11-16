@@ -176,6 +176,12 @@ No names, addresses or secrets in this file (the repository is public).
   Tests: 12 server tests, 1 through the built Apps Script bundle, 9 new and 6 adapted engine tests (three of them proven to fail
   when the feature is broken: revision not kept, server always sending the list, a failed operation dropped), 6 new browser tests
   counting requests (one per tap, one per open, one for three offline taps, old server), live test for `sync`.
+- First measurements on the real server (table in `REFACTOR_PLAN.md`, section 7): the per-request floor is about 0.6 s; the
+  settings / medicines read was the largest cost of a list (0.5 to 2 s), then the duplicate check (0.3 to 0.5 s per operation).
+- Phase 2, part 1 (server): the settings are kept as a copy in a script property, tied to a settings version so a racing reader
+  cannot leave an old copy; all properties are read with one call per request and again only under the lock. A check with nothing
+  new is now exactly one call to Google; a list reads only the events. Tests through the built bundle count the calls to Google
+  (two of them proven to fail: revision not re-read under the lock, copy accepted without its version).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

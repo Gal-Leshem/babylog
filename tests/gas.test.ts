@@ -204,11 +204,115 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'settings' }).settings.medicines.map((m: { status: string }) => m.status)).toEqual(['active', 'archived']);
     // the sheet may hand the date back with its apostrophe, or as a date: both read as the same day
     expect(post({ key, action: 'settings' }).settings.medicines[1].courseUntil).toBe('2026-12-01');
+    // (the server keeps a copy of the settings; these two checks are about reading the sheet itself, so the copy is dropped)
     rt.sheets.get('Medicines')![2]![14] = new Date('2026-12-01T10:00:00Z');
+    rt.props.delete('SETTINGS_JSON');
     expect(post({ key, action: 'settings' }).settings.medicines[1].courseUntil).toBe('2026-12-01');
     // a row written by the first version (12 columns, dose as free text) still reads
     rt.sheets.get('Medicines')!.push(['old', 'ישן', '5 מ״ל', 'daily', '', '', '', '', 'none', '', 'active', '']);
+    rt.props.delete('SETTINGS_JSON');
     expect(post({ key, action: 'settings' }).settings.medicines[2]).toMatchObject({ id: 'old', dose: '5 מ״ל', doseUnit: '', icon: '💊', course: 'none' });
+  });
+
+  // Measured on the real server: reading the settings tabs took 0.5 to 2 s of every list; properties 20 to 400 ms per call.
+  describe('cheap requests: a copy of the settings, properties read once', () => {
+    const day = '2026-01-10';
+    const range = { from: day, to: day };
+    const start = () => {
+      const b = boot();
+      b.g.setup!();
+      const key = b.rt.props.get('API_KEY')!;
+      const count = <T,>(fn: () => T) => {
+        const before = { ...b.rt.calls };
+        const out = fn();
+        return { out, props: b.rt.calls.props - before.props, values: b.rt.calls.values - before.values, find: b.rt.calls.find - before.find };
+      };
+      return { ...b, key, count };
+    };
+
+    it('a list reads the settings tabs only the first time; later lists read just the events', () => {
+      const { post, key, count } = start();
+      post({ key, action: 'log', id: 'f0', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' });
+      post({ key, action: 'sync', ...range }); // fills the copy
+      const second = count(() => post({ key, action: 'sync', ...range }));
+      expect(second.out.settings.medicines).toEqual([DEFAULT_VITAMIN_D]);
+      expect(second.values, 'one read: the events').toBe(1);
+      expect(second.props, 'one call for all properties').toBe(1);
+    });
+
+    it('a check with nothing new is ONE call to Google (the properties) and no sheet read', () => {
+      const { post, key, count } = start();
+      const first = post({ key, action: 'sync', ...range });
+      const check = count(() => post({ key, action: 'sync', ...range, rev: first.rev }));
+      expect(check.out.unchanged).toBe(true);
+      expect([check.props, check.values, check.find]).toEqual([1, 0, 0]);
+    });
+
+    it('a saved change shows at once, on this request and the next ones', () => {
+      const { post, key } = start();
+      post({ key, action: 'sync', ...range });
+      const saved = post({ key, action: 'settings', set: { babyName: 'New', medicines: [{ id: 'm1', name: 'ברזל', schedule: 'daily' }] } });
+      expect(saved.settings.babyName).toBe('New');
+      for (let i = 0; i < 2; i++) {
+        const r = post({ key, action: 'sync', ...range });
+        expect(r.settings.babyName).toBe('New');
+        expect(r.settings.medicines.map((m: { id: string }) => m.id)).toEqual(['vitamin_d', 'm1']);
+      }
+      expect(post({ key, action: 'log', id: 'd1', type: 'medicine', detail: 'm1', start: `${day} 08:00`, user: 'P', source: 'app' }).ok).toBe(true);
+    });
+
+    it('a copy stored by a reader that raced with a save is ignored (it carries the older settings version)', () => {
+      const { rt, post, key } = start();
+      post({ key, action: 'sync', ...range });
+      const stale = rt.props.get('SETTINGS_JSON')!; // what a slow reader is about to store
+      post({ key, action: 'settings', set: { babyName: 'New' } });
+      rt.props.set('SETTINGS_JSON', stale); // ...and it lands after the save
+      expect(post({ key, action: 'sync', ...range }).settings.babyName).toBe('New');
+    });
+
+    it('settings too large for a property are simply read from the sheet every time', () => {
+      const { rt, post, key } = start();
+      const many = Array.from({ length: 29 }, (_, i) => ({ id: `m${i}`, name: `${'תרופה ארוכה מאוד '.repeat(3)}${i}`.slice(0, 30), schedule: 'prn', dose: '12.5', doseUnit: 'מ״ל', minGapHours: 4, maxPerDay: 4, course: 'until', courseUntil: '2026-12-01' }));
+      for (let i = 0; i < 29; i += 10) expect(post({ key, action: 'settings', set: { medicines: many.slice(i, i + 10) } }).ok).toBe(true);
+      const r = post({ key, action: 'sync', ...range });
+      expect(r.settings.medicines).toHaveLength(30);
+      expect((rt.props.get('SETTINGS_JSON') ?? '').includes('m28')).toBe(false);
+      expect(post({ key, action: 'sync', ...range }).settings.medicines).toHaveLength(30);
+    });
+
+    it('running setup again takes in a hand edit of the settings tab', () => {
+      const { rt, g, post, key } = start();
+      post({ key, action: 'sync', ...range });
+      rt.sheets.get('Settings')![0]![1] = 'ByHand';
+      expect(post({ key, action: 'sync', ...range }).settings.babyName).not.toBe('ByHand'); // the copy still answers
+      g.setup!();
+      expect(post({ key, action: 'sync', ...range }).settings.babyName).toBe('ByHand');
+    });
+
+    it('a tap asks for the properties twice (before and under the lock) and writes the revision once', () => {
+      const { post, key, count } = start();
+      const first = post({ key, action: 'sync', ...range });
+      const tap = count(() => post({ key, action: 'sync', ...range, rev: first.rev, ops: [{ action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' }] }));
+      expect(tap.out.unchanged).toBe(true);
+      expect(tap.props).toBe(3);
+    });
+
+    it('the revision is read under the lock: a write that slipped in while waiting for it is not missed', () => {
+      const { rt, post, key } = start();
+      const first = post({ key, action: 'sync', ...range });
+      // the other phone writes between this request's first look at the properties and its turn with the lock
+      const ctx = rt.context;
+      const realLock = ctx.LockService.getScriptLock;
+      ctx.LockService.getScriptLock = () => {
+        const l = realLock();
+        return { ...l, waitLock: (ms: number) => (rt.props.set('REV', String(Number(rt.props.get('REV') ?? '0') + 1)), l.waitLock(ms)) };
+      };
+      const r = post({ key, action: 'sync', ...range, rev: first.rev, ops: [{ action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' }] });
+      ctx.LockService.getScriptLock = realLock;
+      expect(r.unchanged, 'someone else wrote: the list must come back').toBeUndefined();
+      expect(r.events).toHaveLength(1);
+      expect(Number(r.rev)).toBe(Number(first.rev) + 2); // theirs and ours
+    });
   });
 
   it('rotateKey invalidates the old key', () => {

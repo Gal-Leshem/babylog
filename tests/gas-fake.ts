@@ -9,6 +9,8 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
   const props = new Map<string, string>();
   const logs: string[] = [];
   let locks = 0;
+  /** How many calls reached each Google service (the slow part of every request). */
+  const calls = { props: 0, values: 0, find: 0 };
 
   const sheetObj = (name: string) => {
     const rows = () => sheets.get(name)!;
@@ -19,7 +21,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
     };
     const rangeObj = (r0: number, c0: number, nr: number, nc: number): any => {
       const self: any = {
-        getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => rows()[r0 - 1 + i]?.[c0 - 1 + j] ?? '')),
+        getValues: () => (calls.values++, 0) || Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => rows()[r0 - 1 + i]?.[c0 - 1 + j] ?? '')),
         setValues: (v: Cell[][]) => {
           v.forEach((row, i) =>
             row.forEach((val, j) => {
@@ -39,6 +41,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
             matchEntireCell: (b: boolean) => ((entire = b), f),
             matchCase: () => f,
             findNext: () => {
+              calls.find++;
               for (let i = 0; i < nr; i++) {
                 const v = rows()[r0 - 1 + i]?.[c0 - 1];
                 if (v !== undefined && (entire ? String(v) === text : String(v).includes(text))) return rangeObj(r0 + i, c0, 1, 1);
@@ -95,7 +98,16 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
     console: { log: (...a: unknown[]) => logs.push(a.join(' ')) },
     SpreadsheetApp: { getActive: () => ss, flush: () => undefined },
     PropertiesService: {
-      getScriptProperties: () => ({ getProperty: (k: string) => props.get(k) ?? null, setProperty: (k: string, v: string) => void props.set(k, v) }),
+      getScriptProperties: () => ({
+        getProperty: (k: string) => (calls.props++, props.get(k) ?? null),
+        getProperties: () => (calls.props++, Object.fromEntries(props)),
+        setProperty: (k: string, v: string) => {
+          calls.props++;
+          if (v.length > 9000) throw new Error('Argument too large: value'); // the real limit is about 9 KB per value
+          props.set(k, v);
+        },
+        deleteProperty: (k: string) => (calls.props++, void props.delete(k)),
+      }),
     },
     LockService: { getScriptLock: () => ({ waitLock: () => void locks++, releaseLock: () => void locks-- }) },
     ContentService: { createTextOutput: out, MimeType: { JSON: 'json' } },
@@ -118,5 +130,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
     props,
     logs,
     openLocks: () => locks,
+    calls,
+    context,
   };
 }

@@ -126,7 +126,13 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   prints a working code; `ScriptApp.getService().getUrl()` returns the editor-only `/dev` address and must not be used for codes.
 - Entry points (`doPost`, `doGet`, `setup`, `rotateKey`, `printInstallCode`) are emitted as plain top-level functions by the build, because the
   Apps Script editor lists only statically declared functions.
-- `REV` (script property) is the data revision used by `poll`. `API_KEY` is the shared secret. Both live only in the script properties.
+- `REV` (script property) is the data revision. `API_KEY` is the shared secret. Both live only in the script properties.
+- Calls to Google services are the slow part of a request (measured: properties 20 to 400 ms a call, the settings tabs 0.5 to 2 s),
+  so `gas.ts` reads ALL properties with one call per request (`P()`); taking the lock drops that snapshot, so the revision and the
+  settings version are always read fresh under the lock. The settings are also kept as a copy in the property `SETTINGS_JSON`,
+  valid only for the settings version it was read at (`SETTINGS_REV`, moved by every save), so a reader racing with a save cannot
+  leave an old copy behind. The sheet stays the store; settings above 4,000 characters are not copied. A hand edit of the
+  Settings / Medicines tabs is taken in by running `setup()` again (the owner does not edit by hand).
 
 ## Tests (what each layer is for)
 - `tests/` (Vitest, ~242): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime

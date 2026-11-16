@@ -110,10 +110,35 @@ class SheetStore implements Store {
     });
     return true;
   }
+  /**
+   * Reading the Settings and Medicines tabs is the slowest thing a list does (measured: 0.5 to 2 s), and they change rarely.
+   * So the settings are also kept as one script property, which arrives with the properties every request reads anyway.
+   * The copy is valid only for the settings version it was read at (`SETTINGS_REV`, moved by every save), so a reader that
+   * raced with a save can never leave an old copy behind. The sheet stays the store; a hand edit of those two tabs is picked
+   * up by running setup() again.
+   */
   getSettings(): Settings {
-    return timed('settings', () => this.readSettings());
+    const ver = P().SETTINGS_REV ?? '0';
+    try {
+      const c = JSON.parse(P().SETTINGS_JSON ?? 'null') as { v?: string; s?: Settings } | null;
+      if (c && c.v === ver && c.s && Array.isArray(c.s.medicines) && Array.isArray(c.s.parents)) return c.s;
+    } catch {
+      /* unreadable copy: read the sheet */
+    }
+    const s = timed('settings', () => this.readSettings());
+    const json = JSON.stringify({ v: ver, s });
+    if (json.length <= SETTINGS_CACHE_MAX) {
+      try {
+        timed('props', () => props().setProperty('SETTINGS_JSON', json));
+        P().SETTINGS_JSON = json;
+      } catch {
+        /* no copy this time: the sheet was read, the answer is right */
+      }
+    }
+    return s;
   }
-  private readSettings(): Settings {
+  /** Straight from the sheet (setup uses it, so a hand edit can be taken in). */
+  readSettings(): Settings {
     const sh = this.ss.getSheetByName(SETTINGS);
     const map: Record<string, string> = {};
     if (sh && sh.getLastRow() >= 1) {
@@ -153,7 +178,14 @@ class SheetStore implements Store {
     if (rows.length) sh.getRange(2, 1, rows.length, MED_HEADER.length).setValues(rows);
   }
   setSettings(s: Settings): void {
-    timed('write', () => this.writeSettings(s));
+    timed('write', () => {
+      this.writeSettings(s);
+      SpreadsheetApp.flush();
+    });
+    // a new settings version: every stored copy is void from now on (the next read takes the sheet and stores a fresh one)
+    const ver = String(Number(P().SETTINGS_REV ?? '0') + 1);
+    timed('props', () => props().setProperty('SETTINGS_REV', ver));
+    P().SETTINGS_REV = ver;
   }
   private writeSettings(s: Settings): void {
     const sh = this.ss.getSheetByName(SETTINGS) ?? this.ss.insertSheet(SETTINGS);
@@ -170,10 +202,12 @@ class SheetStore implements Store {
     return this.ss.getUrl();
   }
   revision(): string {
-    return timed('props', () => props().getProperty('REV') ?? '0');
+    return P().REV ?? '0';
   }
   bump(): void {
-    timed('props', () => props().setProperty('REV', String(Number(props().getProperty('REV') ?? '0') + 1)));
+    const next = String(Number(P().REV ?? '0') + 1); // read under the lock (the lock drops the snapshot)
+    timed('props', () => props().setProperty('REV', next));
+    P().REV = next;
   }
 }
 
@@ -182,9 +216,22 @@ function fatal(msg: string): never {
 }
 
 const props = () => PropertiesService.getScriptProperties();
+/**
+ * A property value may hold about 9 KB, and Hebrew letters take two bytes each: settings longer than this many characters
+ * (some twenty medicines) are simply not kept as a copy and are read from the sheet as before.
+ */
+const SETTINGS_CACHE_MAX = 4000;
+/**
+ * All script properties, read with ONE call per request (each call costs 20 to 400 ms). Taking the lock drops the snapshot,
+ * so everything decided under the lock (the revision, the settings version) is read fresh.
+ */
+let snapshot: Record<string, string> | null = null;
+function P(): Record<string, string> {
+  return (snapshot ??= timed('props', () => props().getProperties()));
+}
 
 function deps(): Deps {
-  const checkKey = makeCheckKey(timed('props', () => props().getProperty('API_KEY')), __FIXED_KEY__);
+  const checkKey = makeCheckKey(P().API_KEY ?? null, __FIXED_KEY__);
   return {
     store: new SheetStore(),
     now: () => Date.now(),
@@ -192,6 +239,7 @@ function deps(): Deps {
     withLock: (fn) => {
       const lock = LockService.getScriptLock();
       timed('lock', () => lock.waitLock(10_000));
+      snapshot = null; // someone may have written while we waited
       try {
         return fn();
       } finally {
@@ -214,6 +262,7 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
   }
   const t0 = Date.now();
   spent = {};
+  snapshot = null;
   const answer = handle(body, deps());
   const debug = typeof body === 'object' && body !== null && (body as { debug?: unknown }).debug === true;
   // `ms`: our own time, so a phone can tell it from the time the trip itself takes
@@ -283,7 +332,8 @@ export function setup(): void {
   const first = ss.getSheets()[0];
   if (first && first.getName() !== EVENTS && first.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(first);
   const store = new SheetStore();
-  store.setSettings(store.getSettings());
+  snapshot = null;
+  store.setSettings(store.readSettings()); // from the sheet itself: this is how a hand edit of the settings tabs is taken in
   writeReadme(ss);
   if (!props().getProperty('API_KEY')) props().setProperty('API_KEY', newKey());
   printInstallCode();
