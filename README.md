@@ -9,7 +9,7 @@ Google Sheet; there is no other server.
 - `src/app` the Preact app: sync engine, screens, styles
 - `scripts` build, deploy, privacy check, CI helpers, shortcut generator and Mac signing script
 - `tests` unit tests (Vitest); `e2e` browser tests (Playwright, against a mock server)
-- `docs` architecture, install guide (Hebrew), progress notes
+- `docs` architecture, install guide (Hebrew), progress notes, change log, backlog
 
 See `docs/ARCHITECTURE.md`. Install guide for the owner: `docs/INSTALL.he.md`.
 

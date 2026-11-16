@@ -36,6 +36,10 @@ No names, addresses or secrets in this file (the repository is public).
 - Commit identity: new commits are authored as `Claude <noreply@anthropic.com>` (a session hook flags other committer emails as Unverified).
   The first ten commits still carry a generic identity; re-authoring them needs a force-push that has not been approved.
 
+## Monday: backlog
+- `docs/BACKLOG.md` added: a fixes track (owner feedback, always first) and a features track, proposed from a scan of similar apps and
+  parents' reviews; the owner picks the order. Items already covered by the app and things iPhone web apps cannot do are listed separately.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

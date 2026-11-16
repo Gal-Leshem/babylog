@@ -14,12 +14,13 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
+- What comes next: `docs/BACKLOG.md` (track 1: fixes from the owner's feedback, always first; track 2: features in the order the owner picks).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
 2. `git config user.name Claude && git config user.email noreply@anthropic.com`
    `git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' && git fetch origin` (otherwise a session hook mis-counts unpushed commits).
-3. Read `docs/CHANGELOG.md` and `docs/ARCHITECTURE.md`. Run `npm test`, `npm run typecheck`, `npm run build && npx playwright test --trace off`.
+3. Read `docs/CHANGELOG.md`, `docs/ARCHITECTURE.md` and `docs/BACKLOG.md`. Run `npm test`, `npm run typecheck`, `npm run build && npx playwright test --trace off`.
 4. Check the latest pipeline results: `scripts/read-ci.sh` (test | server | pages). Trust a report only if its `sha` equals `git rev-parse --short=7 HEAD`.
 5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; wait for CI; then push the same
    commit to `main`; confirm `https://<account>.github.io/babylog/version.json` serves it.
