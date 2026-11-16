@@ -8,6 +8,7 @@ import {
   poopAfterFeedInsight,
   quantile,
   spread,
+  timeline,
 } from '../src/shared/insights';
 import { addDays, formatLocal } from '../src/shared/tz';
 import type { BabyEvent } from '../src/shared/types';
@@ -166,5 +167,39 @@ describe('night sleep', () => {
 describe('all insights together', () => {
   it('returns nulls on an empty log', () => {
     expect(insights([], NOW, 20)).toEqual({ from: '2026-11-08', to: '2026-11-14', feedGaps: null, poopAfterFeed: null, diaperAfterFeed: null, nightSleep: null });
+  });
+});
+
+describe('timeline rows (06:00 to 06:00)', () => {
+  const evs = [
+    ev({ type: 'feed', detail: 'left', start: '2026-11-14 09:00' }),
+    ev({ type: 'feed', detail: 'right', start: '2026-11-14 09:10' }), // same feeding: one tick
+    ev({ type: 'diaper', detail: 'both', start: '2026-11-14 12:00' }),
+    ev({ type: 'diaper', detail: 'wet', start: '2026-11-15 05:00' }), // before 06:00: still the Nov 14 row
+    ev({ type: 'sleep', start: '2026-11-15 03:00', end: '2026-11-15 08:00' }), // crosses 06:00: split between two rows
+    ev({ type: 'sleep', start: '2026-11-15 09:30' }), // open: runs until now
+  ];
+  const rows = timeline(evs, NOW, 20, 3);
+
+  it('newest first, the first row containing now and running only until now', () => {
+    expect(rows.map((r) => r.date)).toEqual(['2026-11-15', '2026-11-14', '2026-11-13']);
+    expect(rows[0]!.until).toBeCloseTo(4 / 24);
+    expect(rows[1]!.until).toBe(1);
+  });
+
+  it('places feeds (merged), diapers and sleeps as fractions of the day', () => {
+    expect(rows[1]!.feeds).toEqual([3 / 24]);
+    expect(rows[1]!.diapers).toEqual([
+      { at: 6 / 24, poop: true },
+      { at: 23 / 24, poop: false },
+    ]);
+    expect(rows[1]!.sleeps).toEqual([{ from: 21 / 24, to: 1, open: false }]);
+    expect(rows[0]!.sleeps[0]).toEqual({ from: 0, to: 2 / 24, open: false });
+    expect(rows[0]!.sleeps[1]!.open).toBe(true);
+    expect(rows[0]!.sleeps[1]!.to).toBeCloseTo(4 / 24);
+  });
+
+  it('before 06:00 the current row is the one that started yesterday', () => {
+    expect(timeline(evs, T('2026-11-15 05:30'), 20, 1)[0]!.date).toBe('2026-11-14');
   });
 });

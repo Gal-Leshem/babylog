@@ -265,3 +265,28 @@ input, textarea, select {
 .ins { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
 .ins .it { font-weight: 700; line-height: 1.35; }
 .ins .ie { color: var(--muted); font-size: 13px; margin-top: 3px; line-height: 1.35; }
+
+/* ---- insights: timeline (06:00 to 06:00, right to left) and daily count bars ---- */
+.tl-axis { position: relative; height: 14px; margin-inline-start: 62px; font-size: 10px; color: var(--muted); }
+.tl-axis span { position: absolute; top: 0; transform: translateX(50%); }
+.tl-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.tl-day { width: 56px; flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.rib { position: relative; flex: 1; height: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.rib .rest { position: absolute; top: 0; bottom: 0; background: var(--line); opacity: 0.5; }
+.rib .s, .tl-legend .s { position: absolute; top: 4px; bottom: 4px; background: var(--accent); opacity: 0.45; border-radius: 4px; }
+.rib .f, .tl-legend .f { position: absolute; top: 0; height: 10px; width: 2px; margin-right: -1px; background: var(--warn); }
+.rib .d, .tl-legend .d { position: absolute; bottom: 2px; width: 6px; height: 6px; margin-right: -3px; border-radius: 50%; background: var(--muted); }
+.rib .d.p, .tl-legend .d.p { background: var(--fg); }
+.tl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--muted); margin: 6px 0 4px; }
+.tl-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.tl-legend i { position: relative !important; display: inline-block; top: auto !important; bottom: auto !important; margin: 0 !important; }
+.tl-legend i.s { width: 12px; height: 8px; }
+.cnts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cnt { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px 6px; min-width: 0; }
+.cnt .ie { color: var(--muted); font-size: 12px; }
+.bars { display: flex; gap: 4px; margin-top: 4px; }
+.bar { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.bar .bt { width: 100%; height: 40px; display: flex; align-items: flex-end; }
+.bar .bn { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar .bv { width: 100%; min-height: 1px; background: var(--accent); opacity: 0.5; border-radius: 3px 3px 0 0; }
+.bar .bd { font-size: 9px; color: var(--muted); margin-top: 2px; }

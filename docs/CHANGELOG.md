@@ -61,6 +61,10 @@ No names, addresses or secrets in this file (the repository is public).
   Medians and the middle half, never means; each card appears only with enough data; "after a feed" cards appear only when clearly more
   often than chance. Ranges are written in words ("בין 2:00 ל-2:35"): a dash between numbers reads backwards in right-to-left text.
   Calculations in `src/shared/insights.ts` (16 unit tests, one proven to fail when the chance check is removed); two browser tests.
+- F8 part 2: under the cards, a timeline with one row per day from 06:00 to 06:00 (today on top, running until now; time runs right to
+  left like the text; sleep blocks, feed ticks, pee and poop dots) and four small daily count cards for the same 7 full days (feeds, pee
+  including "both", poop including "both", hours of sleep), oldest day on the right. Pure CSS, no chart library. Unit tests for the rows,
+  a browser test that measures a sleep's position from the right edge and the bar order.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

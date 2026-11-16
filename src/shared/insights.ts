@@ -245,3 +245,57 @@ export function insights(events: readonly BabyEvent[], nowEpoch: number, mergeWi
     nightSleep: nightSleepInsight(events, nowEpoch),
   };
 }
+
+// ---------- timeline (one row per day, 06:00 to 06:00) ----------
+
+export const TIMELINE_DAY_START_HOUR = 6;
+
+export interface TimelineRow {
+  /** the calendar date the row starts on (at 06:00) */
+  date: string;
+  /** positions are fractions of the row, 0 = 06:00, 1 = 06:00 the next day */
+  sleeps: { from: number; to: number; open: boolean }[];
+  feeds: number[];
+  diapers: { at: number; poop: boolean }[];
+  /** for today's row: how far the row has run (0..1); 1 for past rows */
+  until: number;
+}
+
+/** The last `days` rows, newest first; the first row is the one that contains `now` (it runs only until now). */
+export function timeline(events: readonly BabyEvent[], nowEpoch: number, mergeWindowMin: number, days = INSIGHT_DAYS): TimelineRow[] {
+  const sixAm = (d: string) => dayStart(d) + TIMELINE_DAY_START_HOUR * 60 * MIN;
+  let current = localDate(nowEpoch);
+  if (nowEpoch < sixAm(current)) current = addDays(current, -1);
+  const evs = live(events);
+  const feeds = feedGroups(evs, mergeWindowMin).map((g) => g.start);
+  const rows: TimelineRow[] = [];
+  for (let k = 0; k < days; k++) {
+    const date = addDays(current, -k);
+    const a = sixAm(date);
+    const b = sixAm(addDays(date, 1));
+    const len = b - a;
+    const pos = (t: number) => (t - a) / len;
+    const inRow = (t: number) => t >= a && t < b && t <= nowEpoch;
+    const sleeps: TimelineRow['sleeps'] = [];
+    for (const e of evs) {
+      if (e.type !== 'sleep' || !e.start) continue;
+      const s = parseLocal(e.start);
+      const end = e.end ? parseLocal(e.end) : nowEpoch;
+      const from = Math.max(s, a);
+      const to = Math.min(end, b, nowEpoch);
+      if (to > from) sleeps.push({ from: pos(from), to: pos(to), open: !e.end && to === Math.min(nowEpoch, b) });
+    }
+    sleeps.sort((x, y) => x.from - y.from);
+    rows.push({
+      date,
+      sleeps,
+      feeds: feeds.filter(inRow).map(pos),
+      diapers: evs
+        .filter((e) => e.type === 'diaper' && e.start && inRow(parseLocal(e.start)))
+        .map((e) => ({ at: pos(parseLocal(e.start)), poop: e.detail === 'poop' || e.detail === 'both' }))
+        .sort((x, y) => x.at - y.at),
+      until: Math.min(1, Math.max(0, pos(nowEpoch))),
+    });
+  }
+  return rows;
+}

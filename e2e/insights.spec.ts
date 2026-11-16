@@ -67,3 +67,32 @@ test('insights: an empty log says there is not enough data yet, and the chosen v
   await page.getByTestId('view-day').click();
   await expect(page.getByTestId('day-summary')).toBeVisible();
 });
+
+test('insights: a timeline row per day from 06:00, right to left, and daily count bars', async ({ page, request }) => {
+  await seed(request, week());
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  const rows = page.getByTestId('tl-row');
+  await expect(rows).toHaveCount(7);
+  await expect(rows.first()).toContainText('היום');
+  await expect(rows.nth(1)).toContainText('אתמול');
+  // yesterday's row (Nov 14, 06:00 -> Nov 15, 06:00): the 22:00 sleep starts 16/24 of the way, measured from the right
+  const box = async (loc: import('@playwright/test').Locator) => (await loc.boundingBox())!;
+  const rib = await box(rows.nth(1).locator('.rib'));
+  const firstSleep = await box(rows.nth(1).getByTestId('tl-sleep').nth(1)); // nth(0) is 06:00-06:05, the end of the night before
+  const fromRight = (rib.x + rib.width - (firstSleep.x + firstSleep.width)) / rib.width;
+  expect(fromRight).toBeGreaterThan(16 / 24 - 0.02);
+  expect(fromRight).toBeLessThan(16 / 24 + 0.02);
+  expect(await rows.nth(1).getByTestId('tl-feed').count()).toBeGreaterThanOrEqual(8);
+  expect(await rows.nth(1).getByTestId('tl-diaper').count()).toBeGreaterThanOrEqual(6);
+  // daily counts: 7 bars each, oldest on the right
+  const feedBars = page.getByTestId('cnt-feeds').locator('.bar');
+  await expect(feedBars).toHaveCount(7);
+  const first = await box(feedBars.first());
+  const last = await box(feedBars.last());
+  expect(first.x).toBeGreaterThan(last.x);
+  await expect(page.getByTestId('cnt-sleep').locator('.bn').first()).toHaveText('2'); // Nov 8: only 22:00-24:00 (the week starts that evening)
+  await expect(page.getByTestId('cnt-sleep').locator('.bn').nth(1)).toHaveText('7'); // 1:40 + 3:05 + 2:00
+});
