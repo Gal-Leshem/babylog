@@ -12,6 +12,8 @@
   --danger: #b3261e;
   --toast-bg: #2c2419;
   --toast-fg: #fff7ea;
+  --pee: #d9a514;
+  --poop: #7a4419;
   color-scheme: light;
 }
 :root[data-theme='night'] {
@@ -26,6 +28,8 @@
   --danger: #b0524a;
   --toast-bg: #2a2216;
   --toast-fg: #c8a87c;
+  --pee: #c9a227;
+  --poop: #a2622c;
   color-scheme: dark;
 }
 /* Optional dim red night theme (per device): less light in a dark room. Colour emoji are tinted to match, otherwise they are the
@@ -41,6 +45,8 @@
   --danger: #d0503f;
   --toast-bg: #2b0b08;
   --toast-fg: #c4473a;
+  --pee: #c4473a;
+  --poop: #8c3128;
 }
 :root[data-theme='night'][data-tint='red'] :is(.ico, .hi, .ti, .emo) {
   filter: grayscale(1) brightness(0.5) sepia(1) saturate(10) hue-rotate(-32deg) brightness(0.8);
@@ -275,8 +281,10 @@ input, textarea, select {
 .rib .rest { position: absolute; top: 0; bottom: 0; background: var(--line); opacity: 0.5; }
 .rib .s, .tl-legend .s { position: absolute; top: 4px; bottom: 4px; background: var(--accent); opacity: 0.45; border-radius: 4px; }
 .rib .f, .tl-legend .f { position: absolute; top: 0; height: 10px; width: 2px; margin-right: -1px; background: var(--warn); }
-.rib .d, .tl-legend .d { position: absolute; bottom: 2px; width: 6px; height: 6px; margin-right: -3px; border-radius: 50%; background: var(--muted); }
-.rib .d.p, .tl-legend .d.p { background: var(--fg); }
+.rib .d, .tl-legend .d { position: absolute; bottom: 1px; width: 8px; height: 8px; margin-right: -4px; border-radius: 50%; box-sizing: border-box; }
+/* pee: a yellow ring; poop (and pee + poop): a brown filled dot. The shapes differ too, so they stay apart in the red theme. */
+.rib .d.w, .tl-legend .d.w { background: transparent; border: 2px solid var(--pee); }
+.rib .d.p, .tl-legend .d.p { background: var(--poop); border: 0; }
 .tl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--muted); margin: 6px 0 4px; }
 .tl-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .tl-legend i { position: relative !important; display: inline-block; top: auto !important; bottom: auto !important; margin: 0 !important; }

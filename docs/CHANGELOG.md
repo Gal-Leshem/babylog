@@ -69,6 +69,10 @@ No names, addresses or secrets in this file (the repository is public).
   `reports/<job>.json`, the retry's rebase conflicted, was aborted and gave up. `scripts/status-branch.sh publish` now restarts from the
   newest branch and puts its own files on top; every run keeps its own commit, the latest report wins. Test with two clones racing
   (`tests/status-branch.test.ts`), failing on the old script.
+- Timeline **(owner request)**: pee and poop dots were hard to tell apart. Pee is now a yellow ring, poop a brown filled dot (own colours
+  per theme, `--pee` / `--poop`; the shapes keep them apart in the red theme); "פיפי + קקי" is drawn as poop (legend says so). Browser test
+  checks shape, colour difference and the "both" mapping; it failed on the old dots.
+- Research only **(owner request)**: how other apps handle more than one medicine; summary and recommendation in `BACKLOG.md` (F7).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

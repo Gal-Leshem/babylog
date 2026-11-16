@@ -34,10 +34,30 @@ other screens or into the existing tiles unless the owner asks otherwise.
 |---|---------|-----|------|-------|
 | F5 | ~~Optional nursing duration~~ not wanted for now **(owner)** | Most trackers time feeds; useful for the pediatrician | M | Feed row gets an end time; one tap still logs as today. Screen stays on while timing (Wake Lock, newer iOS only). Owner decision: is duration wanted at all? |
 | F6 | Bottle / expressed milk with amount (ml) | Common as soon as a bottle is introduced | M | New type, amount column in the sheet, Summary total per day. |
-| F7 | Medicine and temperature | Fever and dosing come up in the first months; "when is the next dose allowed" | M | New types (name, dose, temperature); a "next dose not before" line. No reminders (see "not possible"). |
+| F7 | Medicines (more than one) | Fever and dosing come up in the first months; "when is the next dose allowed" | M | Research done, design to be agreed with the owner: see "F7 research" below. |
 | F8 | ~~7-day trends and insights~~ done (first version) | Patterns and the last week at a glance | M | Reshape after the owner sees which parts get used. Ideas: cluster feeding in the evening, a trend note when the last 3 days differ from the week. |
 | F9 | Report for the pediatrician | Daily averages for the last 7 / 14 days on one page | M | Printable page (share / print to PDF from the phone). |
 | F10 | Growth: weight, length, head | Parents note clinic measurements; percentile vs. WHO tables | M-L | WHO tables are static data in the app. Lower priority for a newborn. |
+
+### F7 research: several medicines (November 2026, before any design)
+What others do: baby trackers mostly log medicine as a plain entry behind one "health/medicine" category (no tile per medicine);
+dedicated apps (Apple Health Medications, MyTherapy, Medisafe) define each medicine once with a schedule: daily, as needed (minimum gap,
+optional maximum per 24 h) or a course with an end date; doses are "given" (or "skipped" for scheduled ones); finished medicines are
+archived with their history; kids' fever apps show "next dose allowed at HH:MM" and a soft "daily maximum reached" note and remind
+caregivers to confirm with each other. Official numbers differ between sources (NHS / AAP / Israeli HMOs), so the app must only use
+numbers the parents enter and never suggest doses.
+Recommended for BabyLog (calm Home, two parents, iPhone web app):
+1. One "תרופות" button replaces the vitamin D button (still 7 buttons); it opens a sheet with one big row per active medicine: name,
+   status ("ניתן היום 08:10 · <who>" / "עדיין לא" / "מנה הבאה מ-14:30" / "מנה 5 מתוך 14") and one-tap "ניתן עכשיו"; the Home tile
+   becomes a one-line summary ("תרופות: הכל ניתן" / "מגיע: ..."). Vitamin D becomes a daily medicine; old rows map to it.
+2. One tap logs the saved dose; edit for another time or dose; undo toast as today.
+3. Who gave it is always shown; the soft warning ("ניתן לפני 2:10 ע״י ..., לרשום בכל זאת?") appears only within a gap / over a maximum
+   the parents set; never a block; nothing when no numbers are set.
+4. Courses end by themselves (archived, history kept); manual archive.
+5. Leave out: stock, drug lists, interactions, dose calculators, reminders (no local notifications in iPhone web apps; push needs a
+   server; a possible later alternative is a prefilled calendar event).
+Data sketch: a "Medicines" list in the sheet (id, name, dose text, schedule type and its numbers, start/end, active) and dose rows as
+events (type `medicine`, which medicine, time, who, dose note, given/skipped). Open questions for the owner are in the session report.
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.

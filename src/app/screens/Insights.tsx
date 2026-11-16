@@ -81,7 +81,7 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
           <div key={`f${f}`} class="f" data-testid="tl-feed" style={{ right: pct(f) }} />
         ))}
         {r.diapers.map((d) => (
-          <div key={`d${d.at}`} class={`d ${d.poop ? 'p' : ''}`} data-testid="tl-diaper" style={{ right: pct(d.at) }} />
+          <div key={`d${d.at}`} class={`d ${d.poop ? 'p' : 'w'}`} data-kind={d.poop ? 'poop' : 'pee'} data-testid="tl-diaper" style={{ right: pct(d.at) }} />
         ))}
       </div>
     </div>
@@ -153,10 +153,10 @@ export function Insights() {
           <i class="f" /> האכלה
         </span>
         <span>
-          <i class="d" /> פיפי
+          <i class="d w" /> פיפי
         </span>
         <span>
-          <i class="d p" /> קקי
+          <i class="d p" /> קקי (גם פיפי + קקי)
         </span>
       </div>
 

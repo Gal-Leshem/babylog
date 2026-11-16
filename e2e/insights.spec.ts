@@ -96,3 +96,34 @@ test('insights: a timeline row per day from 06:00, right to left, and daily coun
   await expect(page.getByTestId('cnt-sleep').locator('.bn').first()).toHaveText('2'); // Nov 8: only 22:00-24:00 (the week starts that evening)
   await expect(page.getByTestId('cnt-sleep').locator('.bn').nth(1)).toHaveText('7'); // 1:40 + 3:05 + 2:00
 });
+
+// Owner: pee and poop dots were hard to tell apart. Pee is a yellow ring, poop a brown filled dot (shape works in the red theme too);
+// "פיפי + קקי" is drawn as poop.
+test('timeline: pee and poop look different, and pee + poop is drawn as poop', async ({ page, request }) => {
+  await seed(request, [
+    { type: 'diaper', detail: 'wet', start: '2026-11-14 09:00' },
+    { type: 'diaper', detail: 'poop', start: '2026-11-14 12:00' },
+    { type: 'diaper', detail: 'both', start: '2026-11-14 15:00' },
+  ]);
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  const dots = page.getByTestId('tl-row').nth(1).getByTestId('tl-diaper');
+  await expect(dots).toHaveCount(3);
+  const look = (i: number) =>
+    dots.nth(i).evaluate((e) => {
+      const s = getComputedStyle(e);
+      return { kind: e.getAttribute('data-kind'), fill: s.backgroundColor, ring: s.borderTopColor, ringWidth: s.borderTopWidth };
+    });
+  const [pee, poop, both] = [await look(0), await look(1), await look(2)];
+  expect([pee.kind, poop.kind, both.kind]).toEqual(['pee', 'poop', 'poop']);
+  expect(both).toEqual(poop);
+  expect(pee.fill).toBe('rgba(0, 0, 0, 0)'); // a ring
+  expect(pee.ringWidth).not.toBe('0px');
+  expect(poop.fill).not.toBe('rgba(0, 0, 0, 0)'); // filled
+  const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number);
+  const [pr, pg, pb] = rgb(pee.ring);
+  const [kr, kg, kb] = rgb(poop.fill);
+  expect(Math.abs(pr! - kr!) + Math.abs(pg! - kg!) + Math.abs(pb! - kb!)).toBeGreaterThan(120); // clearly different colours by day
+});
