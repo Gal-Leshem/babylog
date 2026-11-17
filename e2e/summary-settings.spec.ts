@@ -25,6 +25,7 @@ test('daily summary compares today with yesterday', async ({ page, request }) =>
     { type: 'sleep', start: `${FIXED_TODAY} 02:00`, end: `${FIXED_TODAY} 03:30` },
     { type: 'feed', detail: 'left', start: `${FIXED_YESTERDAY} 10:00` },
     { type: 'diaper', detail: 'both', start: `${FIXED_YESTERDAY} 11:00` },
+    { type: 'diaper', detail: 'both', start: `${FIXED_TODAY} 07:00` },
   ]);
   await page.clock.setFixedTime(NOON);
   await install(page);
@@ -35,9 +36,13 @@ test('daily summary compares today with yesterday', async ({ page, request }) =>
   await expect(cell('רווח ממוצע בין האכלות', 0)).toHaveText('3:00');
   await expect(cell('רווח ממוצע בין האכלות', 1)).toHaveText('—');
   await expect(cell('שמאל / ימין', 0)).toHaveText('2 / 1');
-  await expect(cell('פיפי', 0)).toHaveText('2');
-  await expect(cell('קקי', 0)).toHaveText('1');
-  await expect(cell('פיפי + קקי', 1)).toHaveText('1');
+  // (owner) no separate "פיפי + קקי" row: it counts as one pee AND one poop, as in "תובנות"
+  await expect(page.getByTestId('sum-פיפי + קקי')).toHaveCount(0);
+  await expect(cell('פיפי', 0)).toHaveText('3'); // 2 pee + 1 both
+  await expect(cell('קקי', 0)).toHaveText('2'); // 1 poop + 1 both
+  await expect(cell('פיפי', 1)).toHaveText('1'); // yesterday: 1 both
+  await expect(cell('קקי', 1)).toHaveText('1');
+  await expect(page.getByTestId('day-summary')).toContainText('פיפי + קקי נספר גם כפיפי וגם כקקי');
   await expect(cell('שינה סה״כ', 0)).toHaveText('1:30');
   await expect(cell('הרצף הארוך ביותר', 0)).toHaveText('1:30');
   await expect(cell('ויטמין D', 0)).toHaveText('ניתן');

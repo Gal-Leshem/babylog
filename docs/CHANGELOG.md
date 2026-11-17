@@ -232,6 +232,8 @@ No names, addresses or secrets in this file (the repository is public).
   that something does NOT happen (hidden app, idle checks) and the drag settle times stay as they were. (3) Pipeline: the test
   server deploy and live test run alongside the tests (not production); a new `prod` job deploys production only after both
   passed; the browser download is cached; every step reports how long it took.
+- Summary table **(owner)**: no separate "פיפי + קקי" row; it counts as one pee AND one poop (as "תובנות" already did), so the
+  table shows only "פיפי" and "קקי"; the note under the table says so. Browser test (a "both" on each day) failed before.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

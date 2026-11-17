@@ -14,9 +14,9 @@ const ROWS: Row[] = [
   ['הנקות (האכלות)', (s) => String(s.feeds.count)],
   ['רווח ממוצע בין האכלות', (s) => (s.feeds.avgGapMin === null ? '—' : hm(s.feeds.avgGapMin))],
   ['שמאל / ימין', (s) => `${s.feeds.left} / ${s.feeds.right}`],
-  [KIND_LABEL.wet, (s) => String(s.diapers.wet)],
-  [KIND_LABEL.poop, (s) => String(s.diapers.poop)],
-  [KIND_LABEL.both, (s) => String(s.diapers.both)],
+  // "פיפי + קקי" is one pee AND one poop (owner), as in "תובנות": no row of its own
+  [KIND_LABEL.wet, (s) => String(s.diapers.wet + s.diapers.both)],
+  [KIND_LABEL.poop, (s) => String(s.diapers.poop + s.diapers.both)],
   ['שינה סה״כ', (s) => (s.sleep.totalMin ? hm(s.sleep.totalMin) : '—')],
   ['הרצף הארוך ביותר', (s) => (s.sleep.longestMin ? hm(s.sleep.longestMin) : '—')],
 ];
@@ -92,7 +92,7 @@ function DaySummary() {
           ))}
         </tbody>
       </table>
-      <p class="muted">שינה שחוצה חצות מתחלקת בין שני הימים. הנקות בהפרש של עד {settings.mergeWindowMin} דקות נספרות כהאכלה אחת.</p>
+      <p class="muted">שינה שחוצה חצות מתחלקת בין שני הימים. הנקות בהפרש של עד {settings.mergeWindowMin} דקות נספרות כהאכלה אחת. {KIND_LABEL.both} נספר גם כפיפי וגם כקקי.</p>
     </div>
   );
 }

@@ -142,6 +142,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   shows must sit in an element with class `ico`, `hi`, `ti` or `emo` so the tint reaches it. The theme is applied before the first paint
   by an inline script in `index.html` (same rule as `src/app/theme.ts`, checked by `tests/theme.test.ts`); change both together.
 - **Summary tab:** a switch between "סיכום" (the day table) and "תובנות" (pattern insights), remembered per phone (`summaryView`).
+  Both count "פיפי + קקי" as one pee and one poop; neither shows it as a count of its own (owner).
   Insights are pure functions in `src/shared/insights.ts` over the last 7 full days (today left out): medians and the middle half
   (never means), a minimum amount of data per card (otherwise no card), "after a feed" patterns only when at least 20 points more often
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
