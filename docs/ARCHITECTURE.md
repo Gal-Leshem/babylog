@@ -80,9 +80,12 @@ in), so the key is the protection. The key and server address travel only inside
 shortcut files created locally on the owner's Mac. The test server accepts a key derived in CI.
 
 ## Pipeline (`.github/workflows/pipeline.yml`)
-Tests, privacy check, build, e2e → deploy test server (clasp) → live test → (main) deploy production server and
-publish the site to `gh-pages`. The server job runs one at a time across branches (`concurrency: test-server`): `dev` and `main`
-share the one test server, and two live tests at once fail each other. Reports (sanitized) go to the `ci-status` branch because the build sandbox
+Three things run side by side: `test` (typecheck, unit, builds, privacy check, browser suite twice), `server` (deploy the test
+server with clasp, live test against real Google: not production, so it does not wait for the tests) and, on `main`, `pages`
+(after `test`). On `main`, `prod` deploys the production server only after BOTH `test` and `server` passed. Every logged step
+ends with "took Ns" in its report. The server job runs one at a time across branches (`concurrency: test-server`): `dev` and
+`main` share the one test server, and two live tests at once fail each other. The Playwright browser download is cached per
+Playwright version. Reports (sanitized) go to the `ci-status` branch because the build sandbox
 cannot read Actions logs: `scripts/read-ci.sh`.
 
 ## Shortcuts
@@ -169,5 +172,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - `e2e/` (Playwright, ~129): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
+  Tests run in parallel (4 workers, `fullyParallel`); each worker has its own mock server (port 8787 + `TEST_PARALLEL_INDEX`,
+  `MOCK` in `e2e/helpers.ts`; the config starts them with `MOCK_SERVERS`), and every test resets its own server in
+  `beforeEach`, so tests never see each other. `E2E_WORKERS=1` runs them one by one. Wait for a condition, not a fixed time,
+  unless the test checks that something does NOT happen during a time.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.
 - Habit that found real bugs: after adding a regression test, temporarily break the fix and confirm the test fails.

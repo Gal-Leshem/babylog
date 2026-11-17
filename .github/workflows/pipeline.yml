@@ -47,7 +47,18 @@ jobs:
         env:
           PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
         run: bash scripts/run-logged.sh privacy npm run privacy
-      - run: bash scripts/run-logged.sh playwright-install npx playwright install --with-deps chromium
+      # The browser download is cached per Playwright version; the system libraries are installed every time (apt).
+      - name: Playwright version
+        run: echo "PW_VERSION=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PW_VERSION }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: bash scripts/run-logged.sh playwright-install npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: bash scripts/run-logged.sh playwright-install npx playwright install-deps chromium
       - run: bash scripts/run-logged.sh e2e npm run e2e
       - name: End-to-end tests again with a slow server (finds timing problems)
         env:
@@ -60,8 +71,9 @@ jobs:
           PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
         run: bash scripts/report.sh test
 
+  # The test server is deployed and checked against real Google WHILE the tests run (it is not production, and the live test
+  # takes minutes of real round trips); production waits for both (job "prod").
   server:
-    needs: test
     runs-on: ubuntu-latest
     # dev and main share ONE test server: two live tests at once trip over each other (same open sleep, lock timeouts),
     # and two deploys would race. One server job at a time, whatever the branch.
@@ -100,9 +112,6 @@ jobs:
         run: bash scripts/run-logged.sh deploy-test npx tsx scripts/deploy-server.ts test
       - name: Live test against the test server
         run: bash scripts/run-logged.sh live-test npx tsx scripts/live-test.ts
-      - name: Deploy production server
-        if: github.ref == 'refs/heads/main'
-        run: bash scripts/run-logged.sh deploy-prod npx tsx scripts/deploy-server.ts prod
       - name: Report
         if: always()
         env:
@@ -111,6 +120,49 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/clasp/.clasprc.json"
           bash scripts/report.sh server
+
+  # Production server: only on main, and only after the tests passed AND the same bundle passed the live test on the test server.
+  prod:
+    needs: [test, server]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: prod-server
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: bash scripts/run-logged.sh install npm ci
+      - name: Google credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/clasp"
+          printf '%s' "$CLASPRC_JSON" > "$RUNNER_TEMP/clasp/.clasprc.json"
+          chmod 600 "$RUNNER_TEMP/clasp/.clasprc.json"
+          echo "CLASP_AUTH_DIR=$RUNNER_TEMP/clasp" >> "$GITHUB_ENV"
+      - run: bash scripts/status-branch.sh init
+      - name: Deploy production server
+        run: bash scripts/run-logged.sh deploy-prod npx tsx scripts/deploy-server.ts prod
+      - name: Report
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: |
+          rm -f "$RUNNER_TEMP/clasp/.clasprc.json"
+          bash scripts/report.sh prod
 
   pages:
     needs: test

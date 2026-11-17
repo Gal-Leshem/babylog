@@ -3,7 +3,12 @@ import { encodeSetupCode } from '../src/app/config';
 import { addDays, formatLocal, localDate } from '../src/shared/tz';
 import type { BabyEvent } from '../src/shared/types';
 
-export const MOCK = 'http://127.0.0.1:8787';
+/**
+ * Every Playwright worker talks to its own mock server (port 8787 + its parallel index), so tests running at the same time
+ * never reset or count each other's data. The servers are started by playwright.config.ts.
+ */
+export const MOCK_PORT = 8787 + Number(process.env.TEST_PARALLEL_INDEX ?? 0);
+export const MOCK = `http://127.0.0.1:${MOCK_PORT}`;
 export const KEY = 'test-key';
 export const CODE = encodeSetupCode(`${MOCK}/`, KEY);
 

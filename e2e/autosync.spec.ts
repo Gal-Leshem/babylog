@@ -78,9 +78,7 @@ test('taps made without a connection travel together in one request when it is b
   await install(page);
   await control(request, 'offline=1');
   await page.getByTestId('btn-wet').click();
-  await page.waitForTimeout(1_600); // the buttons unlock
-  await page.getByTestId('btn-poop').click();
-  await page.waitForTimeout(1_600);
+  await page.getByTestId('btn-poop').click(); // a click waits until the button is enabled again (the short tap lock)
   await page.getByTestId('btn-feed_left').click();
   await expect(page.getByTestId('banner-sync')).toContainText('3 ממתינים');
   await control(request, 'offline=0');
@@ -157,10 +155,10 @@ test('a hidden app does not talk to the server; coming back refreshes at once', 
 
 test('after an offline period it catches up without any tap once the connection is back', async ({ page, request }) => {
   await install(page);
-  await request.get('http://127.0.0.1:8787/__control?offline=1');
-  await page.waitForTimeout(11_000);
-  await expect(page.getByTestId('banner-sync')).toContainText('אין חיבור', { timeout: 5_000 });
-  await request.get('http://127.0.0.1:8787/__control?offline=0');
+  await control(request, 'offline=1');
+  // the app notices by itself (no tap): the next check fails within the polling pace (5 s while in use) plus its timeout
+  await expect(page.getByTestId('banner-sync')).toContainText('אין חיבור', { timeout: 16_000 });
+  await control(request, 'offline=0');
   await api(request, { action: 'log', id: 'back-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
   await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 20_000 });
   await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 20_000 });

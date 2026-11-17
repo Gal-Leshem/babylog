@@ -95,7 +95,9 @@ export function startMockServer(port = 8787, key = 'test-key') {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const s = startMockServer(Number(process.env.PORT ?? 8787));
-  await s.listen();
-  console.log(`mock server on ${process.env.PORT ?? 8787}, key "test-key"`);
+  // MOCK_SERVERS=n starts n independent servers on consecutive ports (one per Playwright worker)
+  const first = Number(process.env.PORT ?? 8787);
+  const count = Math.max(1, Number(process.env.MOCK_SERVERS ?? 1));
+  for (let i = 0; i < count; i++) await startMockServer(first + i).listen();
+  console.log(`mock server${count > 1 ? 's' : ''} on ${first}${count > 1 ? `-${first + count - 1}` : ''}, key "test-key"`);
 }

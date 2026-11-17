@@ -222,6 +222,16 @@ No names, addresses or secrets in this file (the repository is public).
   proven to fail without its part. Whether iOS reads the colour again after a reload cannot be tested here: owner confirms.
   CI caught a weak test on the way (it assumed the Settings screen had to scroll to reach the button; in CI it did not): the
   test now scrolls on purpose and taps without moving the scroll.
+- Faster tests and pipeline **(owner request; tests must not get weaker)**. Measured first: unit tests 6 s (left alone); the
+  browser suite ran one test at a time because all tests shared one mock server: 3.6 min, and 5.3 min again against the slow
+  server, plus the server job and the production deploy strictly after the tests. Changes: (1) every Playwright worker gets its
+  own mock server (port 8787 + worker index) and the suite runs 4 tests at a time: 1.1 min locally (1.4 min against the slow
+  server), same 129 tests, unchanged checks; stable over three runs and the slow run; two deliberate breaks (no polling, the old
+  tap lock) still fail 9 tests in parallel. (2) Two fixed waits became waits for the condition (three taps in a row: a click
+  waits for the button anyway; "no connection" appears by itself: up to 16 s instead of a fixed 11 s plus 5 s). Waits that check
+  that something does NOT happen (hidden app, idle checks) and the drag settle times stay as they were. (3) Pipeline: the test
+  server deploy and live test run alongside the tests (not production); a new `prod` job deploys production only after both
+  passed; the browser download is cached; every step reports how long it took.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

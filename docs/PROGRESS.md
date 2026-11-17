@@ -43,8 +43,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 4. Check the latest pipeline results: `scripts/read-ci.sh` (test | server | pages). Trust a report only if its `sha` equals `git rev-parse --short=7 HEAD`;
    better, find a commit's own reports on `ci-status` (see the rule below).
 5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; wait for CI (a background
-   polling loop on `ci-status` for "report: server <sha>"); then push the same commit to `main`; confirm the site's `version.json` serves
-   it AND that the `main` server report says "prod server deployed" and "LIVE TEST PASSED".
+   polling loop on `ci-status` for BOTH "report: test <sha>" and "report: server <sha>": they run side by side now); then push the
+   same commit to `main`; confirm the site's `version.json` serves it, the `main` server report says "LIVE TEST PASSED" and the
+   `prod` report ("report: prod <sha>") says "prod server deployed".
 
 ## Environment and secrets (what lives where)
 - GitHub repository secrets (readable only by Actions): `CLASPRC_JSON` (Google credential for clasp, personal account), `PRIVACY_DENYLIST` (forbidden words).
@@ -70,15 +71,16 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - A browser test must wait for the state it means, not for a text that is also shown one step earlier (the beacon test went on
   at "1 waiting", which is shown while the request is still on its way; it failed only in CI).
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).
-- After pushing to `main`, check that the `main` server report says "prod server deployed" (the site can be published while the
-  server job failed: pages wait only for the tests).
+- After pushing to `main`, check that the `prod` report says "prod server deployed" (the site can be published while the
+  server job failed: pages wait only for the tests; production waits for tests AND the live test).
 - Never push to `dev` while a `main` run is still going (or the other way round) unless you must: the server jobs now queue
   (`concurrency: test-server`), but only one can wait; a third push cancels the waiting one.
-- Run one Playwright run at a time: parallel runs share the mock server and reset each other.
+- Run one Playwright run at a time: inside a run the workers have their own mock servers (ports 8787-8790), but two runs would
+  share them and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
 - `dev` and `main` runs write the same report files on `ci-status`, so the current file may belong to the other branch. Find a commit's
   report by its own commit on `ci-status` (`git log origin/ci-status --format='%h %s' | grep "report: server <sha>"`, then
-  `git show <that>:reports/server.json`) and wait for the `dev` server report (live test) before pushing to `main`.
+  `git show <that>:reports/server.json`) and wait for the `dev` test AND server reports before pushing to `main`.
 
 ## Open risks (cannot be tested in the sandbox)
 - Whether `shortcuts sign` accepts the generated files and iOS imports them (only simulated). Whether a network shortcut runs on a locked phone.
@@ -97,7 +99,7 @@ Not approved: force-push or rewriting history; changing repository settings, sec
 
 Hard rules:
 - The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs (screenshots I send may show real names: never copy them anywhere).
-- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (about 8 minutes; background polling loop; foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it and the main server report says "prod server deployed" and "LIVE TEST PASSED".
+- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (test and server reports; background polling loop; foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it, the main server report says "LIVE TEST PASSED" and the prod report says "prod server deployed".
 - After each change update docs/CHANGELOG.md and docs/PROGRESS.md, docs/ARCHITECTURE.md when the design changes, docs/BACKLOG.md when plans change.
 - Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; no in-app calendar; mixed Hebrew/Latin text isolated with <bdi>; ranges written in words, not "a–b"; at night nothing bright at the top (iOS tints the status bar from the page).
 - The app gives no medical advice: medicine numbers are only what the parents enter.
