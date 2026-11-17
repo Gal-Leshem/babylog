@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { localHour } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { EventForm } from './screens/EventForm';
@@ -9,6 +9,7 @@ import { Settings } from './screens/Settings';
 import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
+import { type Nav, followTheme, takeNav } from './statusbar';
 import { engine, hideToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
@@ -19,7 +20,7 @@ const TABS: [Tab, string, string][] = [
   ['settings', '⚙️', 'הגדרות'],
 ];
 
-function useTheme(): void {
+function useTheme(nav: () => Nav): void {
   const prefs = usePrefs();
   const now = useNow(60_000);
   useEffect(() => {
@@ -29,6 +30,7 @@ function useTheme(): void {
     document.documentElement.dataset.theme = night ? 'night' : 'day';
     document.documentElement.dataset.tint = prefs.nightTint;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#000000' : '#f7f2ea');
+    followTheme(night ? 'night' : 'day', nav); // iPhone home-screen app: the status bar follows only after a reload
   }, [now, prefs.nightMode, prefs.nightTint]);
 }
 
@@ -125,11 +127,21 @@ function ToastView() {
   );
 }
 
+/** After a reload for the theme, the parent is back on the tab they were on, scrolled where they were. */
+const restored = takeNav();
+const startTab: Tab = TABS.some(([id]) => id === restored?.tab) ? (restored!.tab as Tab) : 'home';
+
 export function App() {
-  useTheme();
   const st = useEngine();
   // `n` changes when the current tab is tapped again: its screen starts over (e.g. Settings > medicines back to Settings).
-  const [{ tab, n }, setNav] = useState<{ tab: Tab; n: number }>({ tab: 'home', n: 0 });
+  const [{ tab, n }, setNav] = useState<{ tab: Tab; n: number }>({ tab: startTab, n: 0 });
+  const tabNow = useRef(tab);
+  tabNow.current = tab;
+  useTheme(() => ({ tab: tabNow.current, scroll: document.querySelector('.main')?.scrollTop ?? 0 }));
+  useEffect(() => {
+    if (!restored?.scroll) return;
+    requestAnimationFrame(() => document.querySelector('.main')?.scrollTo(0, restored.scroll));
+  }, []);
   const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent } | null>(null);
   const [medsOpen, setMedsOpen] = useState(false);
 

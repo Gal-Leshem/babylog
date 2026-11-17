@@ -154,3 +154,85 @@ test('night: the full-screen container is black and the sync banner is dark, in 
     await expect(page.getByTestId('btn-wet')).toBeEnabled({ timeout: 3000 });
   }
 });
+
+// Owner screenshots: switching day / night while the app stayed open (in Settings, or when 21:00 came) left the iPhone status
+// bar in the old colour (white over the night screen, black over the day screen). iOS 26 reads that colour only when the page
+// loads, so in a home-screen app a theme change reloads the page when nothing can be lost, and the parent stays where they were.
+test.describe('the iPhone status bar follows a theme change while the app is open', () => {
+  const homeScreen = (page: import('@playwright/test').Page) =>
+    page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { configurable: true, get: () => true }));
+  const countLoads = (page: import('@playwright/test').Page) => {
+    const loads = { n: 0 };
+    page.on('load', () => loads.n++);
+    return loads;
+  };
+
+  test('switching night mode in Settings reloads once and returns to Settings, scrolled where it was', async ({ page }) => {
+    await homeScreen(page);
+    await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z')); // 12:00 in Israel: day
+    await install(page);
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId('night-always').scrollIntoViewIfNeeded();
+    const scrolled = await page.evaluate(() => document.querySelector('.main')!.scrollTop);
+    expect(scrolled).toBeGreaterThan(0);
+    const loads = countLoads(page);
+    await page.getByTestId('night-always').click();
+    await expect.poll(() => loads.n).toBe(1);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+    await expect(page.getByTestId('tab-settings')).toHaveAttribute('aria-current', 'page');
+    await expect.poll(() => page.evaluate(() => document.querySelector('.main')!.scrollTop)).toBe(scrolled);
+    await page.waitForTimeout(1_500);
+    expect(loads.n, 'exactly one reload, no loop').toBe(1);
+
+    await page.getByTestId('night-never').click(); // and back to day
+    await expect.poll(() => loads.n).toBe(2);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'day');
+  });
+
+  test('at 21:00 the open app reloads by itself, but not while a form is open', async ({ page }) => {
+    await homeScreen(page);
+    await page.clock.install({ time: new Date('2026-11-14T18:58:00Z') }); // 20:58 in Israel
+    await install(page);
+    await page.getByTestId('add-late').click(); // a form is open
+    await expect(page.getByTestId('event-form')).toBeVisible();
+    const loads = countLoads(page);
+    await page.clock.runFor(3 * 60_000); // 21:01
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'night'); // the colours change at once
+    await page.clock.runFor(10_000);
+    expect(loads.n, 'nothing is lost: no reload while the form is open').toBe(0);
+    await page.keyboard.press('Escape');
+    await page.getByTestId('event-form').click({ position: { x: 10, y: 10 } }); // tap outside closes it
+    await expect(page.getByTestId('event-form')).toHaveCount(0);
+    await page.clock.runFor(4_000);
+    await expect.poll(() => loads.n).toBe(1);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+    await expect(page.getByTestId('home')).toBeVisible();
+  });
+
+  test('if a reload ever came back in the old theme, it does not reload again and again', async ({ page }) => {
+    await homeScreen(page);
+    await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z'));
+    // simulate the inline theme script and the app disagreeing: the script always paints day
+    await page.addInitScript(() => {
+      const fix = () => document.documentElement.setAttribute('data-theme', 'day');
+      document.addEventListener('readystatechange', fix);
+    });
+    await install(page);
+    await page.getByTestId('tab-settings').click();
+    const loads = countLoads(page);
+    await page.getByTestId('night-always').click();
+    await page.waitForTimeout(3_000);
+    expect(loads.n, "one reload, then the guard stops it").toBe(1);
+  });
+
+  test('in a browser tab (not a home-screen app) nothing reloads', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z'));
+    await install(page);
+    await page.getByTestId('tab-settings').click();
+    const loads = countLoads(page);
+    await page.getByTestId('night-always').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+    await page.waitForTimeout(1_500);
+    expect(loads.n).toBe(0);
+  });
+});

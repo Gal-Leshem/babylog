@@ -22,14 +22,22 @@ export function pageState(doc: Document): PageState {
   };
 }
 
-/** Reloads now if that is safe, otherwise as soon as it becomes safe (checked when the app is hidden and every few seconds). */
-export function reloadWhenSafe(doc: Document, reload: () => void): void {
+/**
+ * Reloads now if that is safe, otherwise as soon as it becomes safe (checked when the app is hidden and every few seconds).
+ * `stillNeeded` (optional) is asked first each time: when it says no, the wait ends without a reload.
+ */
+export function reloadWhenSafe(doc: Document, reload: () => void, stillNeeded: () => boolean = () => true): void {
   let done = false;
-  const attempt = () => {
-    if (done || !safeToReload(pageState(doc))) return;
+  const stop = () => {
     done = true;
     clearInterval(timer);
     doc.removeEventListener('visibilitychange', attempt);
+  };
+  const attempt = () => {
+    if (done) return;
+    if (!stillNeeded()) return stop();
+    if (!safeToReload(pageState(doc))) return;
+    stop();
     reload();
   };
   const timer = setInterval(attempt, 3_000);

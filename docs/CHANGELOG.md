@@ -212,6 +212,14 @@ No names, addresses or secrets in this file (the repository is public).
   / offline wording, the two lock times, the glow for theirs and not for mine (five browser tests proven to fail when the
   change is undone), three engine tests. Lesson on the way: making `resume()` drop near-simultaneous calls broke "the medicines
   window refreshes when opened"; the dropping now lives in its own entry point (`returned()`), used only for app-return events.
+- Status bar after a day / night change **(owner screenshots)**: with the app open, switching night mode in Settings or the
+  clock reaching 21:00 / 07:00 changed the page but not the iPhone status bar (white over the night screen, black over the day
+  screen); closing and reopening fixed it. iOS 26 reads the bar's colour from the page only when it loads; others report that
+  theme-color and a briefly shown strip do not help. Now an iPhone home-screen app reloads the page when the theme changes, at
+  a moment when nothing can be lost (not while a form is open or a field is in use), and returns to the same tab and scroll
+  position; elsewhere nothing reloads. Browser tests: reload once and back to Settings at the same scroll, 21:00 with a form
+  open (waits), no loop if a reload came back in the old theme (87 reloads without the guard), no reload in a browser tab; each
+  proven to fail without its part. Whether iOS reads the colour again after a reload cannot be tested here: owner confirms.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

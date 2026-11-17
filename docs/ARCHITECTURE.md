@@ -113,7 +113,11 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **News from the other phone:** entries that arrive in a list and were not ours glow for a few seconds in the recent list
   (`arrived` in the engine's state, `.rrow.new`); never on the first load, never for an older day loaded for History.
 - **Status bar colour:** iOS 26 ignores `theme-color` and samples the page: keep `#app` with an explicit background (black at night)
-  and nothing bright at the top at night (banners are dark there).
+  and nothing bright at the top at night (banners are dark there). It samples only when the page loads: changing colours,
+  theme-color or flashing a strip at the top does not make it look again (owner screenshots; also reported by others). So in an
+  iPhone home-screen app (`navigator.standalone`) a day / night change while the app is open reloads the page at a safe moment
+  (`statusbar.ts` + `reloadWhenSafe`: hidden, or no form open and no field in use); the tab and its scroll position come back
+  (`sessionStorage`); a guard stops a second reload toward the same theme within 15 s. Browsers elsewhere switch in place.
 - **Layout units:** `#app` is `position: fixed; inset: 0`; never use `vh`/`dvh` (wrong inside iOS home-screen apps). Content starts
   `--top-gap` (22px) below the top safe area because iOS fades content under the status bar.
 - **Never define a component inside another component.** `KindButton` once lived inside `Home`, so every re-render rebuilt all buttons and a
@@ -162,7 +166,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 ## Tests (what each layer is for)
 - `tests/` (Vitest, ~272): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~125): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~129): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.
