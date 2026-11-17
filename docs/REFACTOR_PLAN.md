@@ -1,6 +1,6 @@
 # Refactor plan: sync speed, performance, quality of life
 
-Status: **phases 0 to 4 are built** (left out on purpose after measuring: 2.1 lazy spreadsheet, 2.6 hand edits, 2.7 list cache); phase 5 is next.
+Status: **done.** Phase 5 as decided by the owner: Q1 to Q4 built, Q5 (polish, own icons) and Q6 declined. Before that: **phases 0 to 4 are built** (left out on purpose after measuring: 2.1 lazy spreadsheet, 2.6 hand edits, 2.7 list cache); phase 5 is next.
 Earlier status line: phases 0 and 1 and item 3.2 are built (see `CHANGELOG.md`, "Refactor of the sync path"); the rest is planned.
 Measured numbers: section 7. Written from a full read of the code (November 2026) so that any model or person can
 implement it phase by phase. Every phase is shippable on its own and follows the normal routine (small step, regression test proven

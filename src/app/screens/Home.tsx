@@ -8,6 +8,10 @@ import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from 
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 
+const LOCK_SAME_MS = 1500;
+const LOCK_OTHERS_MS = 400;
+const NEW_FOR_MS = 6_000;
+
 const side = (s: string | null) => (s === 'left' ? 'שמאל' : s === 'right' ? 'ימין' : '');
 
 interface RecentRow {
@@ -58,18 +62,23 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
 }
 
 export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent) => void; onAddLate: () => void; onOpenMeds: () => void }) {
-  const { events, settings } = useEngine();
+  const { events, settings, arrived } = useEngine();
   const now = useNow(15_000);
+  // After a tap the same button rests for 1.5 s (a double tap must not log twice); the others only for a moment, so
+  // "פיפי" and then "נרדם" do not feel blocked.
   const [locked, setLocked] = useState(false);
+  const [held, setHeld] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Medicine | null>(null);
 
   const press = (id: string, fn: () => void) => {
-    if (locked) return;
+    if (locked || held === id) return;
     fn();
     setLocked(true);
+    setHeld(id);
     setFlash(id);
-    setTimeout(() => setLocked(false), 1500);
+    setTimeout(() => setLocked(false), LOCK_OTHERS_MS);
+    setTimeout(() => setHeld((h) => (h === id ? null : h)), LOCK_SAME_MS);
     setTimeout(() => setFlash(null), 350);
   };
 
@@ -93,7 +102,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
       type="button"
       class={`big ${extra} ${flash === kind ? 'flash' : ''} ${(kind === 'feed_left' && next === 'left') || (kind === 'feed_right' && next === 'right') ? 'next' : ''}`}
       data-testid={`btn-${kind}`}
-      disabled={locked}
+      disabled={locked || held === kind}
       onClick={() => press(kind, () => quickLog(kind))}
     >
       <span class="ico">{KIND_ICON[kind]}</span>
@@ -113,7 +122,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
           type="button"
           class={`big ${flash === id ? 'flash' : ''}`}
           data-testid={`btn-${id}`}
-          disabled={locked}
+          disabled={locked || held === id}
           // the parents' own limits say "not now": ask first (the only case with a second tap)
           onClick={() => (doseWarnings(m, events, now).length ? setConfirm(m) : press(id, give))}
         >
@@ -133,6 +142,8 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
   };
 
   const asleep = sleep.state === 'asleep';
+  // entries that just arrived from the other phone glow briefly
+  const isNew = (id: string) => arrived.ids.has(id) && Date.now() - arrived.at < NEW_FOR_MS;
   return (
     <section class="home" data-testid="home">
       <div class={`status ${meds.length ? '' : 'two'}`}>
@@ -173,7 +184,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
             type="button"
             class={`big sleep ${asleep ? 'asleep' : ''} ${flash === 'sleep' ? 'flash' : ''}`}
             data-testid="btn-sleep"
-            disabled={locked}
+            disabled={locked || held === 'sleep'}
             onClick={() => press('sleep', toggleSleep)}
           >
             <span class="ico">{asleep ? '☀️' : '🌙'}</span>
@@ -190,7 +201,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
       <ul class="recent" data-testid="recent">
         {recent.map(({ key, e, at, icon, label }) => (
           <li key={key}>
-            <button type="button" class="rrow" data-testid="recent-row" onClick={() => onEdit(e)}>
+            <button type="button" class={`rrow ${isNew(e.id) ? 'new' : ''}`} data-testid="recent-row" onClick={() => onEdit(e)}>
               <span class="ri emo">{icon}</span>
               <span class="rl">{label}</span>
               <span class="rt">{timeOf(at)}</span>

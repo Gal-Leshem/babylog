@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { encodeSetupCode } from '../src/app/config';
-import { MOCK, api, control, install, installExisting, resetServer, seed, serverEvents, todayLocal } from './helpers';
+import { MOCK, api, control, install, installExisting, nowLocal, resetServer, seed, serverEvents, todayLocal } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -301,3 +301,84 @@ test('recent list: the time stays in place whatever the length of the name', asy
     expect(p.nameLeft).toBeGreaterThanOrEqual(p.rowLeft); // a long name stays inside the row
   }
 });
+
+// Owner (refactor plan, phase 5): the sync strip made Home jump after every tap and made the app feel slow.
+for (const height of [852, 700, 560]) {
+  test(`the sync mark never moves the screen and is never a coloured band (height ${height})`, async ({ page, request }) => {
+    await page.setViewportSize({ width: 393, height });
+    await install(page);
+    const top = () => page.getByTestId('tile-feed').evaluate((e) => e.getBoundingClientRect().top);
+    const before = await top();
+    await control(request, 'offline=1');
+    await page.getByTestId('btn-wet').click();
+    const mark = page.getByTestId('banner-sync');
+    await expect(mark).toContainText('אין חיבור · 1 ממתינים לסנכרון');
+    expect(await top(), 'the tiles stay where they were').toBe(before);
+    const box = await mark.evaluate((e) => ({ bottom: e.getBoundingClientRect().bottom, bg: getComputedStyle(e).backgroundColor, events: getComputedStyle(e).pointerEvents }));
+    expect(box.bottom, 'the mark sits in the empty strip above the tiles').toBeLessThanOrEqual(before);
+    expect(box.bg).toBe('rgba(0, 0, 0, 0)');
+    expect(box.events).toBe('none'); // it can never swallow a tap
+    const main = await page.evaluate(() => {
+      const m = document.querySelector('.main')!;
+      return m.scrollHeight > m.clientHeight + 1;
+    });
+    expect(main).toBe(false);
+    await control(request, 'offline=0');
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect(mark).toBeHidden({ timeout: 10_000 });
+    expect(await top()).toBe(before);
+  });
+}
+
+test('while an entry is being sent there is only a small dot; words appear only when it takes long', async ({ page, request }) => {
+  await install(page);
+  await control(request, 'delay=9500');
+  await page.getByTestId('btn-wet').click();
+  const mark = page.getByTestId('banner-sync');
+  await expect(mark).toHaveAttribute('data-state', 'sending');
+  await expect(page.getByTestId('sync-text')).toHaveCount(0);
+  await expect(page.getByTestId('sync-text')).toHaveText('מסנכרן · 1 ממתינים לסנכרון', { timeout: 9_500 });
+  await expect(mark).toBeHidden({ timeout: 6_000 });
+});
+
+test('opening the app says "מתעדכן…" until its first check is back', async ({ page, request }) => {
+  await install(page);
+  await control(request, 'delay=1500');
+  await page.reload();
+  await expect(page.getByTestId('sync-text')).toHaveText('מתעדכן…');
+  await expect(page.getByTestId('tile-feed')).toBeVisible(); // the stored copy is on the screen meanwhile
+  await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 5_000 });
+});
+
+test('without a connection for a while, the mark says when the data was last updated', async ({ page, request }) => {
+  await page.clock.install({ time: new Date('2026-11-14T10:00:00Z') });
+  await install(page);
+  await control(request, 'offline=1');
+  await page.clock.fastForward(3 * 60_000);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByTestId('sync-text')).toHaveText(/^אין חיבור · עודכן 12:0\d$/);
+});
+
+test('after a tap the same button rests for 1.5 seconds, the others only for a moment', async ({ page }) => {
+  await install(page);
+  await page.getByTestId('btn-wet').click();
+  await expect(page.getByTestId('btn-sleep')).toBeDisabled(); // a moment: a slip of the finger logs nothing
+  await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 900 });
+  await expect(page.getByTestId('btn-wet')).toBeDisabled(); // still resting
+  await page.getByTestId('btn-sleep').click(); // "פיפי" and then "נרדם" straight away
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+  await expect(page.getByTestId('btn-wet')).toBeEnabled({ timeout: 2_000 });
+  await expect(page.getByTestId('recent-row')).toHaveCount(2);
+});
+
+test("an entry that arrives from the other phone glows briefly in the recent list; my own does not", async ({ page, request }) => {
+  await install(page);
+  await page.getByTestId('btn-wet').click();
+  await expect(page.getByTestId('recent-row')).toHaveCount(1);
+  await expect(page.locator('.rrow.new')).toHaveCount(0);
+  await api(request, { action: 'log', id: 'theirs-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await expect(page.locator('.rrow.new')).toHaveCount(1, { timeout: 8_000 });
+  await expect(page.locator('.rrow.new')).toContainText('Parent Two');
+  expect(await page.locator('.rrow.new').evaluate((e) => getComputedStyle(e).animationName)).toBe('arrived');
+});
+

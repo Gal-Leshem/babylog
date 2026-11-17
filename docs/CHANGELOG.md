@@ -203,6 +203,15 @@ No names, addresses or secrets in this file (the repository is public).
   stored on the phone drops days from before the usual window at start (it only ever grew); a new app version no longer reloads
   the page in the middle of a form or while a field has the cursor. Tests: object identity across checks and status changes,
   pruning (both proven to fail without the change), the reload rule.
+- Phase 5, owner's decisions **(owner)**: the own icon set is NOT wanted (the emoji stay); the visual polish did not convince
+  and is not built; wanted and built: (1) a quiet sync mark instead of the strip: in the empty space under the status bar, so
+  Home no longer jumps after every tap, a dot while sending, "מתעדכן…" on opening until the first check is back, words only
+  when sending is slow or there is no connection (then also when the data was last updated); (2) after a tap the same button
+  rests 1.5 s, the others 0.4 s (was 1.5 s for all); (3) an entry that arrives from the other phone glows briefly in the recent
+  list. Tests: the tiles do not move and the mark is transparent and untouchable at 852 / 700 / 560, the dot / slow / opening
+  / offline wording, the two lock times, the glow for theirs and not for mine (five browser tests proven to fail when the
+  change is undone), three engine tests. Lesson on the way: making `resume()` drop near-simultaneous calls broke "the medicines
+  window refreshes when opened"; the dropping now lives in its own entry point (`returned()`), used only for app-return events.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

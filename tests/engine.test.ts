@@ -894,3 +894,70 @@ describe('client housekeeping', () => {
   });
 });
 
+// Phase 5 of docs/REFACTOR_PLAN.md (the parts the owner chose)
+describe('what the screens are told', () => {
+  const theirs = (id: string, start = '2026-11-14 11:00') => {
+    server.append(ev({ id, type: 'feed', detail: 'right', start, user: 'P2' }));
+    server.bump();
+  };
+
+  it("marks entries that just arrived from the other phone, and only those", async () => {
+    const e = makeEngine();
+    theirs('first');
+    await e.refresh(); // the very first load: nothing is "news"
+    expect([...e.getState().arrived.ids]).toEqual([]);
+
+    theirs('x');
+    server.append(ev({ id: 'me-elsewhere', type: 'diaper', detail: 'wet', start: '2026-11-14 11:30', user: 'P1' })); // my own, e.g. through Siri
+    server.append(ev({ id: 'old', type: 'feed', detail: 'left', start: '2026-11-10 08:00', user: 'P2' })); // added late for an old day
+    server.bump();
+    clock += 60_000;
+    await e.pollOnce();
+    expect([...e.getState().arrived.ids]).toEqual(['x']);
+    expect(e.getState().arrived.at).toBe(clock);
+
+    e.dispatch(feed('mine'));
+    await idle();
+    await e.refresh();
+    expect([...e.getState().arrived.ids]).toEqual(['x']); // my own tap coming back in a list is not news
+  });
+
+  it('an older day loaded for History is not news', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    theirs('long-ago', '2026-10-01 08:00');
+    await e.ensureRange('2026-10-01', '2026-10-01');
+    expect(e.getState().events.map((x) => x.id)).toEqual(['long-ago']);
+    expect([...e.getState().arrived.ids]).toEqual([]);
+  });
+
+  it('says "checking" from the moment the app is returned to until that first check is back; ordinary checks do not', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    clock += 10_000; // later: the app is returned to
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    const back = e.returned();
+    await idle();
+    expect(e.getState().checking).toBe(true);
+    gate = null;
+    release();
+    await back;
+    expect(e.getState().checking).toBe(false);
+
+    clock += 10_000;
+    gate = new Promise<void>((r) => (release = r));
+    const poll = e.pollOnce();
+    await idle();
+    expect(e.getState().checking).toBe(false);
+    gate = null;
+    release();
+    await poll;
+
+    offline = true; // and it never stays on after a failure
+    clock += 10_000;
+    await e.returned();
+    expect(e.getState()).toMatchObject({ checking: false, status: 'offline' });
+  });
+});
+

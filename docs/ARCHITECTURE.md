@@ -105,6 +105,13 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **Home is a fixed screen.** `.main.fixed` has no scrolling and no overscroll, the button grid shrinks (never scrolls) on short
   screens, and only the recent-events list (last 10, about 3.5 rows visible) scrolls in its own box. iOS let a scrollable Home get dragged
   out of place and stay stuck. Every other tab scrolls normally; each tab has its own scroll container (`key={tab}`).
+- **Sync mark** (`SyncMark` in `App.tsx`, `.syncmark`): the state of the sync is shown in the empty strip under the status bar
+  (`--top-gap`), fixed, transparent and untouchable, so nothing on the screen moves and it is never a coloured band: a small
+  turning dot while sending or during the first check after opening ("מתעדכן…"), words only when sending takes more than 8 s,
+  and the reason when there is no connection (with "עודכן HH:MM" when the data is older than 2 minutes). Banners (in the flow)
+  remain only for what needs the parent: a wrong key, a refused entry.
+- **News from the other phone:** entries that arrive in a list and were not ours glow for a few seconds in the recent list
+  (`arrived` in the engine's state, `.rrow.new`); never on the first load, never for an older day loaded for History.
 - **Status bar colour:** iOS 26 ignores `theme-color` and samples the page: keep `#app` with an explicit background (black at night)
   and nothing bright at the top at night (banners are dark there).
 - **Layout units:** `#app` is `position: fixed; inset: 0`; never use `vh`/`dvh` (wrong inside iOS home-screen apps). Content starts
@@ -113,8 +120,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   tap straddling a re-render could be lost. Use plain functions that return JSX, or top-level components.
 - **Event icons in lists** (`.ri` recent list, `.hi` history): a 40px column, one line, centred, so one icon and two ("💧💩") line up.
   History's time column (`.ht`) is 112px, one line, centred, so a sleep's range fits.
-- **Buttons:** at least 56px tall at any supported screen height; a tap locks all buttons for 1.5 s (double-tap protection) and shows a
-  5 s undo toast.
+- **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
+  protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
 - **Add-after-the-fact form:** quick buttons are "today", "yesterday", "10/15/30 minutes ago", "an hour ago", "two hours ago". The chosen
   "X minutes ago" button stays lit until the time or date is changed by hand. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
   with the phone's own date input laid invisibly over it, so the system picker opens only when the date is tapped; the app draws no calendar of
@@ -153,9 +160,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   Settings / Medicines tabs is taken in by running `setup()` again (the owner does not edit by hand).
 
 ## Tests (what each layer is for)
-- `tests/` (Vitest, ~269): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
+- `tests/` (Vitest, ~272): time rules vs ICU, domain logic, server rules, the built Apps Script bundle running in a fake Google runtime
   (`gas-fake.ts`), the sync engine, shortcut files (executed by a small interpreter), the Mac signing script, the privacy guard.
-- `e2e/` (Playwright, ~117): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
+- `e2e/` (Playwright, ~125): real browser at phone size against `scripts/mock-server.ts`; includes raw touch drags (`Input.dispatchTouchEvent`),
   two phones syncing with no manual trigger, the number and kind of requests per tap / per open (`/__calls` on the mock), an old server, offline behavior, night mode, layout at several heights. CI runs the suite twice, the second time
   against a slow server (`MOCK_DELAY`), which finds timing bugs.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.

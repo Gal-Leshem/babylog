@@ -51,16 +51,44 @@ function Banner() {
       </div>
     );
   }
-  if (st.status === 'offline' || st.status === 'error' || st.pending > 0) {
-    const waiting = st.pending > 0 ? ` · ${st.pending} ממתינים לסנכרון` : '';
-    return (
-      <div class="banner" data-testid="banner-sync">
-        {st.status === 'offline' ? 'אין חיבור' : st.status === 'error' ? 'שגיאת שרת, מנסה שוב' : 'מסנכרן'}
-        {waiting}
-      </div>
-    );
-  }
-  return null;
+  return <SyncMark />;
+}
+
+const SLOW_MS = 8_000;
+const STALE_MS = 2 * 60_000;
+const hhmm = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
+
+/**
+ * The quiet sync mark. It lives in the empty strip under the status bar, so nothing on the screen moves when it comes and goes,
+ * and it is never a coloured band (at night iOS would tint the status bar with one). A small turning dot while something is
+ * being sent or the first check after opening is on its way; words only when they help: "מתעדכן…" on opening, the number
+ * waiting when sending takes long, and the reason when there is no connection (with the time of the last update when old).
+ */
+function SyncMark() {
+  const st = useEngine();
+  const [slow, setSlow] = useState(false);
+  const sending = st.pending > 0;
+  useEffect(() => {
+    if (!sending) return setSlow(false);
+    const t = setTimeout(() => setSlow(true), SLOW_MS);
+    return () => clearTimeout(t);
+  }, [sending]);
+
+  const trouble = st.status === 'offline' || st.status === 'error';
+  if (!trouble && !sending && !st.checking) return null;
+  const waiting = st.pending > 0 ? ` · ${st.pending} ממתינים לסנכרון` : '';
+  let text = '';
+  if (trouble) {
+    const old = st.lastSync !== null && Date.now() - st.lastSync > STALE_MS ? ` · עודכן ${hhmm(st.lastSync)}` : '';
+    text = `${st.status === 'offline' ? 'אין חיבור' : 'שגיאת שרת, מנסה שוב'}${waiting}${old}`;
+  } else if (sending) text = slow ? `מסנכרן${waiting}` : '';
+  else text = 'מתעדכן…';
+  return (
+    <div class={`syncmark ${trouble ? 'bad' : ''}`} role="status" aria-label={text || 'מסנכרן'} data-testid="banner-sync" data-state={trouble ? st.status : sending ? 'sending' : 'checking'}>
+      <i />
+      {text && <span data-testid="sync-text">{text}</span>}
+    </div>
+  );
 }
 
 function ToastView() {

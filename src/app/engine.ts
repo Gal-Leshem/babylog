@@ -53,6 +53,10 @@ export interface EngineState {
   lastError: string | null;
   sheetUrl: string;
   timing: SyncTiming | null;
+  /** The app was just opened or returned to and its first check is still on its way: what is shown may be a moment old. */
+  checking: boolean;
+  /** Entries that just arrived from the other phone (shown highlighted for a few seconds). */
+  arrived: { ids: ReadonlySet<string>; at: number };
 }
 
 export type DispatchResult =
@@ -143,6 +147,8 @@ export class Engine {
   /** The server does not know `sync` (an older deployment): talk to it the old way for this session. */
   private legacy = false;
   private timing: SyncTiming | null = null;
+  private checking = false;
+  private arrived: { ids: ReadonlySet<string>; at: number } = { ids: new Set(), at: 0 };
   private lastBeaconAt = -Infinity;
   private readonly stopwatch: () => number;
   private readonly random: () => number;
@@ -229,6 +235,8 @@ export class Engine {
       lastError: this.lastError,
       sheetUrl: this.p.sheetUrl,
       timing: this.timing,
+      checking: this.checking,
+      arrived: this.arrived,
     };
   }
 
@@ -349,6 +357,10 @@ export class Engine {
     this.syncing = true;
     this.syncStartedAt = this.now();
     const seq = ++this.syncSeq;
+    if (soft && !this.checking) {
+      this.checking = true; // the screens say "updating" until this first check after a return is back
+      this.emit(false);
+    }
     if (this.retryTimer) {
       this.clearTimer(this.retryTimer);
       this.retryTimer = null;
@@ -367,6 +379,10 @@ export class Engine {
       if (seq === this.syncSeq) {
         this.syncing = false;
         this.inFlight.clear();
+        if (this.checking) {
+          this.checking = false;
+          this.emit(false);
+        }
         // A remembered request, a second batch, or taps made meanwhile. Not after a failure: the retry timer and the next check take over.
         const next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
         this.again = false;
@@ -468,6 +484,19 @@ export class Engine {
     const ops = this.wireOps(batch);
     const ok = this.beacon(ep, { action: 'sync', ...this.defaultRange(), ...(this.p.rev ? { rev: this.p.rev } : {}), ops });
     return ok ? batch.length : 0;
+  }
+
+  /**
+   * Which of the fetched entries are news from the other phone: not in our copy before, not something we sent ourselves, and
+   * recent (an older day loaded for History is not news). Nothing is marked on the very first load.
+   */
+  private noteArrivals(fetched: BabyEvent[]): void {
+    if (this.p.lastSync === null) return;
+    const had = new Set(this.p.serverEvents.map((e) => e.id));
+    const mine = new Set(this.p.queue.map((o) => ('id' in o.req ? o.req.id : '')));
+    const since = this.now() - 24 * 3600_000;
+    const ids = fetched.filter((e) => !had.has(e.id) && !mine.has(e.id) && e.user !== this.config?.me && eventTime(e) >= since).map((e) => e.id);
+    if (ids.length) this.arrived = { ids: new Set(ids), at: this.now() };
   }
 
   private putServerEvent(e: BabyEvent): void {
@@ -587,6 +616,7 @@ export class Engine {
   }
 
   private merge(range: { from: string; to: string }, fetched: BabyEvent[]): void {
+    this.noteArrivals(fetched);
     const lo = dayStart(range.from);
     const hi = dayStart(addDays(range.to, 1));
     const ids = new Set(fetched.map((e) => e.id));
@@ -613,6 +643,14 @@ export class Engine {
   }
 
   /**
+   * The app was opened or returned to. Several events announce one return within a few milliseconds; they count as one.
+   * Until this check is back the state says `checking`.
+   */
+  async returned(): Promise<void> {
+    await this.sync('rev', true);
+  }
+
+  /**
    * Keeps the app current while it is open and visible: a cheap check every few seconds (`pollDelay`), a full refresh every
    * FULL_REFRESH_MS, and an immediate check whenever the app comes back to the foreground or the network returns
    * (the several events one return fires count as one). Nothing runs while the app is hidden. Returns a stop function.
@@ -622,7 +660,7 @@ export class Engine {
     const resume = () => {
       if (!visible()) return;
       this.lastActive = this.now();
-      void this.sync('rev', true);
+      void this.returned();
     };
     const leaving = () => {
       if (!visible()) this.leave();
