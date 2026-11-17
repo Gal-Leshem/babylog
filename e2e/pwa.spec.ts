@@ -172,11 +172,17 @@ test.describe('the iPhone status bar follows a theme change while the app is ope
     await page.clock.setFixedTime(new Date('2026-11-14T10:00:00Z')); // 12:00 in Israel: day
     await install(page);
     await page.getByTestId('tab-settings').click();
-    await page.getByTestId('night-always').scrollIntoViewIfNeeded();
-    const scrolled = await page.evaluate(() => document.querySelector('.main')!.scrollTop);
+    await expect(page.getByTestId('sect-advanced')).toBeVisible();
+    // scroll Settings on purpose (how far a button sits from the top differs between machines)
+    const scrolled = await page.evaluate(() => {
+      const m = document.querySelector('.main')!;
+      m.scrollTop = Math.min(150, m.scrollHeight - m.clientHeight);
+      return m.scrollTop;
+    });
     expect(scrolled).toBeGreaterThan(0);
     const loads = countLoads(page);
-    await page.getByTestId('night-always').click();
+    // a tap without scrolling the button into view first (a test click would move the scroll position it checks)
+    await page.getByTestId('night-always').evaluate((b: HTMLElement) => b.click());
     await expect.poll(() => loads.n).toBe(1);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
     await expect(page.getByTestId('tab-settings')).toHaveAttribute('aria-current', 'page');

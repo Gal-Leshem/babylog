@@ -220,6 +220,8 @@ No names, addresses or secrets in this file (the repository is public).
   position; elsewhere nothing reloads. Browser tests: reload once and back to Settings at the same scroll, 21:00 with a form
   open (waits), no loop if a reload came back in the old theme (87 reloads without the guard), no reload in a browser tab; each
   proven to fail without its part. Whether iOS reads the colour again after a reload cannot be tested here: owner confirms.
+  CI caught a weak test on the way (it assumed the Settings screen had to scroll to reach the button; in CI it did not): the
+  test now scrolls on purpose and taps without moving the scroll.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
