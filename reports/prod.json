@@ -1,0 +1,47 @@
+{
+  "job": "prod",
+  "status": "success",
+  "sha": "ebbe9e7",
+  "ref": "main",
+  "at": "2026-11-17T11:19:24.956Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44072448844",
+  "logs": {
+    "deploy-prod": [
+      "+ npx tsx scripts/deploy-server.ts prod",
+      "::add-mask::[token]",
+      "using existing prod script",
+      "::add-mask::[deployment]",
+      "::add-mask::[deployment]",
+      "server bundle ready (production, 44 KB)",
+      "Script is already up to date.",
+      "redeployed existing web app deployment (version 41)",
+      "::add-mask::[deployment]",
+      "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=41 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "prod server deployed",
+      "took 7s"
+    ],
+    "install": [
+      "+ npm ci",
+      "npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead",
+      "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
+      "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
+      "",
+      "added 657 packages, and audited 658 packages in 7s",
+      "",
+      "210 packages are looking for funding",
+      "  run `npm fund` for details",
+      "",
+      "10 vulnerabilities (8 moderate, 2 high)",
+      "",
+      "To address issues that do not require attention, run:",
+      "  npm audit fix",
+      "",
+      "To address all issues (including breaking changes), run:",
+      "  npm audit fix --force",
+      "",
+      "Run `npm audit` for details.",
+      "took 7s"
+    ]
+  }
+}
