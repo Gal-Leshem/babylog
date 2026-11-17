@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "e23db43",
+  "sha": "fe0f669",
   "ref": "main",
-  "at": "2026-11-17T15:40:15.556Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44116235003",
+  "at": "2026-11-17T16:11:10.016Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44122160909",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -14,12 +14,12 @@
       "::add-mask::[deployment]",
       "server bundle ready (production, 44 KB)",
       "Script is already up to date.",
-      "redeployed existing web app deployment (version 42)",
+      "redeployed existing web app deployment (version 43)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=42 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=43 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "prod server deployed",
-      "took 7s"
+      "took 9s"
     ],
     "install": [
       "+ npm ci",
@@ -41,7 +41,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 6s"
     ]
   }
 }
