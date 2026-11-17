@@ -90,20 +90,23 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
   );
 }
 
-/** Seven small bars, oldest on the right (time runs right to left), with the number above and the weekday below. */
-function countCard(id: string, title: string, days: string[], values: number[]): JSX.Element {
+/**
+ * Small bars, oldest on the right (time runs right to left), with the number above and the weekday below: the seven full
+ * days and then today so far (owner), set a little apart, labelled "היום" and drawn lighter (the day is not over).
+ */
+function countCard(id: string, title: string, days: string[], values: number[], today: string): JSX.Element {
   const max = Math.max(1, ...values);
   return (
     <div class="cnt" data-testid={`cnt-${id}`} key={id}>
       <div class="ie">{title}</div>
       <div class="bars">
         {values.map((v, i) => (
-          <div class="bar" key={days[i]}>
+          <div class={`bar ${days[i] === today ? 'today' : ''}`} key={days[i]}>
             <span class="bn">{v}</span>
             <div class="bt">
               <div class="bv" style={{ height: `${Math.round((v / max) * 100)}%` }} />
             </div>
-            <span class="bd">{weekdayOf(days[i]!)}</span>
+            <span class="bd">{days[i] === today ? 'היום' : weekdayOf(days[i]!)}</span>
           </div>
         ))}
       </div>
@@ -116,13 +119,15 @@ export function Insights() {
   const { events, settings } = useEngine();
   const now = useNow(60_000);
   // Recomputed only when the events change or a minute passes (the engine keeps `events` the same object while nothing changed).
-  const { r, rows, days, sums } = useMemo(() => {
+  const { r, rows, days, countDays, sums } = useMemo(() => {
     const r = insights(events, now, settings.mergeWindowMin);
     const rows = timeline(events, now, settings.mergeWindowMin);
     const days: string[] = [];
     for (let d = r.from; d <= r.to; d = addDays(d, 1)) days.push(d);
-    const sums = days.map((d) => dailySummary(events, d, now, settings.mergeWindowMin));
-    return { r, rows, days, sums };
+    // the counts also show today so far (the insights themselves use only the full days)
+    const countDays = [...days, localDate(now)];
+    const sums = countDays.map((d) => dailySummary(events, d, now, settings.mergeWindowMin));
+    return { r, rows, days, countDays, sums };
   }, [events, now, settings.mergeWindowMin]);
   const today = localDate(now);
 
@@ -171,10 +176,10 @@ export function Insights() {
 
       <h3>ספירות יומיות</h3>
       <div class="cnts">
-        {countCard('feeds', 'האכלות', days, sums.map((s) => s.feeds.count))}
-        {countCard('wet', 'פיפי (כולל פיפי + קקי)', days, sums.map((s) => s.diapers.wet + s.diapers.both))}
-        {countCard('poop', 'קקי (כולל פיפי + קקי)', days, sums.map((s) => s.diapers.poop + s.diapers.both))}
-        {countCard('sleep', 'שינה (שעות)', days, sums.map((s) => Math.round(s.sleep.totalMin / 60)))}
+        {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
+        {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}
+        {countCard('poop', 'קקי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.poop + s.diapers.both), today)}
+        {countCard('sleep', 'שינה (שעות)', countDays, sums.map((s) => Math.round(s.sleep.totalMin / 60)), today)}
       </div>
 
       <p class="muted">

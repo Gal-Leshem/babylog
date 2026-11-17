@@ -87,14 +87,32 @@ test('insights: a timeline row per day from 06:00, right to left, and daily coun
   expect(fromRight).toBeLessThan(16 / 24 + 0.02);
   expect(await rows.nth(1).getByTestId('tl-feed').count()).toBeGreaterThanOrEqual(8);
   expect(await rows.nth(1).getByTestId('tl-diaper').count()).toBeGreaterThanOrEqual(6);
-  // daily counts: 7 bars each, oldest on the right
+  // daily counts: the 7 full days, oldest on the right, and then today (owner), so 8 bars each
   const feedBars = page.getByTestId('cnt-feeds').locator('.bar');
-  await expect(feedBars).toHaveCount(7);
+  await expect(feedBars).toHaveCount(8);
   const first = await box(feedBars.first());
   const last = await box(feedBars.last());
   expect(first.x).toBeGreaterThan(last.x);
   await expect(page.getByTestId('cnt-sleep').locator('.bn').first()).toHaveText('2'); // Nov 8: only 22:00-24:00 (the week starts that evening)
   await expect(page.getByTestId('cnt-sleep').locator('.bn').nth(1)).toHaveText('7'); // 1:40 + 3:05 + 2:00
+  // today is the last bar (leftmost), set slightly apart: its label says "היום" and it is marked, the other days are not
+  for (const id of ['feeds', 'wet', 'poop', 'sleep']) {
+    const bars = page.getByTestId(`cnt-${id}`).locator('.bar');
+    await expect(bars.last()).toHaveClass(/\btoday\b/);
+    await expect(bars.last().locator('.bd')).toHaveText('היום');
+    await expect(page.getByTestId(`cnt-${id}`).locator('.bar.today')).toHaveCount(1);
+  }
+  const todayBar = await box(feedBars.last());
+  const yesterdayBar = await box(feedBars.nth(6));
+  const gap = yesterdayBar.x - (todayBar.x + todayBar.width);
+  const usual = (await box(feedBars.nth(5))).x - (yesterdayBar.x + yesterdayBar.width);
+  expect(gap, 'a little space before today').toBeGreaterThan(usual + 2);
+  // today's numbers are today's so far: the same as the "סיכום" table for today (10:00: feeds 00:30, 03:45, 07:00, ...)
+  const todayCounts = await Promise.all(['feeds', 'wet', 'poop'].map((id) => page.getByTestId(`cnt-${id}`).locator('.bar').last().locator('.bn').textContent()));
+  await page.getByTestId('view-day').click();
+  const cell = (row: string) => page.getByTestId(`sum-${row}`).locator('td').first();
+  expect(todayCounts).toEqual([await cell('הנקות (האכלות)').textContent(), await cell('פיפי').textContent(), await cell('קקי').textContent()]);
+  expect(Number(todayCounts[0])).toBeGreaterThan(0);
 });
 
 // Owner: pee and poop dots were hard to tell apart. Pee is a yellow ring, poop a brown filled dot, and pee + poop a yellow ring with a

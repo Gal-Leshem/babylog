@@ -147,7 +147,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   (never means), a minimum amount of data per card (otherwise no card), "after a feed" patterns only when at least 20 points more often
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
-  bars (oldest on the right), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
+  bars (oldest on the right; then today so far, apart and lighter, labelled "היום"; owner), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
 - **App update:** a new version reloads the page only when nothing can be lost (`update.ts`: the app is in the background, or
   no sheet / form is open and no field has the cursor).
 - **Sync:** see "Sync engine" above (one `sync` request; a check every 5 or 15 s, a full list every 5 minutes, a check on resume).

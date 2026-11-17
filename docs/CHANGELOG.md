@@ -234,6 +234,10 @@ No names, addresses or secrets in this file (the repository is public).
   passed; the browser download is cached; every step reports how long it took.
 - Summary table **(owner)**: no separate "פיפי + קקי" row; it counts as one pee AND one poop (as "תובנות" already did), so the
   table shows only "פיפי" and "קקי"; the note under the table says so. Browser test (a "both" on each day) failed before.
+- Daily counts under "תובנות" **(owner)**: after the 7 full days, a bar for today so far, set a little apart, drawn lighter
+  (the day is not over) and labelled "היום" in the accent colour. Its numbers are the same as the "סיכום" table for today; the
+  insight cards still use only the full days. Browser test (8 bars, today last and marked, the gap, today = the table) failed
+  before.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
