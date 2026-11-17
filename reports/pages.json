@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "c468205",
+  "sha": "42f89fe",
   "ref": "main",
-  "at": "2026-11-17T03:55:40.021Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44012477946",
+  "at": "2026-11-17T10:08:26.618Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44060377114",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -14,20 +14,20 @@
       "",
       "vite v8.3.8 building client environment for production...",
       "transforming...",
-      "✓ 44 modules transformed.",
+      "✓ 45 modules transformed.",
       "rendering chunks...",
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-DSAsR8oy.css   14.21 kB │ gzip:  3.67 kB",
-      "dist/assets/index-B4Xo6GQC.js   106.26 kB │ gzip: 35.67 kB",
+      "dist/assets/index-DCCVofab.js   107.45 kB │ gzip: 36.17 kB",
       "",
-      "✓ built in 86ms",
+      "✓ built in 101ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (119.52 KiB)",
+      "precache  10 entries (120.68 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -69,14 +69,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published c468205 to gh-pages"
+      "published 42f89fe to gh-pages"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 4f85ecc, waiting for c468205",
-      "attempt 2: serves 4f85ecc, waiting for c468205",
-      "attempt 3: serves 4f85ecc, waiting for c468205",
-      "site is live and serves c468205"
+      "attempt 1: serves c468205, waiting for 42f89fe",
+      "attempt 2: serves c468205, waiting for 42f89fe",
+      "attempt 3: serves c468205, waiting for 42f89fe",
+      "site is live and serves 42f89fe"
     ]
   }
 }
