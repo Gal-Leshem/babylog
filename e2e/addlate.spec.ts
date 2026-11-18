@@ -317,3 +317,49 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
   });
 });
 
+
+// Owner: an edit made by mistake must be undoable, putting back exactly what was there before it; one step back is kept.
+test.describe('taking back an edit', () => {
+  const row = async (request: import('@playwright/test').APIRequestContext, id: string) => (await allServerRows(request)).find((e) => e.id === id)!;
+
+  test('"בטל" in the toast after saving puts back what was there before the edit', async ({ page, request }) => {
+    const d = todayLocal();
+    await seed(request, [{ id: 'f1', type: 'feed', detail: 'left', start: `${d} 00:10`, note: 'שקט' }]);
+    await install(page);
+    await page.getByTestId('recent-row').click();
+    await page.getByTestId('kind-feed_right').click();
+    await page.getByTestId('start-time').fill('00:30');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('toast-text')).toHaveText('השינויים נשמרו');
+    await expect.poll(async () => (await row(request, 'f1')).start).toBe(`${d} 00:30`);
+    await page.getByTestId('toast-undo').click();
+    await expect.poll(async () => { const e = await row(request, 'f1'); return [e.detail, e.start, e.note]; }).toEqual(['left', `${d} 00:10`, 'שקט']);
+    await expect(page.getByTestId('recent-row')).toContainText('00:10');
+    await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+  });
+
+  test('later, the form shows the version before the last edit and puts it back in one tap (one step back)', async ({ page, request }) => {
+    const d = todayLocal();
+    await seed(request, [{ id: 's1', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` }]);
+    // the other parent changed falling asleep by mistake, on her phone
+    await api(request, { action: 'update', id: 's1', patch: { start: `${d} 00:25` } });
+    await install(page);
+    await page.getByTestId('recent-row').filter({ hasText: 'נרדם' }).click();
+    await expect(page.getByTestId('prev-line')).toContainText('לפני העריכה האחרונה: נרדם 00:05 · התעורר 00:40');
+    await page.getByTestId('restore-prev').click();
+    await expect(page.getByTestId('event-form')).toBeHidden();
+    await expect(page.getByTestId('toast-text')).toHaveText('הוחזר למה שהיה לפני העריכה');
+    await expect.poll(async () => (await row(request, 's1')).start).toBe(`${d} 00:05`);
+    // one step: now "before the last edit" is the mistaken version, so it can be toggled back if needed
+    await page.getByTestId('recent-row').filter({ hasText: 'נרדם' }).click();
+    await expect(page.getByTestId('prev-line')).toContainText('נרדם 00:25');
+  });
+
+  test('an entry that was never edited shows no such line', async ({ page, request }) => {
+    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:10` }]);
+    await install(page);
+    await page.getByTestId('recent-row').click();
+    await expect(page.getByTestId('event-form')).toBeVisible();
+    await expect(page.getByTestId('prev-line')).toHaveCount(0);
+  });
+});

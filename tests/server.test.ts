@@ -635,3 +635,19 @@ describe('a list reads only the tail of a long sheet', () => {
   });
 });
 
+describe('one step back after an edit (owner)', () => {
+  it('an update keeps what the event was before it; a second update keeps the first edit', () => {
+    const id0 = ok(log('feed', 'left', '2026-11-14 11:00')).event!.id;
+    expect(store.find(id0)!.prev ?? '').toBe('');
+    ok(call({ action: 'update', id: id0, patch: { start: '2026-11-14 10:40', note: 'x' } }));
+    expect(JSON.parse(store.find(id0)!.prev!)).toEqual({ type: 'feed', detail: 'left', start: '2026-11-14 11:00', end: '', note: '' });
+    ok(call({ action: 'update', id: id0, patch: { detail: 'right' } }));
+    expect(JSON.parse(store.find(id0)!.prev!)).toMatchObject({ detail: 'left', start: '2026-11-14 10:40', note: 'x' });
+  });
+  it('a refused update changes nothing, "prev" included', () => {
+    const id0 = ok(log('sleep', '', '2026-11-14 10:00')).event!.id;
+    expect(call({ action: 'update', id: id0, patch: { end: '2026-11-14 09:00' } })).toMatchObject({ ok: false });
+    expect(store.find(id0)!.prev ?? '').toBe('');
+  });
+});
+

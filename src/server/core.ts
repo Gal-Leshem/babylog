@@ -12,6 +12,7 @@ import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../sha
 import {
   type BabyEvent,
   DIAPER_DETAILS,
+  coreOf,
   EVENT_TYPES,
   FEED_DETAILS,
   type Settings,
@@ -504,7 +505,8 @@ function update(o: Obj, deps: Deps, now: number): ApiResponse {
   const id = reqString(o, 'id', 64);
   const base = store.find(id);
   if (!base) return fail('not_found');
-  const next = { ...applyPatch(base, parsePatch(o.patch)), edited: stamp(now) };
+  // the version before this edit is kept with the event (one step back), so it can be restored later (owner)
+  const next = { ...applyPatch(base, parsePatch(o.patch)), edited: stamp(now), prev: JSON.stringify(coreOf(base)) };
   validateEvent(next, now);
   if (next.type === 'medicine' && next.detail !== base.detail) checkMedicineKnown(next, store);
   if (next.type === 'sleep' && next.start && !next.end && !base.deleted) {

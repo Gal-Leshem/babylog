@@ -18,7 +18,8 @@ server (`src/shared/speech.ts`) and only spoken by the shortcuts.
 
 ## Data model
 One row per event (columns in `src/server/readme.ts`, also written to the sheet's read-me tab for AI
-tools). Sleep is one row with start and end. Deletes are soft. Times are Israel time, stored as real
+tools). An edit keeps the event as it was before it in the appended column `prev` (JSON of type, detail, start, end, note;
+owner: one step back), so the edit form can put it back later, from either phone; the toast after saving an edit has "בטל". Sleep is one row with start and end. Deletes are soft. Times are Israel time, stored as real
 sheet dates. Requests carry a client-generated `id`, which makes retries idempotent.
 
 Medicines (F7, API 0.3.0): every medicine is defined in Settings and kept in the sheet's "Medicines" tab, one readable row each

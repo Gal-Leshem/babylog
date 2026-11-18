@@ -253,6 +253,12 @@ No names, addresses or secrets in this file (the repository is public).
   first, so nothing is left for the server to refuse (also offline). The wake-up toast says how long the sleep was ("ישן 0:35").
   Browser tests: the two taps, a second choice, undo after a move offline and online, sleep and wake-up with the length (proven
   to fail without the undo of the moves, and when a choice counts from the previous move).
+- Taking back an edit **(owner)**: "בטל" in the toast after saving an edit puts back exactly what was there before it. One
+  step back is also kept with the event in the sheet (new column `prev`, appended; its title is added to an older sheet the
+  first time an edit needs it), so later, from either phone, the edit form shows "לפני העריכה האחרונה: …" with "החזר". Putting
+  it back is an ordinary edit, so its own "before" is the mistaken version. Tests: server and sheet bundle (the column on an
+  older sheet), browser (the toast, the line and "החזר", no line when never edited; proven to fail without the toast undo and
+  without storing `prev`), live test.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

@@ -1,11 +1,11 @@
 import { useState } from 'preact/hooks';
 import { openSleep } from '../../shared/domain';
 import { localDate, parseLocal } from '../../shared/tz';
-import type { BabyEvent } from '../../shared/types';
+import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared/types';
 import { deleteEvent } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
-import { engine, showToast, useEngine } from '../state';
+import { engine, hideToast, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
@@ -21,6 +21,13 @@ const BACK: [string, number][] = [
 
 /** A sleep has two moments; the form edits one at a time. */
 export type Moment = 'start' | 'end';
+
+/** Takes back an edit: dropped if it has not been sent yet, otherwise the event is set back to `was`. */
+function takeBack(opId: string, id: string, was: EventCore): void {
+  const r = engine.undo(opId, { action: 'update', id, patch: was });
+  hideToast();
+  if (!r.ok) showToast({ text: `לא נשמר: ${errorText(r.error, r.detail)}`, tone: 'error' }, 6000);
+}
 
 interface Props {
   mode: 'add' | 'edit';
@@ -115,8 +122,25 @@ export function EventForm({ mode, event, focus, onClose }: Props) {
         ? engine.dispatch({ action: 'log', id: uid(), type, detail, start, ...(end ? { end } : {}), user: me, source: 'app', note })
         : engine.dispatch({ action: 'update', id: event!.id, patch: { type, detail, start, end, note } });
     if (!res.ok) return setError(errorText(res.error, res.detail));
-    showToast({ text: mode === 'add' ? `נוסף: ${label} ${timeOf(start || end)}` : 'השינויים נשמרו' }, 3000);
+    if (mode === 'add') showToast({ text: `נוסף: ${label} ${timeOf(start || end)}` }, 3000);
+    // (owner) an edit made by mistake: "בטל" puts back exactly what was there before it
+    else showToast({ text: 'השינויים נשמרו', undo: () => takeBack(res.opId, event!.id, coreOf(event!)) }, 6000);
     onClose();
+  };
+
+  // The version before the last edit (kept in the sheet, so also later and from the other phone): one tap puts it back.
+  const before = mode === 'edit' && event ? previousOf(event) : null;
+  const restore = () => {
+    if (!event || !before) return;
+    const res = engine.dispatch({ action: 'update', id: event.id, patch: before });
+    if (!res.ok) return setError(errorText(res.error, res.detail));
+    showToast({ text: 'הוחזר למה שהיה לפני העריכה', undo: () => takeBack(res.opId, event.id, coreOf(event)) }, 6000);
+    onClose();
+  };
+  const describe = (c: EventCore): string => {
+    if (c.type === 'sleep') return `נרדם ${c.start ? when(c.start.slice(0, 10), timeOf(c.start)) : 'לא ידוע'} · ${c.end ? `התעורר ${when(c.end.slice(0, 10), timeOf(c.end))}` : 'עדיין ישן'}`;
+    const name = c.type === 'medicine' ? (settings.medicines.find((m) => m.id === c.detail)?.name ?? KIND_LABEL.medicine) : KIND_LABEL[kindOf({ ...event!, ...c })];
+    return `${name} ${when(c.start.slice(0, 10), timeOf(c.start))}${c.note ? ` · ${c.note}` : ''}`;
   };
 
   return (
@@ -176,6 +200,17 @@ export function EventForm({ mode, event, focus, onClose }: Props) {
 
         <label class="fl">הערה</label>
         <textarea data-testid="note" rows={2} maxLength={200} value={note} onInput={(e) => setNote((e.target as HTMLTextAreaElement).value)} />
+
+        {before && (
+          <div class="prevline" data-testid="prev-line">
+            <span>
+              לפני העריכה האחרונה: <bdi>{describe(before)}</bdi>
+            </span>
+            <button type="button" data-testid="restore-prev" onClick={restore}>
+              החזר
+            </button>
+          </div>
+        )}
 
         {error && (
           <p class="err" role="alert" data-testid="form-error">

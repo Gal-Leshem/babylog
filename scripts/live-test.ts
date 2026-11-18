@@ -122,7 +122,9 @@ const list = await call({ action: 'list', from: today, to: today });
 check('list contains the feed', (list.json?.events ?? []).some((e: R) => e.id === id('feed')));
 check('list returns settings and server time', Boolean(list.json?.settings) && Boolean(list.json?.serverNow));
 
-check('update works', (await call({ action: 'update', id: id('feed'), patch: { note: 'live' } })).json?.event?.note === 'live');
+const upd = await call({ action: 'update', id: id('feed'), patch: { note: 'live' } });
+check('update works', upd.json?.event?.note === 'live');
+check('an edit keeps the version before it (prev, its own sheet column)', JSON.parse(upd.json?.event?.prev || '{}').note === '' && JSON.parse(upd.json?.event?.prev || '{}').detail === 'left', JSON.stringify(upd.json?.event ?? {}).slice(0, 300));
 check('invalid event rejected', (await call({ action: 'log', id: id('bad'), type: 'feed', detail: 'up', start: now(), ...base })).json?.error === 'invalid_event');
 
 const sleepA = await call({ action: 'asleep', id: id('asleep'), start: now(), ...base });

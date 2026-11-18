@@ -21,7 +21,8 @@ const README = 'קרא אותי';
 const MEDICINES = 'Medicines';
 /** One row per medicine besides vitamin D; numbers that do not apply to the schedule are left empty. */
 const MED_HEADER = ['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created', 'icon', 'dose_unit', 'course_until'];
-const HEADER = ['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted'];
+// new columns are only ever appended (rows from older versions still read); 'prev' = the event before its last edit
+const HEADER = ['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted', 'prev'];
 const COLS = HEADER.length;
 const DATE_FORMAT = 'yyyy-mm-dd hh:mm';
 
@@ -47,10 +48,11 @@ function rowToEvent(r: unknown[]): BabyEvent {
     created: toLocal(r[8]),
     edited: toLocal(r[9]),
     deleted: r[10] === true || String(r[10]).toUpperCase() === 'TRUE',
+    prev: String(r[11] ?? ''),
   };
 }
 function eventToRow(e: BabyEvent): unknown[] {
-  return [e.id, e.type, e.detail, toCell(e.start), toCell(e.end), e.user, e.source, e.note, toCell(e.created), toCell(e.edited), e.deleted];
+  return [e.id, e.type, e.detail, toCell(e.start), toCell(e.end), e.user, e.source, e.note, toCell(e.created), toCell(e.edited), e.deleted, e.prev ?? ''];
 }
 
 /** Where this request spent its time: milliseconds per kind of work, and "<kind>#" = number of calls. Sent back with `debug: true`. */
@@ -89,6 +91,8 @@ class SheetStore implements Store {
   count(): number {
     return Math.max(0, this.events().getLastRow() - 1);
   }
+  /** The 'prev' column has its title (checked once per request, only when an edit needs it). */
+  private prevTitled = false;
   /** Rows found in this request (rows never move: events are only appended or rewritten in place). */
   private rows = new Map<string, number>();
   private rowOf(id: string): number {
@@ -114,6 +118,12 @@ class SheetStore implements Store {
     const row = this.rowOf(e.id);
     if (!row) return false;
     timed('write', () => {
+      // a sheet made before the 'prev' column existed gets its title the first time an edit needs it
+      if (e.prev && !this.prevTitled) {
+        const title = this.events().getRange(1, COLS);
+        if (title.getValue() !== HEADER[COLS - 1]) title.setValue(HEADER[COLS - 1]!).setFontWeight('bold');
+        this.prevTitled = true;
+      }
       this.events().getRange(row, 1, 1, COLS).setValues([eventToRow(e)]);
       SpreadsheetApp.flush();
     });

@@ -391,3 +391,7 @@ input, textarea, select {
 .sheet-backdrop.confirm { z-index: 60; align-items: center; padding: 16px; }
 .sheet-backdrop.confirm .sheet { border-radius: 18px; }
 .warnlist { margin: 6px 0; padding-inline-start: 20px; color: var(--warn); font-weight: 600; }
+
+/* the edit form: the version before the last edit, with one tap to put it back */
+.prevline { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 12px; font-size: 13px; color: var(--muted); }
+.prevline button { flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font-weight: 700; color: var(--accent); }

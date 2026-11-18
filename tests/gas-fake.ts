@@ -32,6 +32,8 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
           return self;
         },
         getRow: () => r0,
+        setValue: (v: Cell) => self.setValues([[v]]),
+        getValue: () => rows()[r0 - 1]?.[c0 - 1] ?? '',
         setFontWeight: () => self,
         setFontSize: () => self,
         setNumberFormat: () => self,
@@ -57,6 +59,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
     return {
       getName: () => name,
       getLastRow: lastRow,
+      getLastColumn: () => Math.max(0, ...rows().map((r) => r.length)),
       getMaxRows: () => 1000,
       getRange: (a: number | string, b?: number, c?: number, d?: number) => {
         if (typeof a === 'string') {

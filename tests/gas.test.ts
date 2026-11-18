@@ -36,7 +36,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     const { rt, g } = boot();
     g.setup!();
     expect([...rt.sheets.keys()].sort()).toEqual(['Events', 'Medicines', 'Settings', 'קרא אותי'].sort());
-    expect(rt.sheets.get('Events')![0]).toEqual(['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted']);
+    expect(rt.sheets.get('Events')![0]).toEqual(['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted', 'prev']);
     const key = rt.props.get('API_KEY')!;
     expect(key).toHaveLength(64);
     const line = rt.logs.find((l) => l.startsWith('BL1.'))!;
@@ -327,6 +327,27 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(r.events).toHaveLength(1);
       expect(Number(r.rev)).toBe(Number(first.rev) + 2); // theirs and ours
     });
+  });
+
+  // Owner: an edit made by mistake must be undoable later, also from the other phone: the version before the last edit is kept.
+  it('an edit keeps the version before it in a "prev" column, added to a sheet made before that column existed', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const ev = rt.sheets.get('Events')!;
+    ev[0] = ev[0]!.slice(0, 11); // a sheet from before the column
+    const day = '2026-01-10';
+    post({ key, action: 'log', id: 's1', type: 'sleep', detail: '', start: `${day} 01:00`, user: 'P', source: 'app' });
+    expect(rt.sheets.get('Events')![0]).toHaveLength(11); // a log does not need the column
+    const r = post({ key, action: 'update', id: 's1', patch: { start: `${day} 01:30`, end: `${day} 03:00` } });
+    expect(JSON.parse(r.event.prev)).toEqual({ type: 'sleep', detail: '', start: `${day} 01:00`, end: '', note: '' });
+    expect(rt.sheets.get('Events')![0]![11]).toBe('prev');
+    const listed = post({ key, action: 'list', from: day, to: day }).events[0];
+    expect(JSON.parse(listed.prev).start).toBe(`${day} 01:00`);
+    // restoring is an ordinary edit back to those values; its own "before" is the mistaken version
+    const back = post({ key, action: 'update', id: 's1', patch: JSON.parse(listed.prev) });
+    expect(back.event).toMatchObject({ start: `${day} 01:00`, end: '' });
+    expect(JSON.parse(back.event.prev)).toMatchObject({ start: `${day} 01:30`, end: `${day} 03:00` });
   });
 
   it('rotateKey invalidates the old key', () => {

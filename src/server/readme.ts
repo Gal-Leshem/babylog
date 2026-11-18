@@ -17,6 +17,7 @@ export const README_ROWS: string[][] = [
   ['created', 'When it was actually entered. Never changes when the event is edited. If created is later than start, it was added after the fact.'],
   ['edited', 'Time of the last edit. Empty = never edited.'],
   ['deleted', 'TRUE = deleted by mistake-correction. IGNORE these rows in every count and analysis.'],
+  ['prev', 'How the event looked before its last edit (JSON: type, detail, start, end, note), so the edit can be undone. Not needed for analysis.'],
   [''],
   ['Rules for analysis / כללים לניתוח'],
   ['1', 'Ignore rows where deleted is TRUE.'],
