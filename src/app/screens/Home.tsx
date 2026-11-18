@@ -61,7 +61,7 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
   };
 }
 
-export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent) => void; onAddLate: () => void; onOpenMeds: () => void }) {
+export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent, focus?: 'start' | 'end') => void; onAddLate: () => void; onOpenMeds: () => void }) {
   const { events, settings, arrived } = useEngine();
   const now = useNow(15_000);
   // After a tap the same button rests for 1.5 s (a double tap must not log twice); the others only for a moment, so
@@ -201,7 +201,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent)
       <ul class="recent" data-testid="recent">
         {recent.map(({ key, e, at, icon, label }) => (
           <li key={key}>
-            <button type="button" class={`rrow ${isNew(e.id) ? 'new' : ''}`} data-testid="recent-row" onClick={() => onEdit(e)}>
+            <button type="button" class={`rrow ${isNew(e.id) ? 'new' : ''}`} data-testid="recent-row" onClick={() => onEdit(e, key.endsWith(':e') ? 'end' : key.endsWith(':s') ? 'start' : undefined)}>
               <span class="ri emo">{icon}</span>
               <span class="rl">{label}</span>
               <span class="rt">{timeOf(at)}</span>

@@ -129,8 +129,12 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   History's time column (`.ht`) is 112px, one line, centred, so a sleep's range fits.
 - **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
   protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
-- **Add-after-the-fact form:** quick buttons are "today", "yesterday", "10/15/30 minutes ago", "an hour ago", "two hours ago". The chosen
-  "X minutes ago" button stays lit until the time or date is changed by hand. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
+- **Add-after-the-fact form:** quick buttons are "5/10/15/30 minutes ago", "an hour ago", "two hours ago" (owner: no "today" /
+  "yesterday"; another day is picked in the date field). The chosen button stays lit exactly as long as the time is still the one
+  it set (derived from the values, so a late event from the phone's time wheel cannot switch it off; a change by hand does).
+  A sleep has two moments, "נרדם" and "התעורר", edited one at a time with their own quick buttons (`Moment` in `EventForm.tsx`);
+  the form opens on the one that was tapped (recent list row; in History a finished sleep opens on waking up, an open one on
+  falling asleep). "עדיין ישן" belongs to the wake-up side. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
   with the phone's own date input laid invisibly over it, so the system picker opens only when the date is tapped; the app draws no calendar of
   its own (the owner did not want one). The system picker itself uses the phone's language. The time field is the system one.
   A new sleep starts as "still asleep" (the usual case: the baby fell asleep a while ago); if a sleep is already open, the form asks for

@@ -251,10 +251,11 @@ test('recent list: a sleep shows as "נרדם" and "התעורר" at their own t
   expect(texts[2]).toContain('פיפי');
   expect(texts[3]).toContain('נרדם');
   expect(texts[3]).toContain('00:05');
-  await rows.nth(1).click(); // "התעורר" opens that sleep
+  await rows.nth(1).click(); // "התעורר" opens that sleep, on its wake-up
   await expect(page.getByTestId('event-form')).toBeVisible();
   await expect(page.getByTestId('kind-sleep')).toHaveClass(/\bon\b/);
   await expect(page.getByTestId('end-time')).toHaveValue('00:40');
+  await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
 });
 
 // Owner: logging a feed or a diaper while the baby is marked asleep. Nothing changes by itself (night feeds and changes often happen

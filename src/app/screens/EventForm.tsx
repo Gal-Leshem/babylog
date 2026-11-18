@@ -1,15 +1,17 @@
 import { useState } from 'preact/hooks';
 import { openSleep } from '../../shared/domain';
-import { addDays, localDate, parseLocal } from '../../shared/tz';
+import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { deleteEvent } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
-import { KINDS, KIND_ICON, KIND_LABEL, type Kind, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
+import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
+// (owner) no "today" / "yesterday" buttons: another day is chosen in the date field; these are the quick ones
 const BACK: [string, number][] = [
+  ['לפני 5 דק׳', 5],
   ['לפני 10 דק׳', 10],
   ['לפני 15 דק׳', 15],
   ['לפני 30 דק׳', 30],
@@ -17,13 +19,18 @@ const BACK: [string, number][] = [
   ['לפני שעתיים', 120],
 ];
 
+/** A sleep has two moments; the form edits one at a time. */
+export type Moment = 'start' | 'end';
+
 interface Props {
   mode: 'add' | 'edit';
   event?: BabyEvent;
+  /** which moment of a sleep to show first (the row that was tapped: "נרדם" or "התעורר") */
+  focus?: Moment;
   onClose: () => void;
 }
 
-export function EventForm({ mode, event, onClose }: Props) {
+export function EventForm({ mode, event, focus, onClose }: Props) {
   const { events, settings } = useEngine();
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
@@ -35,8 +42,10 @@ export function EventForm({ mode, event, onClose }: Props) {
   const medChoices = settings.medicines.filter((m) => m.status === 'active' || m.id === medId);
   const [sDate, setSDate] = useState(initStart.slice(0, 10));
   const [sTime, setSTime] = useState(timeOf(initStart));
-  // which "X minutes ago" button is active (cleared as soon as the time or date is changed by hand)
-  const [quick, setQuick] = useState<number | null>(null);
+  // The "X minutes ago" button that set the time, and the time it set: it stays lit exactly as long as the time is still that one
+  // (a late event from the phone's time wheel with the same value cannot switch it off; a change by hand does).
+  const [quick, setQuick] = useState<{ moment: Moment; mins: number; at: string } | null>(null);
+  const [moment, setMoment] = useState<Moment>(focus ?? (event?.type === 'sleep' && !event.start ? 'end' : 'start'));
   const [unknownStart, setUnknownStart] = useState(Boolean(event && event.type === 'sleep' && !event.start));
   const initEnd = event?.end || nowStr;
   // A new sleep added after the fact is usually a baby who fell asleep a little while ago and is still asleep, so that is the
@@ -51,18 +60,52 @@ export function EventForm({ mode, event, onClose }: Props) {
   const today = localDate(Date.now());
   const isSleep = kind === 'sleep';
 
-  const setBack = (mins: number) => {
+  const setBack = (m: Moment, mins: number) => {
     const t = nowLocal(Date.now() - mins * 60_000);
-    setSDate(t.slice(0, 10));
-    setSTime(timeOf(t));
-    setUnknownStart(false);
-    setQuick(mins);
+    if (m === 'start') {
+      setSDate(t.slice(0, 10));
+      setSTime(timeOf(t));
+      setUnknownStart(false);
+    } else {
+      setEDate(t.slice(0, 10));
+      setETime(timeOf(t));
+      setStillAsleep(false);
+    }
+    setQuick({ moment: m, mins, at: t });
   };
+  const valueOf = (m: Moment) => (m === 'start' ? `${sDate} ${sTime}` : `${eDate} ${eTime}`);
+  const lit = (m: Moment, mins: number) => quick !== null && quick.moment === m && quick.mins === mins && quick.at === valueOf(m);
+
+  // One moment's date, time and quick buttons (a plain function returning JSX, not a component).
+  const timeEditor = (m: Moment, label: string) => {
+    const [date, time, setDate, setTime] = m === 'start' ? [sDate, sTime, setSDate, setSTime] : [eDate, eTime, setEDate, setETime];
+    return (
+      <>
+        <label class="fl">{label}</label>
+        <div class="when">
+          <DateField testId={`${m}-date`} value={date} max={today} onChange={setDate} />
+          <input type="time" data-testid={`${m}-time`} value={time} onInput={(e) => setTime((e.target as HTMLInputElement).value)} />
+        </div>
+        <div class="chips small">
+          {BACK.map(([text, mins]) => (
+            <button type="button" key={mins} class={`chip ${lit(m, mins) ? 'on' : ''}`} aria-pressed={lit(m, mins)} data-testid={m === 'start' ? `back-${mins}` : `end-back-${mins}`} onClick={() => setBack(m, mins)}>
+              {text}
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  };
+  const when = (date: string, time: string) => (date === today ? time : `${time} · ${dayName(date, today)}`);
 
   const save = () => {
     const start = isSleep && unknownStart ? '' : `${sDate} ${sTime}`;
     const end = isSleep && !stillAsleep ? `${eDate} ${eTime}` : '';
     if (Number.isNaN(parseLocal(start || end))) return setError('תאריך או שעה לא תקינים');
+    if (start && end && parseLocal(end) < parseLocal(start)) {
+      setMoment('end');
+      return setError(errorText('invalid_event', 'end is before start')); // the wording stays as it was until the owner picks one
+    }
     const { type, detail: kindDetail } = fromKind(kind);
     const detail = kind === 'medicine' ? medId! : kindDetail;
     const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : KIND_LABEL[kind];
@@ -95,78 +138,37 @@ export function EventForm({ mode, event, onClose }: Props) {
           ))}
         </div>
 
-        {isSleep && unknownStart ? null : (
-          <>
-            <label class="fl">{isSleep ? 'נרדם ב' : 'מתי'}</label>
-            <div class="when">
-              <DateField
-                testId="start-date"
-                value={sDate}
-                max={today}
-                onChange={(d) => {
-                  setSDate(d);
-                  setQuick(null);
-                }}
-              />
-              <input
-                type="time"
-                data-testid="start-time"
-                value={sTime}
-                onInput={(e) => {
-                  setSTime((e.target as HTMLInputElement).value);
-                  setQuick(null);
-                }}
-              />
-            </div>
-            <div class="chips small">
-              <button
-                type="button"
-                class={`chip ${quick === null && sDate === today ? 'on' : ''}`}
-                data-testid="chip-today"
-                onClick={() => {
-                  setSDate(today);
-                  setQuick(null);
-                }}
-              >
-                היום
-              </button>
-              <button
-                type="button"
-                class={`chip ${quick === null && sDate === addDays(today, -1) ? 'on' : ''}`}
-                data-testid="chip-yesterday"
-                onClick={() => {
-                  setSDate(addDays(today, -1));
-                  setQuick(null);
-                }}
-              >
-                אתמול
-              </button>
-              {BACK.map(([label, m]) => (
-                <button type="button" key={m} class={`chip ${quick === m ? 'on' : ''}`} aria-pressed={quick === m} data-testid={`back-${m}`} onClick={() => setBack(m)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        {!isSleep && timeEditor('start', 'מתי')}
 
         {isSleep && (
           <>
-            {event && !event.start && (
-              <label class="check">
-                <input type="checkbox" checked={unknownStart} onChange={(e) => setUnknownStart((e.target as HTMLInputElement).checked)} /> שעת ההירדמות לא ידועה
-              </label>
-            )}
-            <label class="check">
-              <input type="checkbox" data-testid="still-asleep" checked={stillAsleep} onChange={(e) => setStillAsleep((e.target as HTMLInputElement).checked)} /> עדיין ישן
-            </label>
-            {!stillAsleep && (
+            {/* the two moments of a sleep, each edited on its own; the one that was tapped opens first */}
+            <div class="seg moments" role="tablist" aria-label="שינה">
+              <button type="button" role="tab" class={moment === 'start' ? 'on' : ''} aria-selected={moment === 'start'} data-testid="moment-start" onClick={() => setMoment('start')}>
+                <span>נרדם</span>
+                <b data-testid="moment-start-value">{unknownStart ? 'לא ידוע' : when(sDate, sTime)}</b>
+              </button>
+              <button type="button" role="tab" class={moment === 'end' ? 'on' : ''} aria-selected={moment === 'end'} data-testid="moment-end" onClick={() => setMoment('end')}>
+                <span>התעורר</span>
+                <b data-testid="moment-end-value">{stillAsleep ? 'עדיין ישן' : when(eDate, eTime)}</b>
+              </button>
+            </div>
+            {moment === 'start' && (
               <>
-                <label class="fl">התעורר ב</label>
-                <div class="when">
-                  <DateField testId="end-date" value={eDate} max={today} onChange={setEDate} />
-                  <input type="time" data-testid="end-time" value={eTime} onInput={(e) => setETime((e.target as HTMLInputElement).value)} />
-                </div>
+                {event && !event.start && (
+                  <label class="check">
+                    <input type="checkbox" checked={unknownStart} onChange={(e) => setUnknownStart((e.target as HTMLInputElement).checked)} /> שעת ההירדמות לא ידועה
+                  </label>
+                )}
+                {!unknownStart && timeEditor('start', 'נרדם ב')}
+              </>
+            )}
+            {moment === 'end' && (
+              <>
+                <label class="check">
+                  <input type="checkbox" data-testid="still-asleep" checked={stillAsleep} onChange={(e) => setStillAsleep((e.target as HTMLInputElement).checked)} /> עדיין ישן
+                </label>
+                {!stillAsleep && timeEditor('end', 'התעורר ב')}
               </>
             )}
           </>

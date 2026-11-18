@@ -238,6 +238,15 @@ No names, addresses or secrets in this file (the repository is public).
   (the day is not over) and labelled "היום" in the accent colour. Its numbers are the same as the "סיכום" table for today; the
   insight cards still use only the full days. Browser test (8 bars, today last and marked, the gap, today = the table) failed
   before.
+- Sleep editing **(owner report)**: only falling asleep could be set with the quick buttons, and a sleep opened from its
+  "התעורר" row still showed falling asleep first. Now the form shows the sleep's two moments side by side ("נרדם 00:05" /
+  "התעורר 00:40"); the one that was tapped opens, and each has its own date, time and quick buttons; switching keeps what was
+  changed in the other; History opens a finished sleep on waking up (owner agreed). A wake-up before falling asleep opens the
+  wake-up side with the error (wording unchanged until the owner picks one).
+- Quick-time buttons **(owner report)**: the chosen "X minutes ago" sometimes did not light up. The lit state is now derived
+  from the values it set, so a late report of the same time from the phone's time wheel cannot clear it. "לפני 5 דק׳" added;
+  "היום" / "אתמול" removed (owner). Tests: the button order, the late-report case, the moments (opening side, separate changes,
+  switching, History); each new test proven to fail without its part.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
