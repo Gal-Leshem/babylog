@@ -11,31 +11,41 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 286 unit (Vitest) and 160 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
-  The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
-- `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
-- The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
-- What comes next: `docs/BACKLOG.md` (track 1: fixes from the owner's feedback, always first; track 2: features in the order the owner picks).
-- Done in the second working session (details in `CHANGELOG.md`): backlog; red night colour; insights view (cards, timeline, daily
-  counts); medicines F7 complete (Settings screen, vitamin D as an ordinary medicine, icons, dose units, courses incl. "until a date",
-  Home button / window / tile, warnings with confirmation, add/edit and summary); Settings in sections; many layout fixes from the
-  owner's screenshots; CI hardening (report race, live-test retry).
-- Answered by the owner: the status bar is black at night on the phone (fixed); no total line on the medicines tile for now.
-- In progress: the sync / performance refactor, `docs/REFACTOR_PLAN.md` (owner: the full plan on the current Apps Script server;
-  a move to another server is decided later). Done: phase 0 (timings), phase 1 (`sync`, one round trip), item 3.2 (one
-  request per open), from phase 2: settings copy in a property, properties once per request, no whole-sheet duplicate lookup
-  for first attempts, one row search per edit; all of phase 3 (`keepalive`, the beacon when the app is left, adaptive polling, retry spread), tail read of the events.
-  Left out on purpose: server-side caching of the list (2.7; the list is already near the floor) and the lazy spreadsheet (2.1;
-  opening it costs 2 ms). Phase 4 (client housekeeping) is done too. Phase 5 as the owner decided: quiet sync
-  mark, shorter tap lock and the glow for the other parent's entries are built; the own icons and the visual polish were
-  declined (the look stays; do not propose them again unasked). The refactor is complete; further changes: the owner will say. Ask the owner
-  what Settings > מתקדם shows as "סנכרון אחרון" on the phones (real numbers from real use).
-  After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
-- Open with the owner: send the sync log (Settings > מתקדם > יומן סנכרון > העתקה) after a slow opening; then pick the fix
-  (see CHANGELOG, "Sync log").
-- Open with the owner: confirm on the phone that the status bar now follows a day / night change without closing the app (the
-  page reloads by itself; if the bar still keeps the old colour, a reload is not enough on iOS and another approach is needed).
-- Open with the owner: which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape F8.
+- Tests: about 286 unit (Vitest) and 160 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+  browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
+  until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
+  `main` (with production) in about 4 more.
+- `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for both `dev` reports, then `main`.
+- The app is complete and used daily on two iPhones; every change comes from the owner's feedback. History: `CHANGELOG.md`.
+- Third working session (details in `CHANGELOG.md`): the sync refactor (`REFACTOR_PLAN.md`, done: one `sync` round trip, settings
+  copy, tail read, beacon/keepalive, adaptive polling, timings), parallel tests and a faster pipeline, iPhone status bar after a
+  day/night change (reload), sleep editing by moment, quick "לפני X" buttons, "היה לפני" in the toast, undo of an edit (`prev`
+  column), sleep tile / forgotten wake-up / overlap warning, the baby's sex with matching wording, "הנקה הבאה" tag, toast timings,
+  the wake-up offer as its own row in the toast, and a sync log.
+
+## Where we are: slow catching up after opening (the open topic)
+- The owner sees that the app is sometimes slow to catch up when it is opened, and ONLY when the other parent entered something
+  (so it is the path that reads the sheet, not the tiny "nothing changed" check).
+- To find out why, the owner collects the sync log on the phone: Settings > מתקדם > "יומן סנכרון" > "העתקה", pasted into the
+  chat. Each line: why (פתיחה / חזרה לאפליקציה / בדיקה / רישום ...), total time, "שרת" (our code) vs "רשת וגוגל" (the rest:
+  Google's routing and start-up plus the phone's network), the server breakdown (פתיחת גיליון, קריאה, הגדרות, מאפיינים, נעילה),
+  whether new data came and its size, and for an opening the time until the data was on screen. Slow lines (> 3 s) are marked.
+- Known from CI: Google usually answers a request in 0.6 to 1.4 s; once in about 24 live tests a request took 41 s, all of it in
+  Google opening the spreadsheet. A list answer costs about 0.9 to 1.7 s in total.
+- Two proposed fixes, both inside Google (decide after reading the log; build nothing before the owner chooses):
+  1. **Changes since your version** (recommended if the log shows sheet work is the slow part): the server keeps the last few
+     dozen changes in script properties (the same fast store as the revision); a phone that is a little behind gets only what
+     changed since its revision, with no sheet read at all; the sheet stays the store; a phone too far behind falls back to the
+     list as today. Watch the limits: 9 KB per property value, 500 KB in all.
+  2. **CacheService**: the last 14 days of events as JSON in Google's in-memory cache, rewritten on every write, read instead of the
+     sheet; expires after up to 6 hours (then the sheet). Value limit 100 KB (split if needed).
+  Other candidates already discussed: keep the server warm (a time-driven trigger every few minutes; helps only if the log shows
+  "רשת וגוגל" / start-up is the slow part), a lazy spreadsheet (do not open it for a "nothing changed" check), abandon a request
+  that was frozen while the phone was locked, and, last, moving off Apps Script (decided later by the owner).
+  A Drive file as a "database" was considered and rejected (the app cannot read Drive without a sign-in; reading a Drive file in
+  Apps Script is as slow as the sheet; two parents writing one file risk overwriting each other).
+- Other open items with the owner: confirm the status bar follows a day/night change without closing the app (the page reloads
+  by itself); which insight cards get used (reshape F8 later).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
@@ -44,10 +54,10 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 3. Read `docs/CHANGELOG.md`, `docs/ARCHITECTURE.md` and `docs/BACKLOG.md`. Run `npm test`, `npm run typecheck`, `npm run build && npx playwright test --trace off`.
 4. Check the latest pipeline results: `scripts/read-ci.sh` (test | server | pages). Trust a report only if its `sha` equals `git rev-parse --short=7 HEAD`;
    better, find a commit's own reports on `ci-status` (see the rule below).
-5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; wait for CI (a background
-   polling loop on `ci-status` for BOTH "report: test <sha>" and "report: server <sha>": they run side by side now); then push the
-   same commit to `main`; confirm the site's `version.json` serves it, the `main` server report says "LIVE TEST PASSED" and the
-   `prod` report ("report: prod <sha>") says "prod server deployed".
+5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; then run
+   `bash scripts/ship.sh <sha7>` in the background: it waits for BOTH `dev` reports to be "success", only then pushes the same commit
+   to `main`, waits for the `main` test, server and prod reports and for the live site to serve the commit, and prints the
+   "LIVE TEST PASSED" and "prod server deployed" lines. It stops at the first failure without going further.
 
 ## Environment and secrets (what lives where)
 - GitHub repository secrets (readable only by Actions): `CLASPRC_JSON` (Google credential for clasp, personal account), `PRIVACY_DENYLIST` (forbidden words).
@@ -62,7 +72,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Done: GitHub Pages enabled; `setup` run in both Apps Script projects; production key rotated once (`rotateKey`) and a working `/exec` setup code used;
   app installed on the owner's phone and used daily.
 - Pending / optional: install on the second parent's phone (send the setup code privately, never in a group chat; names are prefilled);
-  share the sheet (Viewer) with the second parent's Google account only if she wants to read it or use her AI assistant on it;
+  share the sheet (Viewer) with the second parent's Google account only if they want to read it or use their AI assistant on it;
   optionally run `rotateKey` once more when everything works (the setup code was pasted into a chat during setup), then reinstall the code on both phones.
 - Not wanted for now: Siri shortcuts via the Mac signing script (`scripts/shortcuts` stays, unused). Fallback: one manual shortcut on the phone.
 
@@ -96,20 +106,28 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Resume prompt (paste into a new session with the repository attached)
 ```
-You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use. The repository is attached.
+You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use on two iPhones. The repository is attached.
 
-First read, in this order: docs/PROGRESS.md (handoff: status, open questions, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md (fixes track and features track; F7 medicines spec), docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch). Tell me briefly in Hebrew whether everything is green (or what is not) and list the open questions from PROGRESS.md, then wait for my next request.
+First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
+
+Then tell me briefly in Hebrew whether everything is green (or what is not), and pick up the open topic.
+
+The open topic: the app is sometimes slow to catch up when it is opened, and only when the other parent entered something. I will paste the sync log from the phone (Settings > מתקדם > יומן סנכרון > העתקה). Before that, tell me:
+1. Roughly how many log lines, and of which kind (how many openings after the other parent entered something, how many ordinary ones, over how many days and from which phone), you need for the log to be worth analysing, and what exactly to do on the phones to produce them.
+2. What you will look at in the log to tell the causes apart (sheet work vs Google start-up and network vs a request that waited for an earlier one).
+Then do fresh research for further solutions that may fit (on Apps Script, on the phone side, or a change of where the data lives), besides the two already proposed in PROGRESS.md ("changes since your version" kept in script properties, and CacheService) and the other candidates listed there. Present the options with what each would fix, its cost and its risk, and your recommendation. When I send the log, analyse it and recommend. Build nothing until I decide.
 
 Standing approvals: push to dev and main, deploy to GitHub Pages, deploy the Apps Script servers through GitHub Actions with the stored credential.
 Not approved: force-push or rewriting history; changing repository settings, secrets or collaborators.
 
 Hard rules:
 - The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs (screenshots I send may show real names: never copy them anywhere).
-- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> wait for green CI (test and server reports; background polling loop; foreground commands stop at 5 minutes) -> push the same commit to main -> confirm the live site's version.json serves it, the main server report says "LIVE TEST PASSED" and the prod report says "prod server deployed".
+- Every change: small step -> a regression test that fails without the fix (break the fix once to prove it, and check that the broken build still compiles) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> run `bash scripts/ship.sh <sha7>` in the background (it waits for BOTH dev reports to be green before main, then for main, production and the live site, and stops at the first failure) -> confirm the live site serves the commit, the main server report says "LIVE TEST PASSED" and the prod report says "prod server deployed".
 - After each change update docs/CHANGELOG.md and docs/PROGRESS.md, docs/ARCHITECTURE.md when the design changes, docs/BACKLOG.md when plans change.
-- Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; no in-app calendar; mixed Hebrew/Latin text isolated with <bdi>; ranges written in words, not "a–b"; at night nothing bright at the top (iOS tints the status bar from the page).
+- Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; words about the baby come from src/app/words.ts (boy / girl); no in-app calendar; mixed Hebrew/Latin text isolated with <bdi>; ranges written in words, not "a–b"; at night nothing bright at the top (iOS tints the status bar from the page).
 - The app gives no medical advice: medicine numbers are only what the parents enter.
-- When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code; show me screenshots of what you changed.
+- The look stays as it is (own icons and a visual polish were declined); do not propose them again unless I ask.
+- When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code; show me screenshots of what you changed (day, night, and at 560).
 - For a new feature: research first, propose, and wait for my decisions before building.
 
 Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings > מתקדם shows the new version).

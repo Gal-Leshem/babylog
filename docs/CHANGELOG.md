@@ -314,6 +314,9 @@ No names, addresses or secrets in this file (the repository is public).
   "☀️ לסמן שהתעורר" (girl: "עדיין מסומנת כישנה" / "לסמן שהתעוררה"). Browser test checks the separate row, the words and the
   filled button (failed on the old toast). A flaky older test (the 8 s "slow" wording, seen once in 13 parallel runs) got a wider
   window: the server answers after 12 s instead of 9.5 s.
+- Handoff: `scripts/ship.sh` (the safe way from `dev` to production, used in this session from a scratch copy) is now in the
+  repository; `PROGRESS.md` has the open topic (slow catching up after opening, the sync log, the proposed fixes) and a new resume
+  prompt for the next session.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
