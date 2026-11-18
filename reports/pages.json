@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "2672f1b",
+  "sha": "92a1536",
   "ref": "main",
-  "at": "2026-11-18T09:43:21.653Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44277900327",
+  "at": "2026-11-18T10:36:56.973Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44286421381",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-UCIvss6L.css   15.78 kB │ gzip:  3.97 kB",
-      "dist/assets/index-C3GkXb51.js   112.27 kB │ gzip: 37.78 kB",
+      "dist/assets/index-ufqESaHi.js   112.30 kB │ gzip: 37.80 kB",
       "",
-      "✓ built in 94ms",
+      "✓ built in 92ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (126.92 KiB)",
+      "precache  10 entries (126.95 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 0s"
+      "took 1s"
     ],
     "install": [
       "+ npm ci",
@@ -73,16 +73,16 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 2672f1b to gh-pages",
+      "published 92a1536 to gh-pages",
       "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 8b1fe52, waiting for 2672f1b",
-      "attempt 2: serves 8b1fe52, waiting for 2672f1b",
-      "attempt 3: serves 8b1fe52, waiting for 2672f1b",
-      "site is live and serves 2672f1b",
-      "took 31s"
+      "attempt 1: serves 2672f1b, waiting for 92a1536",
+      "attempt 2: serves 2672f1b, waiting for 92a1536",
+      "attempt 3: serves 2672f1b, waiting for 92a1536",
+      "site is live and serves 92a1536",
+      "took 30s"
     ]
   }
 }
