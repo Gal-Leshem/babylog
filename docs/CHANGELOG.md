@@ -259,6 +259,10 @@ No names, addresses or secrets in this file (the repository is public).
   it back is an ordinary edit, so its own "before" is the mistaken version. Tests: server and sheet bundle (the column on an
   older sheet), browser (the toast, the line and "החזר", no line when never edited; proven to fail without the toast undo and
   without storing `prev`), live test.
+- Sleep, owner-approved: the sleep tile says "נרדם ב-HH:MM" while asleep; a sleep open much longer than usual (longer than the
+  week's longest plus an hour, at least 6 hours) shows "שכחתם התעוררות?" and a tap opens it on waking up, ready to record it;
+  a sleep that overlaps another one asks once before saving. Unit tests for both rules; browser tests (each proven to fail
+  without its part). Lesson: a deliberate break must still compile, or the test runs against the previous build and "passes".
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

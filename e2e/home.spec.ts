@@ -462,3 +462,38 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await expect(page.getByTestId('toast-earlier')).toBeVisible();
   });
 });
+
+// Owner-approved sleep improvements
+test.describe('sleep on Home', () => {
+  test('while asleep the tile says since when', async ({ page }) => {
+    await install(page);
+    await page.getByTestId('btn-sleep').click();
+    await expect(page.getByTestId('tile-sleep-sub')).toHaveText(/נרדם ב-\d\d:\d\d$/);
+    await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-sleep').click();
+    await expect(page.getByTestId('tile-sleep-sub')).not.toContainText('נרדם ב');
+  });
+
+  test('a sleep open much longer than usual asks "שכחתם התעוררות?"; a tap opens it on waking up, ready to record it', async ({ page, request }) => {
+    await seed(request, [{ id: 'long', type: 'sleep', start: nowLocal(-7 * 60) }]);
+    await install(page);
+    const tile = page.getByTestId('tile-sleep');
+    await expect(tile).toHaveClass(/\bwarn\b/);
+    await expect(page.getByTestId('tile-sleep-sub')).toHaveText('שכחתם התעוררות?');
+    await tile.click();
+    await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('still-asleep')).not.toBeChecked();
+    await page.getByTestId('end-back-60').click(); // woke up an hour ago
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+    await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'long')!.end).not.toBe('');
+    await expect(tile).not.toHaveClass(/\bwarn\b/);
+  });
+
+  test('an ordinary nap is not flagged', async ({ page, request }) => {
+    await seed(request, [{ id: 'nap', type: 'sleep', start: nowLocal(-90) }]);
+    await install(page);
+    await expect(page.getByTestId('tile-sleep')).not.toHaveClass(/\bwarn\b/);
+    await expect(page.getByTestId('tile-sleep-sub')).toContainText('נרדם ב-');
+  });
+});

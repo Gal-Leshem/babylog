@@ -78,6 +78,38 @@ export function sleepState(events: readonly BabyEvent[]): SleepState {
   return { state: 'awake', since: latestEnd };
 }
 
+/** A sleep open for longer than this is surely a forgotten wake-up, whatever the week looked like. */
+export const FORGOTTEN_WAKE_MIN_MIN = 6 * 60;
+
+/**
+ * "Forgot to log the wake-up?" (owner): the open sleep has lasted longer than the longest finished sleep of the last 7 days
+ * plus an hour, and at least 6 hours. Returns the open sleep then, otherwise null.
+ */
+export function forgottenWake(events: readonly BabyEvent[], nowEpoch: number): BabyEvent | null {
+  const open = openSleep(events);
+  if (!open) return null;
+  const since = nowEpoch - 7 * 24 * 60 * MIN;
+  let longest = 0;
+  for (const e of live(events)) {
+    if (e.type !== 'sleep' || !e.start || !e.end) continue;
+    const s = parseLocal(e.start);
+    const t = parseLocal(e.end);
+    if (t >= since && t > s) longest = Math.max(longest, (t - s) / MIN);
+  }
+  const limit = Math.max(FORGOTTEN_WAKE_MIN_MIN, longest + 60);
+  return (nowEpoch - parseLocal(open.start)) / MIN > limit ? open : null;
+}
+
+/** Another sleep that overlaps [from, to) (an open sleep lasts until now), or undefined. `exceptId`: the sleep being edited. */
+export function overlappingSleep(events: readonly BabyEvent[], from: number, to: number, nowEpoch: number, exceptId?: string): BabyEvent | undefined {
+  return live(events).find((e) => {
+    if (e.type !== 'sleep' || e.id === exceptId || !e.start) return false;
+    const s = parseLocal(e.start);
+    const t = e.end ? parseLocal(e.end) : nowEpoch;
+    return from < t && s < to;
+  });
+}
+
 // ---------- vitamin D ----------
 
 export function vitaminDOnDate(events: readonly BabyEvent[], date: string): BabyEvent | undefined {

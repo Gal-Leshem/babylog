@@ -363,3 +363,38 @@ test.describe('taking back an edit', () => {
     await expect(page.getByTestId('prev-line')).toHaveCount(0);
   });
 });
+
+// Owner-approved: a sleep that overlaps another one is probably a mistake; say so, and a second tap saves anyway.
+test('a sleep that overlaps another asks first; a second tap saves; changing the time asks again', async ({ page, request }) => {
+  const d = todayLocal();
+  await seed(request, [{ id: 'a', type: 'sleep', start: `${d} 00:10`, end: `${d} 00:50` }]);
+  await install(page);
+  await page.getByTestId('add-late').click();
+  await page.getByTestId('kind-sleep').click();
+  await page.getByTestId('start-time').fill('00:30');
+  await page.getByTestId('moment-end').click();
+  await page.getByTestId('still-asleep').uncheck();
+  await page.getByTestId('end-time').fill('01:00');
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('form-error')).toHaveText('חופף לשינה אחרת (נרדם 00:10 · התעורר 00:50). לשמור בכל זאת?');
+  await expect(page.getByTestId('save')).toHaveText('לשמור בכל זאת');
+  expect(await allServerRows(request)).toHaveLength(1);
+  await page.getByTestId('end-time').fill('01:05'); // a change asks again
+  await expect(page.getByTestId('save')).toHaveText('שמירה');
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('save')).toHaveText('לשמור בכל זאת');
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('event-form')).toBeHidden();
+  await expect.poll(async () => (await allServerRows(request)).length).toBe(2);
+});
+
+test('editing a sleep does not count it as overlapping itself', async ({ page, request }) => {
+  const d = todayLocal();
+  await seed(request, [{ id: 'a', type: 'sleep', start: `${d} 00:10`, end: `${d} 00:50` }]);
+  await install(page);
+  await page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).click();
+  await page.getByTestId('end-time').fill('00:55');
+  await page.getByTestId('save').click();
+  await expect(page.getByTestId('event-form')).toBeHidden();
+  await expect.poll(async () => (await allServerRows(request))[0]!.end).toBe(`${d} 00:55`);
+});

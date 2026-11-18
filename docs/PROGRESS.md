@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 272 unit (Vitest) and 129 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 279 unit (Vitest) and 147 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -68,6 +68,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Never define a component inside a component; never use vh/dvh; Home must never be scrollable; each tab has its own scroll container.
 - When a trigger can arrive during work in progress, queue it; do not drop it.
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
+- When breaking a fix on purpose to prove a test, check that the build still compiles: a failed build leaves the previous
+  build in place and the test "passes" against it.
 - A browser test must wait for the state it means, not for a text that is also shown one step earlier (the beacon test went on
   at "1 waiting", which is shown while the request is still on its way; it failed only in CI).
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events work; synthesized touch gestures do not).

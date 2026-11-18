@@ -7,9 +7,7 @@ No names or private details here (public repository).
 
 ## Track 1: fixes and quality of life
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
-- In progress **(owner, November 2026)**: (a) done: "undo edit". (b) done: "earlier" buttons in the toast. (c) Sleep: a hint when a sleep has been open much longer than usual
-  ("forgot the wake-up?"), done: the sleep's length in the wake-up toast; "נרדם ב-HH:MM" in the sleep tile, a warning when an edit
-  makes two sleeps overlap. (d) Pending owner decision: the wording when a wake-up is before falling asleep.
+- In progress **(owner, November 2026)**: (a) done: "undo edit". (b) done: "earlier" buttons in the toast. (c) done: the sleep improvements (forgotten wake-up, length, since when, overlap). (d) Pending owner decision: the wording when a wake-up is before falling asleep.
 - Slow sync and performance **(owner report)**: diagnosis and a phased plan in `docs/REFACTOR_PLAN.md` (owner: the full plan).
   Phases 0 and 1 are done; the order of the rest is in `PROGRESS.md`. Phase 5 (look and feel): screenshots to the owner first.
 

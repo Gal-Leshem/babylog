@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { byTimeDesc, clock, elapsedHM, lastFeed, nextSide, sleepState } from '../../shared/domain';
+import { byTimeDesc, clock, elapsedHM, forgottenWake, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
 import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
@@ -61,7 +61,7 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
   };
 }
 
-export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent, focus?: 'start' | 'end') => void; onAddLate: () => void; onOpenMeds: () => void }) {
+export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e: BabyEvent, focus?: 'start' | 'end') => void; onAddLate: () => void; onOpenMeds: () => void; onFixWake: (sleep: BabyEvent) => void }) {
   const { events, settings, arrived } = useEngine();
   const now = useNow(15_000);
   // After a tap the same button rests for 1.5 s (a double tap must not log twice); the others only for a moment, so
@@ -142,6 +142,8 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent,
   };
 
   const asleep = sleep.state === 'asleep';
+  const openStart = asleep ? openSleep(events)?.start : undefined;
+  const forgotten = forgottenWake(events, now);
   // entries that just arrived from the other phone glow briefly
   const isNew = (id: string) => arrived.ids.has(id) && Date.now() - arrived.at < NEW_FOR_MS;
   return (
@@ -152,13 +154,24 @@ export function Home({ onEdit, onAddLate, onOpenMeds }: { onEdit: (e: BabyEvent,
           <div class="tv">{feedValue}</div>
           <div class="ts">{next ? `הבא: ${side(next)}` : 'אין עדיין'}</div>
         </div>
-        <div class="tile" data-testid="tile-sleep">
-          <div class="tl">שינה</div>
-          <div class="tv">{sleepValue}</div>
-          <div class="ts">
-            <span class="emo">{asleep ? '🌙' : '☀️'}</span>
+        {forgotten ? (
+          // (owner) open much longer than usual: probably a wake-up that was not logged; a tap opens it on waking up
+          <button type="button" class="tile warn" data-testid="tile-sleep" onClick={() => onFixWake(forgotten)}>
+            <div class="tl">שינה</div>
+            <div class="tv">{sleepValue}</div>
+            <div class="ts" data-testid="tile-sleep-sub">שכחתם התעוררות?</div>
+          </button>
+        ) : (
+          <div class="tile" data-testid="tile-sleep">
+            <div class="tl">שינה</div>
+            <div class="tv">{sleepValue}</div>
+            <div class="ts" data-testid="tile-sleep-sub">
+              <span class="emo">{asleep ? '🌙' : '☀️'}</span>
+              {/* (owner) while asleep: since when */}
+              {asleep && openStart && ` נרדם ב-${timeOf(openStart)}`}
+            </div>
           </div>
-        </div>
+        )}
         {tile && (
           <div class={`tile ${tile.warn ? 'warn' : ''}`} data-testid="tile-vitamin">
             <div class="tl">{tile.title}</div>

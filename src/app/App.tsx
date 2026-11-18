@@ -170,7 +170,7 @@ export function App() {
     if (!restored?.scroll) return;
     requestAnimationFrame(() => document.querySelector('.main')?.scrollTo(0, restored.scroll));
   }, []);
-  const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent; focus?: Moment } | null>(null);
+  const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent; focus?: Moment; wake?: boolean } | null>(null);
   const [medsOpen, setMedsOpen] = useState(false);
 
   if (!st.configured) return <Install />;
@@ -180,7 +180,7 @@ export function App() {
       <Banner />
       {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
       <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={`${tab}-${n}`}>
-        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => setMedsOpen(true)} />}
+        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => setMedsOpen(true)} onFixWake={(event) => setForm({ mode: 'edit', event, focus: 'end', wake: true })} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event, focus: historyFocus(event) })} />}
         {tab === 'summary' && <Summary />}
         {tab === 'settings' && <Settings />}
@@ -195,7 +195,7 @@ export function App() {
         ))}
       </nav>
       {medsOpen && <MedsWindow onClose={() => setMedsOpen(false)} />}
-      {form && <EventForm mode={form.mode} event={form.event} focus={form.focus} onClose={() => setForm(null)} />}
+      {form && <EventForm mode={form.mode} event={form.event} focus={form.focus} wake={form.wake} onClose={() => setForm(null)} />}
     </>
   );
 }

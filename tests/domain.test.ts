@@ -4,9 +4,11 @@ import {
   dailySummary,
   elapsedHM,
   feedGroups,
+  forgottenWake,
   lastFeed,
   nextSide,
   openSleep,
+  overlappingSleep,
   sleepState,
   vitaminDOnDate,
 } from '../src/shared/domain';
@@ -150,5 +152,37 @@ describe('formatting', () => {
   it('formats a clock time', () => {
     expect(clock(T('2026-11-14 03:12'))).toBe('3:12');
     expect(clock(T('2026-11-14 13:05'))).toBe('13:05');
+  });
+});
+
+describe('sleep: a forgotten wake-up and overlapping sleeps (owner)', () => {
+  const now = T('2026-11-14 12:00');
+  const open = (start: string) => ev({ id: 'open', type: 'sleep', start });
+  const done = (id: string, start: string, end: string) => ev({ id, type: 'sleep', start, end });
+
+  it('an open sleep longer than 6 hours, with no longer sleep this week, is a forgotten wake-up', () => {
+    expect(forgottenWake([open('2026-11-14 06:30')], now)).toBeNull(); // 5:30
+    expect(forgottenWake([open('2026-11-14 05:59')], now)?.id).toBe('open'); // 6:01
+  });
+
+  it('a week with long night sleeps raises the bar to the longest one plus an hour', () => {
+    const week = [done('n', '2026-11-12 21:00', '2026-11-13 04:30')]; // 7:30
+    expect(forgottenWake([...week, open('2026-11-14 03:31')], now)).toBeNull(); // 8:29
+    expect(forgottenWake([...week, open('2026-11-14 03:29')], now)?.id).toBe('open'); // 8:31
+    // a sleep from more than a week ago does not count
+    expect(forgottenWake([done('old', '2026-11-01 20:00', '2026-11-02 06:00'), open('2026-11-14 05:00')], now)?.id).toBe('open');
+  });
+
+  it('no open sleep: nothing to say', () => {
+    expect(forgottenWake([done('a', '2026-11-13 20:00', '2026-11-14 06:00')], now)).toBeNull();
+  });
+
+  it('finds another sleep that overlaps, an open one lasting until now, never the sleep itself', () => {
+    const list = [done('a', '2026-11-14 01:00', '2026-11-14 03:00'), open('2026-11-14 11:00')];
+    const at = (s: string) => T(`2026-11-14 ${s}`);
+    expect(overlappingSleep(list, at('02:30'), at('04:00'), now)?.id).toBe('a');
+    expect(overlappingSleep(list, at('03:00'), at('04:00'), now)).toBeUndefined(); // touching is fine
+    expect(overlappingSleep(list, at('11:30'), at('11:45'), now)?.id).toBe('open');
+    expect(overlappingSleep(list, at('00:30'), at('02:00'), now, 'a')).toBeUndefined();
   });
 });

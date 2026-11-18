@@ -1,5 +1,5 @@
-import { useState } from 'preact/hooks';
-import { openSleep } from '../../shared/domain';
+import { useEffect, useState } from 'preact/hooks';
+import { openSleep, overlappingSleep } from '../../shared/domain';
 import { localDate, parseLocal } from '../../shared/tz';
 import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared/types';
 import { deleteEvent } from '../actions';
@@ -34,10 +34,12 @@ interface Props {
   event?: BabyEvent;
   /** which moment of a sleep to show first (the row that was tapped: "נרדם" or "התעורר") */
   focus?: Moment;
+  /** opened to record a forgotten wake-up: the wake-up side, no longer "still asleep" */
+  wake?: boolean;
   onClose: () => void;
 }
 
-export function EventForm({ mode, event, focus, onClose }: Props) {
+export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   const { events, settings } = useEngine();
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
@@ -58,11 +60,14 @@ export function EventForm({ mode, event, focus, onClose }: Props) {
   // A new sleep added after the fact is usually a baby who fell asleep a little while ago and is still asleep, so that is the
   // default (otherwise it was saved as over and the home button stayed on "נרדם"). If a sleep is already open, the added one
   // must be a finished one, so then the end time is asked for.
-  const [stillAsleep, setStillAsleep] = useState(event ? event.type === 'sleep' && !event.end && Boolean(event.start) : !openSleep(events));
+  const [stillAsleep, setStillAsleep] = useState(wake ? false : event ? event.type === 'sleep' && !event.end && Boolean(event.start) : !openSleep(events));
   const [eDate, setEDate] = useState(initEnd.slice(0, 10));
   const [eTime, setETime] = useState(timeOf(initEnd));
   const [note, setNote] = useState(event?.note ?? '');
   const [error, setError] = useState('');
+  // the overlap warning was shown: the next tap on save saves anyway (any change to the times asks again)
+  const [overlapOk, setOverlapOk] = useState(false);
+  useEffect(() => setOverlapOk(false), [sDate, sTime, eDate, eTime, stillAsleep, unknownStart, sel]);
 
   const today = localDate(Date.now());
   const isSleep = kind === 'sleep';
@@ -112,6 +117,14 @@ export function EventForm({ mode, event, focus, onClose }: Props) {
     if (start && end && parseLocal(end) < parseLocal(start)) {
       setMoment('end');
       return setError(errorText('invalid_event', 'end is before start')); // the wording stays as it was until the owner picks one
+    }
+    // (owner) a sleep that overlaps another one is probably a mistake: say so once; a second tap saves anyway
+    if (kind === 'sleep' && start && !overlapOk) {
+      const other = overlappingSleep(events, parseLocal(start), end ? parseLocal(end) : Date.now(), Date.now(), event?.id);
+      if (other) {
+        setOverlapOk(true);
+        return setError(`חופף לשינה אחרת (נרדם ${when(other.start.slice(0, 10), timeOf(other.start))}${other.end ? ` · התעורר ${when(other.end.slice(0, 10), timeOf(other.end))}` : ' · עדיין ישן'}). לשמור בכל זאת?`);
+      }
     }
     const { type, detail: kindDetail } = fromKind(kind);
     const detail = kind === 'medicine' ? medId! : kindDetail;
@@ -220,7 +233,7 @@ export function EventForm({ mode, event, focus, onClose }: Props) {
 
         <div class="actions">
           <button type="button" class="primary" data-testid="save" onClick={save}>
-            שמירה
+            {overlapOk ? 'לשמור בכל זאת' : 'שמירה'}
           </button>
           <button type="button" onClick={onClose}>
             ביטול

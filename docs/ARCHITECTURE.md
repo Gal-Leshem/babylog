@@ -103,6 +103,10 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   active medicines (none: neither is shown and the grid drops a row; one: one tap logs it; several: a window to mark doses). Status
   uses only what was given, the gap and the daily count, never clock times. Mixed Hebrew/Latin parts are wrapped in `<bdi>`.
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
+- **Sleep on Home** (owner): while asleep the tile says "נרדם ב-HH:MM"; a sleep open longer than the longest finished sleep of
+  the last 7 days plus an hour (at least 6 hours; `forgottenWake` in `domain.ts`) turns the tile into a warning button
+  "שכחתם התעוררות?" that opens the sleep on its wake-up side, ready to record it. The form warns once when a sleep overlaps
+  another one (`overlappingSleep`; an open sleep lasts until now); a second tap on "לשמור בכל זאת" saves, any change asks again.
 - **Recent list** columns: icon 40px, label, time 48px, name 76px (cut with "…"), so the time never moves with a name.
 - **Recent list** (`recentRows` in `Home.tsx`): sleeps appear as two moments, "נרדם" and "התעורר"; same-minute rows keep entry order
   (newest entered first). History shows one row per event.
