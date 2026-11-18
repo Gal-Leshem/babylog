@@ -275,6 +275,12 @@ No names, addresses or secrets in this file (the repository is public).
   the new timing field were seen after a deploy before). Fixes: every server answer carries its build (the commit), and the live
   test first waits until three answers in a row come from this commit's build (up to 3 minutes); the polling loop now requires
   BOTH `dev` reports to be "success" before pushing to `main`.
+- Edit form, "ביטול" **(owner)**: it must always be there and work, also when nothing was changed, and leave without
+  changing anything. On short screens the buttons were below the bottom of the form (scrolling needed), and the toast of the tap
+  just made could lie over them. Now the form's buttons are pinned to the bottom of the sheet (also in the medicines window), and
+  opening a form or the window clears the toast. Browser test at 852 / 700 / 560: with a toast up, "ביטול" is on screen, not
+  covered, closes the form and nothing changes (failed before at 560 and on the toast). The overlap message is as the owner
+  wants it.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

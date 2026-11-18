@@ -172,6 +172,11 @@ export function App() {
   }, []);
   const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent; focus?: Moment; wake?: boolean } | null>(null);
   const [medsOpen, setMedsOpen] = useState(false);
+  // A form or the medicines window takes the screen: the toast of the last tap would lie over its buttons (owner: "ביטול"
+  // must always be reachable), so it goes. Its undo is no longer needed: the form edits that entry directly.
+  useEffect(() => {
+    if (form || medsOpen) hideToast();
+  }, [form, medsOpen]);
 
   if (!st.configured) return <Install />;
 

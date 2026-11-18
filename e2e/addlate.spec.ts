@@ -398,3 +398,33 @@ test('editing a sleep does not count it as overlapping itself', async ({ page, r
   await expect(page.getByTestId('event-form')).toBeHidden();
   await expect.poll(async () => (await allServerRows(request))[0]!.end).toBe(`${d} 00:55`);
 });
+
+// Owner: in the edit form "ביטול" must always be there and work, even when nothing was changed: it leaves without changing
+// anything. On short screens it was below the bottom of the form, and the toast of the tap just made could lie over it.
+for (const height of [852, 700, 560]) {
+  test(`edit form: "ביטול" is always visible and tappable, and changes nothing (height ${height})`, async ({ page, request }) => {
+    await page.setViewportSize({ width: 393, height });
+    const d = todayLocal();
+    await seed(request, [{ id: 's1', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40`, note: 'ok' }]);
+    await install(page);
+    await page.getByTestId('btn-wet').click(); // a toast is on screen
+    await expect(page.getByTestId('toast')).toBeVisible();
+    // an edit with the longest form (sleep), opened while the toast is still there (a plain tap: the toast may lie over the row)
+    await page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).evaluate((b: HTMLElement) => b.click());
+    await expect(page.getByTestId('toast')).toHaveCount(0, { timeout: 1000 }); // the toast makes way for the form (at once, not after its 6 s)
+    const cancel = page.getByTestId('cancel');
+    // visible without scrolling, and nothing covers it
+    const free = await cancel.evaluate((b) => {
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return r.bottom <= window.innerHeight && r.top >= 0 && (hit === b || b.contains(hit));
+    });
+    expect(free, 'ביטול visible and on top').toBe(true);
+    await expect(cancel).toBeEnabled();
+    await page.getByTestId('note').fill('typed but cancelled');
+    await cancel.click({ trial: false });
+    await expect(page.getByTestId('event-form')).toHaveCount(0);
+    const e = (await allServerRows(request)).find((x) => x.id === 's1')!;
+    expect([e.start, e.end, e.note, e.edited]).toEqual([`${d} 00:05`, `${d} 00:40`, 'ok', '']);
+  });
+}

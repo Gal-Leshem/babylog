@@ -235,7 +235,8 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
           <button type="button" class="primary" data-testid="save" onClick={save}>
             {overlapOk ? 'לשמור בכל זאת' : 'שמירה'}
           </button>
-          <button type="button" onClick={onClose}>
+          {/* always there and always active: leaves without changing anything (owner) */}
+          <button type="button" data-testid="cancel" onClick={onClose}>
             ביטול
           </button>
           {mode === 'edit' && event && (
