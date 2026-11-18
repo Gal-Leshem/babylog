@@ -5,6 +5,9 @@ import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { KIND_LABEL, errorText, fromKind, hm, kindOf, nowLocal, timeOf, type Kind } from './labels';
 import { engine, hideToast, showToast } from './state';
+import { babyWords } from './words';
+
+const W = () => babyWords(engine.getState().settings.babySex);
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 
@@ -74,7 +77,7 @@ export function quickLog(kind: Kind): void {
   // A feed or a diaper while the baby is marked asleep: often he really is still asleep (a night feed or change), so nothing
   // changes by itself; the toast says so and offers to mark him awake with one tap.
   if ((type === 'feed' || type === 'diaper') && openSleep(engine.getState().events)) {
-    return toastFor((t) => `${savedText(label, timeOf(t), offline)} · עדיין מסומן שישן`, { action: { label: 'התעורר', run: toggleSleep } }, 8000);
+    return toastFor((t) => `${savedText(label, timeOf(t), offline)} · ${W().stillMarkedAsleep}`, { action: { label: W().wokeUp, run: toggleSleep } }, 8000);
   }
   toastFor((t) => savedText(label, timeOf(t), offline));
 }
@@ -88,8 +91,8 @@ export function toggleSleep(): void {
     const id = uid();
     const res = engine.dispatch({ action: 'asleep', id, user: me(), source: 'app', start });
     if (!res.ok) return fail(res.error, res.detail);
-    const mv = earlierFor(id, 'start', start, (t) => savedText('נרדם', timeOf(t), offline));
-    showToast({ text: savedText('נרדם', timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, 6000);
+    const mv = earlierFor(id, 'start', start, (t) => savedText(W().fellAsleep, timeOf(t), offline));
+    showToast({ text: savedText(W().fellAsleep, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, 6000);
     return;
   }
   const id = uid();
@@ -100,7 +103,7 @@ export function toggleSleep(): void {
   const inverse: ApiRequest = sleepId !== id ? { action: 'update', id: sleepId, patch: { end: '' } } : { action: 'delete', id };
   // (owner) the wake-up toast also says how long the sleep was
   const slept = res.event?.start ? parseLocal(res.event.start) : NaN;
-  const text = (t: string) => savedText('התעורר', timeOf(t), offline) + (Number.isNaN(slept) ? '' : ` · ישן ${hm((parseLocal(t) - slept) / 60_000)}`);
+  const text = (t: string) => savedText(W().wokeUp, timeOf(t), offline) + (Number.isNaN(slept) ? '' : ` · ${W().slept} ${hm((parseLocal(t) - slept) / 60_000)}`);
   const mv = earlierFor(sleepId, 'end', start, text);
   showToast({ text: text(start), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, inverse)) }, 6000);
 }

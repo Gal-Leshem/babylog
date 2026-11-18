@@ -151,6 +151,10 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   its own (the owner did not want one). The system picker itself uses the phone's language. The time field is the system one.
   A new sleep starts as "still asleep" (the usual case: the baby fell asleep a while ago); if a sleep is already open, the form asks for
   the wake time instead.
+- **Words about the baby** follow the baby's sex chosen in Settings (`babyWords` in `src/app/words.ts`; `babySex` in the
+  Settings sheet; missing = boy). Never write "נרדם" / "ישן" etc. directly in a screen: take them from there.
+- **Next feed:** the side to feed next has a frame and a "הנקה הבאה" tag; feed buttons are size containers, and when short
+  their icon and label go side by side with the tag above (so it never covers them).
 - **Wording:** diaper kinds are "פיפי", "קקי", "פיפי + קקי" (`KIND_LABEL` in `labels.ts` is the single source, also used by the summary
   table). The sheet values stay `wet` / `poop` / `both`; Siri phrases are English and unchanged.
 - **Night mode** (per phone, `bl.prefs.v1` in local storage): auto (21:00-07:00 or the phone's dark mode) / always / never, and a night

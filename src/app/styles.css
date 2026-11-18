@@ -176,6 +176,21 @@ button.tile { font: inherit; color: inherit; width: 100%; cursor: pointer; }
 .big:disabled { opacity: 0.55; }
 .big .ico { font-size: 26px; line-height: 1; }
 .big.next { outline: 3px solid var(--accent); outline-offset: -3px; }
+/* (owner) "הנקה הבאה": a small tag on the side to feed next, clearer than the frame alone */
+.big { position: relative; }
+/* in the top corner, so it never covers the centred icon, even on the shortest screens */
+/* the icon and the label of every big button sit in one inner box (a column) */
+.big .inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 0; }
+/* feed buttons leave room at the top for the tag (both alike); when a feed button is short (small screen, full recent list)
+   its icon and label go side by side and the tag sits above them, so it never covers them */
+.feedrow .big { container-type: size; }
+.feedrow .big .inner { padding-top: 22px; }
+@container (max-height: 100px) {
+  .feedrow .big .inner { flex-direction: row; gap: 8px; padding-top: 0; }
+  /* short: the tag stands in line above them instead of in the corner */
+  .feedrow .big .nexttag { position: static; margin-bottom: 3px; }
+}
+.big .nexttag { position: absolute; top: 7px; inset-inline-start: 9px; background: var(--accent); color: var(--accent-fg); font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 8px 4px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
 .big.sleep.asleep { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .big.flash { background: var(--accent); color: var(--accent-fg); }
 

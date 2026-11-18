@@ -289,6 +289,15 @@ No names, addresses or secrets in this file (the repository is public).
   opens; when that effect ran late it also removed the toast that saving the form shows. The toast is now cleared at the moment a
   form or the medicines window opens (no effect). Did not reproduce locally (10 of 10 passed); the CI machine is slower. The
   deploy script stopped before `main` as it should.
+- Next feed **(owner)**: besides the frame, the side to feed next carries a "הנקה הבאה" tag; the feed tile says "הבאה: ימין"
+  (was "הבא"). In a short feed button (small screen, full recent list) the icon and label go side by side and the tag sits above
+  them (container query), so it never covers them. Found by the test on the way: two presses in the same minute (sides switched
+  quickly) suggested the wrong side; the press entered later now decides.
+- The baby's sex **(owner)**: Settings > family: "בן" / "בת" (saved at once in the Settings sheet, row `babySex`; both phones
+  follow). The words about the baby follow it (`src/app/words.ts`): ישן/ישנה כבר, ער/ערה כבר, נרדם/נרדמה, התעורר/התעוררה,
+  עדיין ישן/ישנה, ישן/ישנה עכשיו, "עדיין מסומן שישן" / "עדיין מסומנת שישנה", in the tiles, buttons, recent list, toasts, the form
+  and History. Default (older sheets): boy, the wording used before. Tests: server, sheet, browser (all the words, back to
+  "בן", the other phone follows; proven to fail when the wording ignores the choice); tag at four sizes with a full list.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

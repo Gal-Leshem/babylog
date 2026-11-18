@@ -179,6 +179,10 @@ function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { m
   if (!isObj(raw)) return fail('bad_request', 'set must be an object');
   const out: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } = {};
   if (raw.medicines !== undefined) out.medicines = parseMedicines(raw.medicines);
+  if (raw.babySex !== undefined) {
+    if (raw.babySex !== 'boy' && raw.babySex !== 'girl') fail('bad_request', 'babySex must be boy or girl');
+    out.babySex = raw.babySex as 'boy' | 'girl';
+  }
   if (raw.babyName !== undefined) {
     const v = raw.babyName;
     if (typeof v !== 'string' || v.trim() === '' || v.length > 40) fail('bad_request', 'babyName invalid');

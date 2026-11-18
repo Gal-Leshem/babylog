@@ -54,7 +54,7 @@ test('one tap on a feed button records it, shows it, and recommends the other si
   await page.getByTestId('btn-feed_left').click();
   await expect(page.getByTestId('toast-text')).toContainText('נשמר: הנקה שמאל');
   await expect(page.getByTestId('tile-feed')).toContainText('לפני 0:00 · שמאל');
-  await expect(page.getByTestId('tile-feed')).toContainText('הבא: ימין');
+  await expect(page.getByTestId('tile-feed')).toContainText('הבאה: ימין');
   await expect(page.getByTestId('btn-feed_right')).toHaveClass(/next/);
   await expect(page.getByTestId('btn-feed_left')).not.toHaveClass(/next/);
   await expect.poll(async () => (await serverEvents(request)).map((e) => [e.type, e.detail, e.user, e.source])).toEqual([['feed', 'left', 'Parent One', 'app']]);
@@ -495,5 +495,85 @@ test.describe('sleep on Home', () => {
     await install(page);
     await expect(page.getByTestId('tile-sleep')).not.toHaveClass(/\bwarn\b/);
     await expect(page.getByTestId('tile-sleep-sub')).toContainText('נרדם ב-');
+  });
+});
+
+// Owner: the side to feed next had only a frame; a "הנקה הבאה" tag makes it clear. The tile says "הבאה".
+for (const [width, height] of [[393, 852], [375, 700], [375, 560], [393, 560]] as const) {
+  test(`the side to feed next carries a "הנקה הבאה" tag that never covers the icon (${width}x${height}, full recent list)`, async ({ page, request }) => {
+    await page.setViewportSize({ width, height });
+    // a full recent list makes the buttons as short as they get
+    await seed(request, Array.from({ length: 10 }, (_, i) => ({ type: 'diaper' as const, detail: 'wet', start: nowLocal(-300 + i * 20) })));
+    await install(page);
+    await expect(page.getByTestId('next-tag')).toHaveCount(0); // nothing logged yet: no suggestion
+    await page.getByTestId('btn-feed_left').click();
+    await expect(page.getByTestId('btn-feed_right').getByTestId('next-tag')).toHaveText('הנקה הבאה');
+    await expect(page.getByTestId('next-tag')).toHaveCount(1);
+    await expect(page.getByTestId('tile-feed')).toContainText('הבאה: ימין');
+    const fit = await page.getByTestId('btn-feed_right').evaluate((b) => {
+      const tag = b.querySelector('.nexttag')!.getBoundingClientRect();
+      const box = b.getBoundingClientRect();
+      const over = (r: DOMRect) => !(r.bottom <= tag.top || r.top >= tag.bottom || r.right <= tag.left || r.left >= tag.right);
+      const inside = (r: DOMRect) => r.top >= box.top && r.bottom <= box.bottom + 0.5;
+      const ico = b.querySelector('.ico')!.getBoundingClientRect();
+      const lbl = b.querySelector('.lbl')!.getBoundingClientRect();
+      return { overlap: over(ico) || over(lbl), inside: inside(ico) && inside(lbl), h: box.height };
+    });
+    expect(fit.overlap, `tag over the icon or label (button ${fit.h}px)`).toBe(false);
+    expect(fit.inside, 'icon and label inside the button').toBe(true);
+    await expect(page.getByTestId('btn-feed_right')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-feed_right').click();
+    await expect(page.getByTestId('btn-feed_left').getByTestId('next-tag')).toBeVisible();
+    await expect(page.getByTestId('next-tag')).toHaveCount(1);
+  });
+}
+
+// Owner: the baby's sex in Settings; the wording about the baby follows it everywhere, on both phones.
+test.describe('wording for a girl', () => {
+  test('choosing "בת" changes every word about the baby; "בן" (the default) brings the old wording back', async ({ page, request }) => {
+    await install(page);
+    await page.getByTestId('tab-settings').click();
+    await expect(page.getByTestId('sex-boy')).toHaveAttribute('aria-checked', 'true'); // default: the wording used before
+    await page.getByTestId('sex-girl').click();
+    await expect(page.getByTestId('sex-girl')).toHaveAttribute('aria-checked', 'true');
+    await expect.poll(async () => (await api(request, { action: 'settings' })).settings.babySex).toBe('girl'); // in the sheet
+
+    await page.getByTestId('tab-home').click();
+    await expect(page.getByTestId('btn-sleep')).toContainText('נרדמה');
+    await page.getByTestId('btn-sleep').click();
+    await expect(page.getByTestId('toast-text')).toContainText('נשמר: נרדמה');
+    await expect(page.getByTestId('tile-sleep')).toContainText('ישנה כבר');
+    await expect(page.getByTestId('tile-sleep-sub')).toContainText('נרדמה ב-');
+    await expect(page.getByTestId('btn-sleep')).toContainText('התעוררה');
+    await page.getByTestId('btn-wet').click(); // while asleep
+    await expect(page.getByTestId('toast-text')).toContainText('עדיין מסומנת שישנה');
+    await expect(page.getByTestId('toast-action')).toHaveText('התעוררה');
+    await page.getByTestId('tab-history').click();
+    await expect(page.getByTestId('history-list')).toContainText('ישנה עכשיו');
+    await page.getByTestId('tab-home').click();
+    await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-sleep').click(); // wakes up
+    await expect(page.getByTestId('toast-text')).toContainText(/נשמר: התעוררה \d\d:\d\d · ישנה \d/);
+    await expect(page.getByTestId('tile-sleep')).toContainText('ערה כבר');
+    await expect(page.getByTestId('recent-row').filter({ hasText: 'התעוררה' })).toHaveCount(1);
+    await expect(page.getByTestId('recent-row').filter({ hasText: 'נרדמה' })).toHaveCount(1);
+    await page.getByTestId('recent-row').filter({ hasText: 'התעוררה' }).click();
+    await expect(page.getByTestId('moment-start')).toContainText('נרדמה');
+    await expect(page.getByTestId('moment-end')).toContainText('התעוררה');
+    await page.getByTestId('still-asleep').locator('..').filter({ hasText: 'עדיין ישנה' }).waitFor();
+    await page.getByTestId('cancel').click();
+    expect(await page.locator('body').innerText()).not.toMatch(/\bנרדם\b|\bהתעורר\b|ישן כבר|ער כבר/);
+
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId('sex-boy').click();
+    await page.getByTestId('tab-home').click();
+    await expect(page.getByTestId('tile-sleep')).toContainText('ער כבר');
+    await expect(page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).first()).toBeVisible();
+  });
+
+  test('the other phone follows the choice by itself', async ({ page, request }) => {
+    await install(page);
+    await api(request, { action: 'settings', set: { babySex: 'girl' } }); // chosen on the other phone
+    await expect(page.getByTestId('btn-sleep')).toContainText('נרדמה', { timeout: 20_000 });
   });
 });

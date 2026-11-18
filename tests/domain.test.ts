@@ -186,3 +186,14 @@ describe('sleep: a forgotten wake-up and overlapping sleeps (owner)', () => {
     expect(overlappingSleep(list, at('00:30'), at('02:00'), now, 'a')).toBeUndefined();
   });
 });
+
+describe('the next side when both sides were pressed in the same minute', () => {
+  it('the press entered later decides (sides switched quickly)', () => {
+    const left = ev({ id: 'l', type: 'feed', detail: 'left', start: '2026-11-14 10:00' });
+    const right = ev({ id: 'r', type: 'feed', detail: 'right', start: '2026-11-14 10:00' });
+    expect(lastFeed([left, right])?.id).toBe('r');
+    expect(nextSide([left, right])).toBe('left');
+    expect(nextSide([right, left])).toBe('right');
+  });
+});
+

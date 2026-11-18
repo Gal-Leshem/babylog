@@ -44,10 +44,11 @@ export function feedGroups(events: readonly BabyEvent[], windowMin: number): Fee
   return groups;
 }
 
+/** The latest feed press. Two presses in the same minute (sides switched quickly): the one entered later counts. */
 export function lastFeed(events: readonly BabyEvent[]): BabyEvent | undefined {
-  return live(events)
-    .filter((e) => e.type === 'feed' && e.start)
-    .sort(byTimeDesc)[0];
+  let best: BabyEvent | undefined;
+  for (const e of live(events)) if (e.type === 'feed' && e.start && (!best || eventTime(e) >= eventTime(best))) best = e;
+  return best;
 }
 
 /** The recommended side for the next feeding: opposite of the most recent press. */

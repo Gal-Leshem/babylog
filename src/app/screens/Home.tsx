@@ -7,6 +7,7 @@ import { logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
+import { type BabyWords, babyWords } from '../words';
 
 const LOCK_SAME_MS = 1500;
 const LOCK_OTHERS_MS = 400;
@@ -27,13 +28,13 @@ interface RecentRow {
  * The last 10 things that happened. A sleep is two moments here: "נרדם" when it started and "התעורר" when it ended (History keeps
  * one "שינה" row), so it is easy to check that a wake-up was logged. Tapping either opens the same sleep.
  */
-function recentRows(events: readonly BabyEvent[], meds: readonly Medicine[]): RecentRow[] {
+function recentRows(events: readonly BabyEvent[], meds: readonly Medicine[], w: BabyWords): RecentRow[] {
   const rows: RecentRow[] = [];
   // walk the newest entries first: the sort below is stable, so rows in the same minute stay newest-entered first
   for (const e of [...events].reverse()) {
     if (e.type === 'sleep') {
-      if (e.start) rows.push({ key: `${e.id}:s`, e, at: e.start, icon: '🌙', label: 'נרדם' });
-      if (e.end) rows.push({ key: `${e.id}:e`, e, at: e.end, icon: '☀️', label: 'התעורר' });
+      if (e.start) rows.push({ key: `${e.id}:s`, e, at: e.start, icon: '🌙', label: w.fellAsleep });
+      if (e.end) rows.push({ key: `${e.id}:e`, e, at: e.end, icon: '☀️', label: w.wokeUp });
     } else rows.push({ key: e.id, e, at: e.start, icon: eventIcon(e, meds), label: eventLabel(e, meds) });
   }
   return rows.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 10);
@@ -88,25 +89,35 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
   const sleep = sleepState(events);
   const meds = settings.medicines.filter((m) => m.status === 'active');
   const tile = meds.length ? medsTile(meds, events, now) : null;
-  const recent = useMemo(() => recentRows(events, settings.medicines), [events, settings.medicines]);
+  const w = babyWords(settings.babySex);
+  const recent = useMemo(() => recentRows(events, settings.medicines, w), [events, settings.medicines, w]);
 
   const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
   const sleepValue =
-    sleep.state === 'asleep' ? `ישן כבר ${elapsedHM(now - sleep.since)}` : sleep.since !== null ? `ער כבר ${elapsedHM(now - sleep.since)}` : '—';
+    sleep.state === 'asleep' ? `${w.asleepFor} ${elapsedHM(now - sleep.since)}` : sleep.since !== null ? `${w.awakeFor} ${elapsedHM(now - sleep.since)}` : '—';
 
   // A plain function (not a component defined here): a component type created on every render would make Preact
   // rebuild all the buttons each time, and a tap that straddles a re-render could be lost.
+  const isNext = (kind: Kind) => (kind === 'feed_left' && next === 'left') || (kind === 'feed_right' && next === 'right');
   const kindButton = (kind: Kind, extra = '') => (
     <button
       key={kind}
       type="button"
-      class={`big ${extra} ${flash === kind ? 'flash' : ''} ${(kind === 'feed_left' && next === 'left') || (kind === 'feed_right' && next === 'right') ? 'next' : ''}`}
+      class={`big ${extra} ${flash === kind ? 'flash' : ''} ${isNext(kind) ? 'next' : ''}`}
       data-testid={`btn-${kind}`}
       disabled={locked || held === kind}
       onClick={() => press(kind, () => quickLog(kind))}
     >
-      <span class="ico">{KIND_ICON[kind]}</span>
-      <span class="lbl">{KIND_LABEL[kind]}</span>
+      {isNext(kind) && (
+        // (owner) clearer than the frame alone
+        <span class="nexttag" data-testid="next-tag">
+          הנקה הבאה
+        </span>
+      )}
+      <span class="inner">
+        <span class="ico">{KIND_ICON[kind]}</span>
+        <span class="lbl">{KIND_LABEL[kind]}</span>
+      </span>
     </button>
   );
 
@@ -152,7 +163,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
         <div class="tile" data-testid="tile-feed">
           <div class="tl">האכלה</div>
           <div class="tv">{feedValue}</div>
-          <div class="ts">{next ? `הבא: ${side(next)}` : 'אין עדיין'}</div>
+          <div class="ts">{next ? `הבאה: ${side(next)}` : 'אין עדיין'}</div>
         </div>
         {forgotten ? (
           // (owner) open much longer than usual: probably a wake-up that was not logged; a tap opens it on waking up
@@ -168,7 +179,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
             <div class="ts" data-testid="tile-sleep-sub">
               <span class="emo">{asleep ? '🌙' : '☀️'}</span>
               {/* (owner) while asleep: since when */}
-              {asleep && openStart && ` נרדם ב-${timeOf(openStart)}`}
+              {asleep && openStart && ` ${w.fellAsleep} ב-${timeOf(openStart)}`}
             </div>
           </div>
         )}
@@ -201,7 +212,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
             onClick={() => press('sleep', toggleSleep)}
           >
             <span class="ico">{asleep ? '☀️' : '🌙'}</span>
-            <span class="lbl">{asleep ? 'התעורר' : 'נרדם'}</span>
+            <span class="lbl">{asleep ? w.wokeUp : w.fellAsleep}</span>
           </button>
         </div>
         {meds.length > 0 && <div class="row1">{medsButton(meds)}</div>}

@@ -26,7 +26,7 @@ export const README_ROWS: string[][] = [
   ['4', 'Vitamin D rows have type vitamin_d; how often it is given is its row in the "Medicines" sheet (id vitamin_d; once a day unless the parents changed it).'],
   ['5', 'All times are Israel local time. Duration = end minus start.'],
   [''],
-  ['Sheet "Settings": display name of the baby, the two parents, and the merge window. Do not copy these values into other tools without asking.'],
+  ['Sheet "Settings": display name of the baby, the two parents, the merge window, and babySex (boy / girl: only for the Hebrew wording). Do not copy these values into other tools without asking.'],
   [''],
   ['Sheet "Medicines": medicines besides vitamin D, one row each, as the parents entered them (the app gives no medical advice).'],
   ['schedule', 'daily = once a day; times = times_per_day per day; interval = every every_hours hours; prn = as needed.'],

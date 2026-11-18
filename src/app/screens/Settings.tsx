@@ -10,6 +10,11 @@ const NIGHT: [NightMode, string][] = [
   ['never', 'אף פעם'],
 ];
 
+const SEX: ['boy' | 'girl', string][] = [
+  ['boy', 'בן'],
+  ['girl', 'בת'],
+];
+
 const TINT: [NightTint, string][] = [
   ['amber', 'ענבר'],
   ['red', 'אדום עמום'],
@@ -93,6 +98,22 @@ export function Settings() {
           שם התינוק
         </label>,
         <input key="i1" data-testid="baby-name" value={baby} maxLength={40} onInput={edit(setBaby)} />,
+        // (owner) the wording follows it ("ישן" / "ישנה", "התעורר" / "התעוררה"); saved at once, for both phones
+        <div class="chips" role="radiogroup" aria-label="בן או בת" key="sex">
+          {SEX.map(([id, label]) => (
+            <button
+              type="button"
+              key={id}
+              role="radio"
+              aria-checked={(st.settings.babySex ?? 'boy') === id}
+              class={`chip ${(st.settings.babySex ?? 'boy') === id ? 'on' : ''}`}
+              data-testid={`sex-${id}`}
+              onClick={() => engine.dispatch({ action: 'settings', set: { babySex: id } })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>,
         <label class="fl" key="l2">
           הורה 1
         </label>,

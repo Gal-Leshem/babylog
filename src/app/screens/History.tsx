@@ -5,6 +5,7 @@ import type { BabyEvent } from '../../shared/types';
 import { FILTERS, eventIcon, eventLabel, eventTimeText, isBackfilled, sleepDurationText } from '../labels';
 import { engine, useEngine, useNow } from '../state';
 import { DayNav } from './DayNav';
+import { babyWords } from '../words';
 
 export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
   const { events, settings } = useEngine();
@@ -44,7 +45,7 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
               <span class="hl">
                 {eventLabel(e, settings.medicines)}
                 {e.type === 'sleep' && sleepDurationText(e) && <small> · {sleepDurationText(e)}</small>}
-                {e.type === 'sleep' && e.start && !e.end && <small> · ישן עכשיו</small>}
+                {e.type === 'sleep' && e.start && !e.end && <small> · {babyWords(settings.babySex).sleepingNow}</small>}
                 {e.note && <small class="note"> · {e.note}</small>}
               </span>
               <span class="hm">

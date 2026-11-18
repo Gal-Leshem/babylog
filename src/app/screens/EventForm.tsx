@@ -7,6 +7,7 @@ import { VITAMIN_D_ID } from '../../shared/medicines';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, hideToast, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
+import { babyWords } from '../words';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
 // (owner) no "today" / "yesterday" buttons: another day is chosen in the date field; these are the quick ones
@@ -44,6 +45,7 @@ interface Props {
 
 export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   const { events, settings } = useEngine();
+  const w = babyWords(settings.babySex);
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
   // what is being recorded: one of the kinds, or a medicine ("med:<id>"; vitamin D is "med:vitamin_d")
@@ -126,7 +128,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
       const other = overlappingSleep(events, parseLocal(start), end ? parseLocal(end) : Date.now(), Date.now(), event?.id);
       if (other) {
         setOverlapOk(true);
-        return setError(`חופף לשינה אחרת (נרדם ${when(other.start.slice(0, 10), timeOf(other.start))}${other.end ? ` · התעורר ${when(other.end.slice(0, 10), timeOf(other.end))}` : ' · עדיין ישן'}). לשמור בכל זאת?`);
+        return setError(`חופף לשינה אחרת (${w.fellAsleep} ${when(other.start.slice(0, 10), timeOf(other.start))}${other.end ? ` · ${w.wokeUp} ${when(other.end.slice(0, 10), timeOf(other.end))}` : ` · ${w.stillAsleep}`}). לשמור בכל זאת?`);
       }
     }
     const { type, detail: kindDetail } = fromKind(kind);
@@ -154,7 +156,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     onClose();
   };
   const describe = (c: EventCore): string => {
-    if (c.type === 'sleep') return `נרדם ${c.start ? when(c.start.slice(0, 10), timeOf(c.start)) : 'לא ידוע'} · ${c.end ? `התעורר ${when(c.end.slice(0, 10), timeOf(c.end))}` : 'עדיין ישן'}`;
+    if (c.type === 'sleep') return `${w.fellAsleep} ${c.start ? when(c.start.slice(0, 10), timeOf(c.start)) : 'לא ידוע'} · ${c.end ? `${w.wokeUp} ${when(c.end.slice(0, 10), timeOf(c.end))}` : w.stillAsleep}`;
     const name = c.type === 'medicine' ? (settings.medicines.find((m) => m.id === c.detail)?.name ?? KIND_LABEL.medicine) : KIND_LABEL[kindOf({ ...event!, ...c })];
     return `${name} ${when(c.start.slice(0, 10), timeOf(c.start))}${c.note ? ` · ${c.note}` : ''}`;
   };
@@ -185,12 +187,12 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
             {/* the two moments of a sleep, each edited on its own; the one that was tapped opens first */}
             <div class="seg moments" role="tablist" aria-label="שינה">
               <button type="button" role="tab" class={moment === 'start' ? 'on' : ''} aria-selected={moment === 'start'} data-testid="moment-start" onClick={() => setMoment('start')}>
-                <span>נרדם</span>
+                <span>{w.fellAsleep}</span>
                 <b data-testid="moment-start-value">{unknownStart ? 'לא ידוע' : when(sDate, sTime)}</b>
               </button>
               <button type="button" role="tab" class={moment === 'end' ? 'on' : ''} aria-selected={moment === 'end'} data-testid="moment-end" onClick={() => setMoment('end')}>
-                <span>התעורר</span>
-                <b data-testid="moment-end-value">{stillAsleep ? 'עדיין ישן' : when(eDate, eTime)}</b>
+                <span>{w.wokeUp}</span>
+                <b data-testid="moment-end-value">{stillAsleep ? w.stillAsleep : when(eDate, eTime)}</b>
               </button>
             </div>
             {moment === 'start' && (
@@ -200,15 +202,15 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
                     <input type="checkbox" checked={unknownStart} onChange={(e) => setUnknownStart((e.target as HTMLInputElement).checked)} /> שעת ההירדמות לא ידועה
                   </label>
                 )}
-                {!unknownStart && timeEditor('start', 'נרדם ב')}
+                {!unknownStart && timeEditor('start', `${w.fellAsleep} ב`)}
               </>
             )}
             {moment === 'end' && (
               <>
                 <label class="check">
-                  <input type="checkbox" data-testid="still-asleep" checked={stillAsleep} onChange={(e) => setStillAsleep((e.target as HTMLInputElement).checked)} /> עדיין ישן
+                  <input type="checkbox" data-testid="still-asleep" checked={stillAsleep} onChange={(e) => setStillAsleep((e.target as HTMLInputElement).checked)} /> {w.stillAsleep}
                 </label>
-                {!stillAsleep && timeEditor('end', 'התעורר ב')}
+                {!stillAsleep && timeEditor('end', `${w.wokeUp} ב`)}
               </>
             )}
           </>

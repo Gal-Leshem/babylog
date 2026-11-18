@@ -359,6 +359,18 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key: 'wrong', action: 'ping' }).build).toBe(build);
   });
 
+  it("the baby's sex is a row of the Settings sheet and survives the settings copy", () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    expect(post({ key, action: 'settings' }).settings.babySex).toBeUndefined();
+    post({ key, action: 'settings', set: { babySex: 'girl' } });
+    expect(rt.sheets.get('Settings')!.some((r) => r[0] === 'babySex' && r[1] === 'girl')).toBe(true);
+    expect(post({ key, action: 'sync', from: '2026-01-10', to: '2026-01-10' }).settings.babySex).toBe('girl');
+    rt.props.delete('SETTINGS_JSON'); // straight from the sheet as well
+    expect(post({ key, action: 'settings' }).settings.babySex).toBe('girl');
+  });
+
   it('rotateKey invalidates the old key', () => {
     const { rt, g, post } = boot();
     g.setup!();

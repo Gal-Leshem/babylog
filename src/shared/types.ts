@@ -51,8 +51,13 @@ export function previousOf(e: BabyEvent): EventCore | null {
   }
 }
 
+/** The baby's sex, for the Hebrew wording only ("ישן" / "ישנה", "התעורר" / "התעוררה"). */
+export type BabySex = 'boy' | 'girl';
+
 export interface Settings {
   babyName: string;
+  /** (owner) chosen in Settings; the wording follows it. Missing (older sheets) = boy, the wording used before. */
+  babySex?: BabySex;
   mergeWindowMin: number;
   /** The two parents' display names, as chosen in the app (kept only in the private sheet). */
   parents: [string, string];

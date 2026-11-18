@@ -168,6 +168,7 @@ class SheetStore implements Store {
     const win = Number(map.mergeWindowMin);
     return {
       babyName: map.babyName || DEFAULT_SETTINGS.babyName,
+      ...(map.babySex === 'girl' || map.babySex === 'boy' ? { babySex: map.babySex } : {}),
       mergeWindowMin: Number.isFinite(win) && map.mergeWindowMin !== '' && map.mergeWindowMin !== undefined ? win : DEFAULT_SETTINGS.mergeWindowMin,
       parents: [map.parent1 || DEFAULT_SETTINGS.parents[0], map.parent2 || DEFAULT_SETTINGS.parents[1]],
       medicines: this.readMedicines(),
@@ -215,6 +216,7 @@ class SheetStore implements Store {
       ['mergeWindowMin', s.mergeWindowMin],
       ['parent1', s.parents[0]],
       ['parent2', s.parents[1]],
+      ['babySex', s.babySex ?? ''],
     ];
     sh.getRange(1, 1, rows.length, 2).setValues(rows);
     this.writeMedicines(s.medicines);

@@ -651,3 +651,13 @@ describe('one step back after an edit (owner)', () => {
   });
 });
 
+describe("the baby's sex (owner: wording only)", () => {
+  it('is stored, read back, and only boy or girl', () => {
+    expect(ok(call({ action: 'settings' })).settings!.babySex).toBeUndefined(); // older sheets: none (the app says boy)
+    expect(ok(call({ action: 'settings', set: { babySex: 'girl' } })).settings!.babySex).toBe('girl');
+    expect(ok(call({ action: 'settings', set: { babyName: 'B' } })).settings!.babySex).toBe('girl'); // other changes keep it
+    expect(call({ action: 'settings', set: { babySex: 'x' } })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(store.getSettings().babySex).toBe('girl');
+  });
+});
+
