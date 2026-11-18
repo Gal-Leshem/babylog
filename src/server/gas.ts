@@ -14,6 +14,8 @@ declare const __FIXED_KEY__: string;
  * ScriptApp.getService().getUrl() returns the editor's private /dev address when run from the editor.
  */
 declare const __EXEC_URL__: string;
+/** The commit this bundle was built from (replaced at build time). */
+declare const __BUILD__: string;
 
 const EVENTS = 'Events';
 const SETTINGS = 'Settings';
@@ -285,7 +287,7 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
   const answer = handle(body, deps());
   const debug = typeof body === 'object' && body !== null && (body as { debug?: unknown }).debug === true;
   // `ms`: our own time, so a phone can tell it from the time the trip itself takes
-  return json({ ...answer, ms: Date.now() - t0, ...(debug ? { t: spent } : {}) });
+  return json({ ...answer, ms: Date.now() - t0, build: __BUILD__, ...(debug ? { t: spent } : {}) });
 }
 
 export function doGet(): GoogleAppsScript.Content.TextOutput {

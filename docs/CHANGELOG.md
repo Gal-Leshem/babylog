@@ -267,6 +267,14 @@ No names, addresses or secrets in this file (the repository is public).
   stayed on the previous version. The test expected "ישן כבר 0:30" right after logging "30 minutes ago"; the tile's clock
   refreshes every 15 s, so just after a minute boundary it still said 0:29. Not an app bug. That check and an older one with the
   same weakness now accept 0:29.
+- CI incident (process, my doing): for the "undo edit" commit the `dev` live test failed (the real test server answered an edit
+  without the kept version) and my polling loop pushed to `main` anyway, because it stopped only on a failed TEST report, not a
+  failed SERVER report. On `main` the same bundle passed the live test and production was deployed, so nothing broken reached
+  the phones, but the rule "green `dev` first" was broken. Cause of the failure: right after a deploy Google can still answer
+  from the previous version for a while (the first deploy of the commit failed, the second, identical one passed; answers without
+  the new timing field were seen after a deploy before). Fixes: every server answer carries its build (the commit), and the live
+  test first waits until three answers in a row come from this commit's build (up to 3 minutes); the polling loop now requires
+  BOTH `dev` reports to be "success" before pushing to `main`.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

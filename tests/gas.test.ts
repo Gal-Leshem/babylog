@@ -350,6 +350,15 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(JSON.parse(back.event.prev)).toMatchObject({ start: `${day} 01:30`, end: `${day} 03:00` });
   });
 
+  it('every answer says which build it comes from (the live test waits for the new one after a deploy)', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const build = post({ key, action: 'ping' }).build;
+    expect(build).toBe((process.env.GITHUB_SHA ?? 'local').slice(0, 7));
+    expect(post({ key: 'wrong', action: 'ping' }).build).toBe(build);
+  });
+
   it('rotateKey invalidates the old key', () => {
     const { rt, g, post } = boot();
     g.setup!();

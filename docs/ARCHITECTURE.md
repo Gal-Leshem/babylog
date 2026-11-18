@@ -190,5 +190,7 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   `MOCK` in `e2e/helpers.ts`; the config starts them with `MOCK_SERVERS`), and every test resets its own server in
   `beforeEach`, so tests never see each other. `E2E_WORKERS=1` runs them one by one. Wait for a condition, not a fixed time,
   unless the test checks that something does NOT happen during a time.
-- `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI.
+- `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI. Every server answer carries
+  `build` (the commit); the live test first waits until three answers in a row come from this commit's build, because right after a
+  deploy Google can still answer from the previous version.
 - Habit that found real bugs: after adding a regression test, temporarily break the fix and confirm the test fails.

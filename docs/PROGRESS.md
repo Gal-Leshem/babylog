@@ -68,6 +68,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Never define a component inside a component; never use vh/dvh; Home must never be scrollable; each tab has its own scroll container.
 - When a trigger can arrive during work in progress, queue it; do not drop it.
 - Apps Script: entry points must be top-level `function` declarations; never print the editor `/dev` address in a setup code.
+- Push to `main` only when BOTH the `dev` test report AND the `dev` server report are "success" (check the status field, not only
+  that the reports exist); stop at the first failure.
 - When breaking a fix on purpose to prove a test, check that the build still compiles: a failed build leaves the previous
   build in place and the test "passes" against it.
 - A browser test must wait for the state it means, not for a text that is also shown one step earlier (the beacon test went on

@@ -102,6 +102,26 @@ if (!first.json) {
 }
 check('ping ok', first.json.ok === true, JSON.stringify(first.json));
 
+// Right after a deploy Google can still answer from the previous version for a while (seen: a check of a new feature failed
+// on the first deploy of a commit and passed on the second). Wait until three answers in a row come from this commit's build.
+const expected = (process.env.GITHUB_SHA ?? '').slice(0, 7);
+if (expected && first.json.build !== undefined) {
+  const t0 = Date.now();
+  let inARow = 0;
+  while (inARow < 3) {
+    const p = (await call({ action: 'ping' })).json;
+    inARow = p?.build === expected ? inARow + 1 : 0;
+    if (inARow < 3) {
+      if (Date.now() - t0 > 180_000) {
+        console.log(`FAIL  the server still answers from another build after 3 minutes (${String(p?.build)})`);
+        process.exit(1);
+      }
+      if (inARow === 0) await new Promise((r) => setTimeout(r, 3_000));
+    }
+  }
+  console.log(`PASS  the server answers from this build (after ${Math.round((Date.now() - t0) / 1000)} s)`);
+}
+
 const run = Date.now();
 const id = (n: string) => `live-${run}-${n}`;
 const now = () => formatLocal(Date.now());
