@@ -247,6 +247,12 @@ No names, addresses or secrets in this file (the repository is public).
   from the values it set, so a late report of the same time from the phone's time wheel cannot clear it. "לפני 5 דק׳" added;
   "היום" / "אתמול" removed (owner). Tests: the button order, the late-report case, the moments (opening side, separate changes,
   switching, History); each new test proven to fail without its part.
+- Toast after a one-tap log **(owner)**: a quiet row "היה לפני 5 · 10 · 15 · 30 דק׳" moves the entry just logged that
+  many minutes before the logged time: two taps to log something that happened a little while ago (feeds, diapers, falling
+  asleep, waking up, the single medicine button). Another choice counts from the logged time again; "בטל" takes the moves back
+  first, so nothing is left for the server to refuse (also offline). The wake-up toast says how long the sleep was ("ישן 0:35").
+  Browser tests: the two taps, a second choice, undo after a move offline and online, sleep and wake-up with the length (proven
+  to fail without the undo of the moves, and when a choice counts from the previous move).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

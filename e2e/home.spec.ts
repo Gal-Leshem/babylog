@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { encodeSetupCode } from '../src/app/config';
+import { formatLocal, parseLocal } from '../src/shared/tz';
 import { MOCK, api, control, install, installExisting, nowLocal, resetServer, seed, serverEvents, todayLocal } from './helpers';
 
 test.beforeEach(async ({ request }) => {
@@ -383,3 +384,81 @@ test("an entry that arrives from the other phone glows briefly in the recent lis
   expect(await page.locator('.rrow.new').evaluate((e) => getComputedStyle(e).animationName)).toBe('arrived');
 });
 
+
+// Owner: two taps to log something that happened a little while ago: the button, then "15" in the toast.
+test.describe('the toast after a one-tap log: "it happened earlier"', () => {
+  const minus = (local: string, mins: number) => formatLocal(parseLocal(local) - mins * 60_000);
+
+  test('two taps: the entry moves to that many minutes before it was logged; another choice counts from the logged time', async ({ page, request }) => {
+    await install(page);
+    await page.getByTestId('btn-wet').click();
+    await expect(page.getByTestId('toast-earlier')).toBeVisible();
+    await expect(page.getByTestId('toast-earlier').locator('button')).toHaveText(['5', '10', '15', '30']);
+    await expect.poll(async () => (await serverEvents(request)).length).toBe(1);
+    const logged = (await serverEvents(request))[0]!.start;
+    await page.getByTestId('toast-back-15').click();
+    await expect(page.getByTestId('toast-back-15')).toHaveClass(/\bon\b/);
+    await expect(page.getByTestId('toast-text')).toContainText(`נשמר: פיפי ${minus(logged, 15).slice(11)}`);
+    await expect.poll(async () => (await serverEvents(request))[0]!.start).toBe(minus(logged, 15));
+    await page.getByTestId('toast-back-10').click(); // changed my mind: 10, not 25
+    await expect(page.getByTestId('toast-back-15')).not.toHaveClass(/\bon\b/);
+    await expect.poll(async () => (await serverEvents(request))[0]!.start).toBe(minus(logged, 10));
+    expect(await serverEvents(request)).toHaveLength(1);
+    await expect(page.getByTestId('recent-row').first()).toContainText(minus(logged, 10).slice(11));
+  });
+
+  test('undo after moving takes the entry back completely (also before anything reached the server)', async ({ page, request }) => {
+    await install(page);
+    await control(request, 'offline=1');
+    await page.getByTestId('btn-poop').click();
+    await page.getByTestId('toast-back-30').click();
+    await page.getByTestId('toast-undo').click();
+    await expect(page.getByTestId('recent-row')).toHaveCount(0);
+    await control(request, 'offline=0');
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 10_000 });
+    await expect(page.getByTestId('banner-rejected')).toHaveCount(0); // nothing left over that the server would refuse
+    expect(await serverEvents(request)).toHaveLength(0);
+
+    await page.getByTestId('btn-both').click(); // and once it is on the server
+    await expect.poll(async () => (await serverEvents(request)).length).toBe(1);
+    await page.getByTestId('toast-back-5').click();
+    await page.getByTestId('toast-undo').click();
+    await expect.poll(async () => (await serverEvents(request)).length).toBe(0);
+    await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+  });
+
+  test('falling asleep and waking up move their own time; the wake-up says how long the sleep was', async ({ page, request }) => {
+    await install(page);
+    await page.getByTestId('btn-sleep').click();
+    await page.getByTestId('toast-back-30').click();
+    const sleep = async () => (await serverEvents(request)).find((e) => e.type === 'sleep')!;
+    await expect.poll(async () => (await sleep())?.start ?? '').not.toBe('');
+    await expect.poll(async () => (parseLocal((await sleep()).created) - parseLocal((await sleep()).start)) / 60_000).toBeGreaterThanOrEqual(29);
+    await expect(page.getByTestId('tile-sleep')).toContainText('ישן כבר 0:3');
+    await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-sleep').click(); // wakes up
+    await expect(page.getByTestId('toast-text')).toContainText(/התעורר \d\d:\d\d · ישן 0:3\d/);
+    await page.getByTestId('toast-back-5').click();
+    await expect(page.getByTestId('toast-text')).toContainText(/ישן 0:2\d/); // five minutes shorter
+    await expect.poll(async () => (await sleep()).end).not.toBe('');
+    const s = await sleep();
+    expect((parseLocal(s.end) - parseLocal(s.start)) / 60_000).toBeLessThan(30);
+    await page.getByTestId('toast-undo').click(); // undo after the move: the sleep is open again
+    await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+    await expect.poll(async () => (await sleep()).end).toBe('');
+    await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+  });
+
+  test('the medicine button and a feed while asleep get the same buttons', async ({ page }) => {
+    await install(page);
+    await page.getByTestId('btn-vitamin_d').click();
+    await expect(page.getByTestId('toast-earlier')).toBeVisible();
+    await page.getByTestId('toast-undo').click();
+    await page.getByTestId('btn-sleep').click();
+    await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-feed_left').click();
+    await expect(page.getByTestId('toast-action')).toHaveText('התעורר');
+    await expect(page.getByTestId('toast-earlier')).toBeVisible();
+  });
+});

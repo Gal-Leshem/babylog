@@ -10,7 +10,8 @@ import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
-import { engine, hideToast, useEngine, useNow, usePrefs, useToast } from './state';
+import { EARLIER_MIN } from './actions';
+import { engine, hideToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
 const TABS: [Tab, string, string][] = [
@@ -98,6 +99,7 @@ function ToastView() {
   if (!t) return null;
   return (
     <div class={`toast ${t.tone ?? 'ok'}`} role="status" aria-live="polite" data-testid="toast" key={t.id}>
+      <div class="trow">
       <span data-testid="toast-text">{t.text}</span>
       {t.undo && (
         <button
@@ -122,6 +124,29 @@ function ToastView() {
         >
           {t.action.label}
         </button>
+      )}
+      </div>
+      {t.earlier && (
+        // two taps to log something that happened a little while ago: the button, then one of these (owner)
+        <div class="tback" data-testid="toast-earlier">
+          <span>היה לפני</span>
+          {EARLIER_MIN.map((m) => (
+            <button
+              type="button"
+              key={m}
+              class={t.earlier?.chosen === m ? 'on' : ''}
+              aria-pressed={t.earlier?.chosen === m}
+              data-testid={`toast-back-${m}`}
+              onClick={() => {
+                const text = t.earlier?.pick(m);
+                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m } }, 6000);
+              }}
+            >
+              {m}
+            </button>
+          ))}
+          <span>דק׳</span>
+        </div>
       )}
     </div>
   );

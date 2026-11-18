@@ -127,6 +127,10 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   tap straddling a re-render could be lost. Use plain functions that return JSX, or top-level components.
 - **Event icons in lists** (`.ri` recent list, `.hi` history): a 40px column, one line, centred, so one icon and two ("💧💩") line up.
   History's time column (`.ht`) is 112px, one line, centred, so a sleep's range fits.
+- **Toast after a one-tap log** (owner): besides "בטל" (and "התעורר" while asleep), one quiet row "היה לפני 5 · 10 · 15 · 30
+  דק׳" moves the entry just logged to that many minutes before the logged time (`earlierFor` in `actions.ts`; counted from the
+  logged time, so another choice replaces the first). Two taps in all. "בטל" first takes the moves back, then the entry. The
+  wake-up toast also says how long the sleep was. Toasts with these buttons stay 6 s.
 - **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
   protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
 - **Add-after-the-fact form:** quick buttons are "5/10/15/30 minutes ago", "an hour ago", "two hours ago" (owner: no "today" /

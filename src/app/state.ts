@@ -50,6 +50,11 @@ export interface Toast {
   /** a second button, e.g. "התעורר" after logging a feed while the baby is marked asleep */
   action?: { label: string; run: () => void };
   tone?: 'ok' | 'warn' | 'error';
+  /**
+   * "It happened earlier": small buttons (minutes before the logged time) that move the entry just logged. `pick` moves it and
+   * returns the toast's new text (null when it could not be moved); `chosen` is the button in effect.
+   */
+  earlier?: { pick: (mins: number) => string | null; chosen?: number };
 }
 
 let toast: Toast | null = null;
@@ -60,6 +65,14 @@ const emitToast = () => toastListeners.forEach((l) => l());
 
 export function showToast(t: Omit<Toast, 'id'>, ms = 5000): void {
   toast = { ...t, id: ++toastSeq };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, ms);
+  emitToast();
+}
+/** Changes the toast on screen (if it is still the same one) and gives it a fresh `ms` before it goes. */
+export function updateToast(id: number, patch: Partial<Omit<Toast, 'id'>>, ms = 5000): void {
+  if (!toast || toast.id !== id) return;
+  toast = { ...toast, ...patch };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, ms);
   emitToast();
