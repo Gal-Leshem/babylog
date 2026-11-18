@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "fe0f669",
+  "sha": "93e05a2",
   "ref": "main",
-  "at": "2026-11-17T16:11:10.016Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44122160909",
+  "at": "2026-11-18T08:46:43.674Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44269446218",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -14,12 +14,12 @@
       "::add-mask::[deployment]",
       "server bundle ready (production, 44 KB)",
       "Script is already up to date.",
-      "redeployed existing web app deployment (version 43)",
+      "redeployed existing web app deployment (version 44)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=43 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=44 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "prod server deployed",
-      "took 9s"
+      "took 7s"
     ],
     "install": [
       "+ npm ci",
@@ -27,12 +27,12 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 8s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
       "",
-      "10 vulnerabilities (8 moderate, 2 high)",
+      "22 vulnerabilities (6 moderate, 16 high)",
       "",
       "To address issues that do not require attention, run:",
       "  npm audit fix",
@@ -41,7 +41,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 6s"
+      "took 8s"
     ]
   }
 }
