@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "92a1536",
+  "sha": "6713301",
   "ref": "main",
-  "at": "2026-11-18T10:36:33.642Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44286421381",
+  "at": "2026-11-18T11:56:22.294Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44298095081",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -12,16 +12,16 @@
       "using existing prod script",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "server bundle ready (production, 44 KB)",
-      "Pushed 2 files at 10:36:28 AM.",
+      "server bundle ready (production, 45 KB)",
+      "Pushed 2 files at 11:56:19 AM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 48)",
+      "redeployed existing web app deployment (version 49)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=48 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=49 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "prod server deployed",
-      "took 13s"
+      "took 9s"
     ],
     "install": [
       "+ npm ci",
@@ -29,7 +29,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 8s",
+      "added 657 packages, and audited 658 packages in 6s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -43,7 +43,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 6s"
     ]
   }
 }
