@@ -285,6 +285,10 @@ No names, addresses or secrets in this file (the repository is public).
   long); both, and "הוחזר", now 4.5 s. The toasts after a one-tap log stay 6 s (8 s while the baby is marked asleep), deletes 5 s.
   Wording **(owner)**: a wake-up before falling asleep says "שעת ההתעוררות לפני שעת ההירדמות". Browser tests with a frozen clock
   (the toast is there at 4.4 s and gone at 4.8 s; both failed before; a clock that keeps running made one of them pass wrongly).
+- CI caught a race on `dev` (slow run, frozen clock): the toast was cleared by an effect that runs after paint when a form
+  opens; when that effect ran late it also removed the toast that saving the form shows. The toast is now cleared at the moment a
+  form or the medicines window opens (no effect). Did not reproduce locally (10 of 10 passed); the CI machine is slower. The
+  deploy script stopped before `main` as it should.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

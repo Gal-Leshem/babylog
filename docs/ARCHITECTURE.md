@@ -139,8 +139,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
   protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
 - **Sheets** (add / edit form, medicines window): the row of buttons is pinned to the bottom of the sheet (`.sheet > .actions`,
-  sticky), so "שמירה" / "ביטול" are visible without scrolling at any height; opening a sheet clears the toast (it would lie over
-  them). "ביטול" always closes without changing anything.
+  sticky), so "שמירה" / "ביטול" are visible without scrolling at any height; opening a sheet clears the toast at that moment (it would lie over
+  them; not from an effect, which could run late and also remove the toast that saving shows). "ביטול" always closes without changing anything.
 - **Add-after-the-fact form:** quick buttons are "5/10/15/30 minutes ago", "an hour ago", "two hours ago" (owner: no "today" /
   "yesterday"; another day is picked in the date field). The chosen button stays lit exactly as long as the time is still the one
   it set (derived from the values, so a late event from the phone's time wheel cannot switch it off; a change by hand does).

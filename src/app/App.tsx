@@ -170,13 +170,19 @@ export function App() {
     if (!restored?.scroll) return;
     requestAnimationFrame(() => document.querySelector('.main')?.scrollTo(0, restored.scroll));
   }, []);
-  const [form, setForm] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent; focus?: Moment; wake?: boolean } | null>(null);
-  const [medsOpen, setMedsOpen] = useState(false);
+  const [form, setFormState] = useState<{ mode: 'add' | 'edit'; event?: BabyEvent; focus?: Moment; wake?: boolean } | null>(null);
+  const [medsOpen, setMedsState] = useState(false);
   // A form or the medicines window takes the screen: the toast of the last tap would lie over its buttons (owner: "ביטול"
-  // must always be reachable), so it goes. Its undo is no longer needed: the form edits that entry directly.
-  useEffect(() => {
-    if (form || medsOpen) hideToast();
-  }, [form, medsOpen]);
+  // must always be reachable), so it goes, at the moment of opening (not in an effect: an effect that ran late could also
+  // remove the toast that saving the form shows).
+  const setForm = (f: typeof form) => {
+    if (f) hideToast();
+    setFormState(f);
+  };
+  const setMedsOpen = (open: boolean) => {
+    if (open) hideToast();
+    setMedsState(open);
+  };
 
   if (!st.configured) return <Install />;
 
