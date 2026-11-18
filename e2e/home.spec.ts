@@ -578,8 +578,8 @@ test.describe('wording for a girl', () => {
   });
 });
 
-// Owner: the toast after a one-tap log stayed a little too long (6 s, 8 s while asleep): one second less.
-test('the toast after a one-tap log stays 5 seconds (7 while the baby is marked asleep)', async ({ page }) => {
+// Owner: the toast after a one-tap log stayed a little too long (6 s, 8 s while asleep): two seconds less, in two steps.
+test('the toast after a one-tap log stays 4 seconds (6 while the baby is marked asleep)', async ({ page }) => {
   await page.clock.install();
   await install(page);
   const timeToast = async (tap: () => Promise<void>, seconds: number) => {
@@ -592,9 +592,9 @@ test('the toast after a one-tap log stays 5 seconds (7 while the baby is marked 
     await expect(page.getByTestId('toast')).toHaveCount(0);
     await page.clock.resume();
   };
-  await timeToast(() => page.getByTestId('btn-wet').click(), 5);
+  await timeToast(() => page.getByTestId('btn-wet').click(), 4);
   await expect(page.getByTestId('btn-sleep')).toBeEnabled();
-  await timeToast(() => page.getByTestId('btn-sleep').click(), 5);
+  await timeToast(() => page.getByTestId('btn-sleep').click(), 4);
   await expect(page.getByTestId('btn-poop')).toBeEnabled();
-  await timeToast(() => page.getByTestId('btn-poop').click(), 7); // while asleep
+  await timeToast(() => page.getByTestId('btn-poop').click(), 6); // while asleep
 });

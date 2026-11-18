@@ -23,9 +23,9 @@ function savedText(label: string, time: string, pending: boolean): string {
   return `${pending ? 'ממתין לסנכרון' : 'נשמר'}: ${label} ${time}`;
 }
 
-/** How long the toast after a one-tap log stays (owner: 6 s was a little long), and while the baby is marked asleep. */
-export const TAP_TOAST_MS = 5_000;
-const TAP_TOAST_ASLEEP_MS = 7_000;
+/** How long the toast after a one-tap log stays (owner: 6 s and then 5 s were a little long), and while the baby is marked asleep. */
+export const TAP_TOAST_MS = 4_000;
+const TAP_TOAST_ASLEEP_MS = 6_000;
 
 /** Minutes offered in the toast after a one-tap log for "it happened earlier" (owner). */
 export const EARLIER_MIN = [5, 10, 15, 30] as const;

@@ -300,6 +300,7 @@ No names, addresses or secrets in this file (the repository is public).
   "בן", the other phone follows; proven to fail when the wording ignores the choice); tag at four sizes with a full list.
 - Toast after a one-tap log **(owner: still a little long)**: 5 s (was 6), 7 s while the baby is marked asleep (was 8), and 5 s
   more after choosing "היה לפני". Browser test with a frozen clock (failed before).
+- Toast after a one-tap log **(owner: still a little long)**: 4 s (6 s while the baby is marked asleep), also after "היה לפני".
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
