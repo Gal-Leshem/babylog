@@ -435,7 +435,7 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     const sleep = async () => (await serverEvents(request)).find((e) => e.type === 'sleep')!;
     await expect.poll(async () => (await sleep())?.start ?? '').not.toBe('');
     await expect.poll(async () => (parseLocal((await sleep()).created) - parseLocal((await sleep()).start)) / 60_000).toBeGreaterThanOrEqual(29);
-    await expect(page.getByTestId('tile-sleep')).toContainText('ישן כבר 0:3');
+    await expect(page.getByTestId('tile-sleep')).toContainText(/ישן כבר 0:(29|3\d)/); // the tile's clock refreshes every 15 s: just after a minute boundary it may still say 0:29
     await expect(page.getByTestId('btn-sleep')).toBeEnabled({ timeout: 3000 });
     await page.getByTestId('btn-sleep').click(); // wakes up
     await expect(page.getByTestId('toast-text')).toContainText(/התעורר \d\d:\d\d · ישן 0:3\d/);

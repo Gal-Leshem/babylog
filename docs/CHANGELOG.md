@@ -263,6 +263,10 @@ No names, addresses or secrets in this file (the repository is public).
   week's longest plus an hour, at least 6 hours) shows "שכחתם התעוררות?" and a tap opens it on waking up, ready to record it;
   a sleep that overlaps another one asks once before saving. Unit tests for both rules; browser tests (each proven to fail
   without its part). Lesson: a deliberate break must still compile, or the test runs against the previous build and "passes".
+- CI incident: the toast commit passed on `dev` but one browser test failed on `main` (slow run), so production and the site
+  stayed on the previous version. The test expected "ישן כבר 0:30" right after logging "30 minutes ago"; the tile's clock
+  refreshes every 15 s, so just after a minute boundary it still said 0:29. Not an app bug. That check and an older one with the
+  same weakness now accept 0:29.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

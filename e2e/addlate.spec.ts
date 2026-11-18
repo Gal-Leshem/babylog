@@ -89,7 +89,7 @@ test('"still asleep" records an open sleep and flips the home button', async ({ 
   await page.getByTestId('still-asleep').check();
   await page.getByTestId('save').click();
   await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
-  await expect(page.getByTestId('tile-sleep')).toContainText('ישן כבר 0:3');
+  await expect(page.getByTestId('tile-sleep')).toContainText(/ישן כבר 0:(29|3\d)/); // the tile's clock refreshes every 15 s: just after a minute boundary it may still say 0:29
   await expect.poll(async () => (await allServerRows(request)).filter((e) => !e.end).length).toBe(1);
 });
 
