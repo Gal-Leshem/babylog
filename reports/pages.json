@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "fe0f669",
+  "sha": "93e05a2",
   "ref": "main",
-  "at": "2026-11-17T16:11:19.098Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44122160909",
+  "at": "2026-11-18T08:47:18.082Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44269446218",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -20,14 +20,14 @@
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
-      "dist/assets/index-YFl18QNJ.css   14.37 kB │ gzip:  3.70 kB",
-      "dist/assets/index-CUegFQky.js   107.59 kB │ gzip: 36.22 kB",
+      "dist/assets/index-CbnKRh6Y.css   14.58 kB │ gzip:  3.74 kB",
+      "dist/assets/index-DU4olvpU.js   108.37 kB │ gzip: 36.53 kB",
       "",
-      "✓ built in 71ms",
+      "✓ built in 68ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (120.97 KiB)",
+      "precache  10 entries (121.94 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 1s"
+      "took 4s"
     ],
     "install": [
       "+ npm ci",
@@ -46,12 +46,12 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
       "",
-      "10 vulnerabilities (8 moderate, 2 high)",
+      "22 vulnerabilities (6 moderate, 16 high)",
       "",
       "To address issues that do not require attention, run:",
       "  npm audit fix",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 5s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -69,19 +69,20 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 1s"
+      "took 0s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published fe0f669 to gh-pages",
+      "published 93e05a2 to gh-pages",
       "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves e23db43, waiting for fe0f669",
-      "attempt 2: serves e23db43, waiting for fe0f669",
-      "site is live and serves fe0f669",
-      "took 20s"
+      "attempt 1: serves fe0f669, waiting for 93e05a2",
+      "attempt 2: serves fe0f669, waiting for 93e05a2",
+      "attempt 3: serves fe0f669, waiting for 93e05a2",
+      "site is live and serves 93e05a2",
+      "took 30s"
     ]
   }
 }
