@@ -48,7 +48,7 @@ export interface Toast {
   text: string;
   undo?: () => void;
   /** a second button, e.g. "התעורר" after logging a feed while the baby is marked asleep */
-  action?: { label: string; run: () => void };
+  action?: { label: string; run: () => void; /** shown with the button on a row of its own, set apart from the message */ note?: string };
   tone?: 'ok' | 'warn' | 'error';
   /**
    * "It happened earlier": small buttons (minutes before the logged time) that move the entry just logged. `pick` moves it and

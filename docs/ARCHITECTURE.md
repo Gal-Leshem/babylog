@@ -135,6 +135,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   tap straddling a re-render could be lost. Use plain functions that return JSX, or top-level components.
 - **Event icons in lists** (`.ri` recent list, `.hi` history): a 40px column, one line, centred, so one icon and two ("💧💩") line up.
   History's time column (`.ht`) is 112px, one line, centred, so a sleep's range fits.
+- **Toast while asleep:** a feed or diaper while the baby is marked asleep shows the wake-up offer on a row of its own under
+  the confirmation (`action.note` in the toast), with a filled "☀️ לסמן שהתעורר" button.
 - **Toast after a one-tap log** (owner): besides "בטל" (and "התעורר" while asleep), one quiet row "היה לפני 5 · 10 · 15 · 30
   דק׳" moves the entry just logged to that many minutes before the logged time (`earlierFor` in `actions.ts`; counted from the
   logged time, so another choice replaces the first). Two taps in all. "בטל" first takes the moves back, then the entry. The

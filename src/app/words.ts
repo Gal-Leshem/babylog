@@ -12,6 +12,8 @@ export interface BabyWords {
   stillAsleep: string;
   sleepingNow: string;
   stillMarkedAsleep: string;
+  /** the button that marks the wake-up from a toast */
+  markAwake: string;
   slept: string;
 }
 
@@ -22,7 +24,8 @@ const BOY: BabyWords = {
   awakeFor: 'ער כבר',
   stillAsleep: 'עדיין ישן',
   sleepingNow: 'ישן עכשיו',
-  stillMarkedAsleep: 'עדיין מסומן שישן',
+  stillMarkedAsleep: 'עדיין מסומן כישן',
+  markAwake: 'לסמן שהתעורר',
   slept: 'ישן',
 };
 
@@ -33,7 +36,8 @@ const GIRL: BabyWords = {
   awakeFor: 'ערה כבר',
   stillAsleep: 'עדיין ישנה',
   sleepingNow: 'ישנה עכשיו',
-  stillMarkedAsleep: 'עדיין מסומנת שישנה',
+  stillMarkedAsleep: 'עדיין מסומנת כישנה',
+  markAwake: 'לסמן שהתעוררה',
   slept: 'ישנה',
 };
 

@@ -309,6 +309,11 @@ No names, addresses or secrets in this file (the repository is public).
   are marked; "העתקה" copies the list as text. Cleared on disconnect. Found in CI on the way: one live-test request took 41 s,
   all of it in Google opening the spreadsheet. Next: read the owner's log and decide (lazy spreadsheet, a stuck request on
   return, keeping the server warm, or a server move).
+- Toast while the baby is marked asleep **(owner: the wake-up offer must stand out)**: the confirmation line stays plain
+  ("נשמר: פיפי 23:22"); under it, a row of its own, lighter than the toast, says "🌙 עדיין מסומן כישן" with a filled button
+  "☀️ לסמן שהתעורר" (girl: "עדיין מסומנת כישנה" / "לסמן שהתעוררה"). Browser test checks the separate row, the words and the
+  filled button (failed on the old toast). A flaky older test (the 8 s "slow" wording, seen once in 13 parallel runs) got a wider
+  window: the server answers after 12 s instead of 9.5 s.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

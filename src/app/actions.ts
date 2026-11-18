@@ -81,7 +81,8 @@ export function quickLog(kind: Kind): void {
   // A feed or a diaper while the baby is marked asleep: often he really is still asleep (a night feed or change), so nothing
   // changes by itself; the toast says so and offers to mark him awake with one tap.
   if ((type === 'feed' || type === 'diaper') && openSleep(engine.getState().events)) {
-    return toastFor((t) => `${savedText(label, timeOf(t), offline)} · ${W().stillMarkedAsleep}`, { action: { label: W().wokeUp, run: toggleSleep } }, TAP_TOAST_ASLEEP_MS);
+    // (owner) the offer to mark the wake-up is a row of its own, clearly apart from the confirmation
+    return toastFor((t) => savedText(label, timeOf(t), offline), { action: { label: W().markAwake, note: W().stillMarkedAsleep, run: toggleSleep } }, TAP_TOAST_ASLEEP_MS);
   }
   toastFor((t) => savedText(label, timeOf(t), offline));
 }

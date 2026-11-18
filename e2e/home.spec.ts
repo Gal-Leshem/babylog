@@ -271,7 +271,19 @@ test('a feed or diaper while asleep offers "התעורר" in the confirmation; a
   await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
   await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
   await page.getByTestId('btn-feed_left').click();
-  await expect(page.getByTestId('toast-text')).toContainText('עדיין מסומן שישן');
+  // (owner) the offer is set apart: its own row, its own words, a filled button; the confirmation line stays plain
+  await expect(page.getByTestId('toast-text')).toHaveText(/^נשמר: הנקה שמאל \d\d:\d\d$/);
+  await expect(page.getByTestId('toast-asleep-text')).toHaveText('עדיין מסומן כישן');
+  await expect(page.getByTestId('toast-action')).toHaveText('☀️ לסמן שהתעורר');
+  const look = await page.evaluate(() => {
+    const bg = (sel: string) => getComputedStyle(document.querySelector(sel)!).backgroundColor;
+    const row = document.querySelector('[data-testid="toast-asleep"]')!.getBoundingClientRect();
+    const msg = document.querySelector('[data-testid="toast-text"]')!.getBoundingClientRect();
+    return { rowBg: bg('[data-testid="toast-asleep"]'), toastBg: bg('[data-testid="toast"]'), btnBg: bg('[data-testid="toast-action"]'), below: row.top >= msg.bottom };
+  });
+  expect(look.below, 'on a row of its own, under the message').toBe(true);
+  expect(look.rowBg).not.toBe(look.toastBg);
+  expect(look.btnBg).not.toBe('rgba(0, 0, 0, 0)');
   await expect(page.getByTestId('recent-row').first()).toContainText('הנקה שמאל'); // same minute as "נרדם": entered later, so first
   await expect(page.getByTestId('btn-sleep')).toContainText('התעורר'); // still asleep: nothing changed by itself
   await page.getByTestId('toast-action').click();
@@ -334,13 +346,14 @@ for (const height of [852, 700, 560]) {
 
 test('while an entry is being sent there is only a small dot; words appear only when it takes long', async ({ page, request }) => {
   await install(page);
-  await control(request, 'delay=9500');
+  // the answer takes 12 s; the words come at 8 s: a 4 s window to see them (was 1.5 s: flaky under a full parallel run)
+  await control(request, 'delay=12000');
   await page.getByTestId('btn-wet').click();
   const mark = page.getByTestId('banner-sync');
   await expect(mark).toHaveAttribute('data-state', 'sending');
   await expect(page.getByTestId('sync-text')).toHaveCount(0);
-  await expect(page.getByTestId('sync-text')).toHaveText('מסנכרן · 1 ממתינים לסנכרון', { timeout: 9_500 });
-  await expect(mark).toBeHidden({ timeout: 6_000 });
+  await expect(page.getByTestId('sync-text')).toHaveText('מסנכרן · 1 ממתינים לסנכרון', { timeout: 11_000 });
+  await expect(mark).toBeHidden({ timeout: 8_000 });
 });
 
 test('opening the app says "מתעדכן…" until its first check is back', async ({ page, request }) => {
@@ -458,7 +471,7 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await page.getByTestId('btn-sleep').click();
     await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
     await page.getByTestId('btn-feed_left').click();
-    await expect(page.getByTestId('toast-action')).toHaveText('התעורר');
+    await expect(page.getByTestId('toast-action')).toContainText('לסמן שהתעורר');
     await expect(page.getByTestId('toast-earlier')).toBeVisible();
   });
 });
@@ -546,8 +559,8 @@ test.describe('wording for a girl', () => {
     await expect(page.getByTestId('tile-sleep-sub')).toContainText('נרדמה ב-');
     await expect(page.getByTestId('btn-sleep')).toContainText('התעוררה');
     await page.getByTestId('btn-wet').click(); // while asleep
-    await expect(page.getByTestId('toast-text')).toContainText('עדיין מסומנת שישנה');
-    await expect(page.getByTestId('toast-action')).toHaveText('התעוררה');
+    await expect(page.getByTestId('toast-asleep-text')).toHaveText('עדיין מסומנת כישנה');
+    await expect(page.getByTestId('toast-action')).toContainText('לסמן שהתעוררה');
     await page.getByTestId('tab-history').click();
     await expect(page.getByTestId('history-list')).toContainText('ישנה עכשיו');
     await page.getByTestId('tab-home').click();

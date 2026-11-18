@@ -113,7 +113,7 @@ function ToastView() {
           בטל
         </button>
       )}
-      {t.action && (
+      {t.action && !t.action.note && (
         <button
           type="button"
           data-testid="toast-action"
@@ -126,6 +126,24 @@ function ToastView() {
         </button>
       )}
       </div>
+      {t.action?.note && (
+        // (owner) e.g. a feed while the baby is marked asleep: the offer to mark the wake-up, set apart from the confirmation
+        <div class="tact" data-testid="toast-asleep">
+          <span>
+            <span class="emo">🌙</span> <span data-testid="toast-asleep-text">{t.action.note}</span>
+          </span>
+          <button
+            type="button"
+            data-testid="toast-action"
+            onClick={() => {
+              hideToast();
+              t.action?.run();
+            }}
+          >
+            <span class="emo">☀️</span> {t.action.label}
+          </button>
+        </div>
+      )}
       {t.earlier && (
         // two taps to log something that happened a little while ago: the button, then one of these (owner)
         <div class="tback" data-testid="toast-earlier">
