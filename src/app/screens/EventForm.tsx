@@ -22,6 +22,9 @@ const BACK: [string, number][] = [
 /** A sleep has two moments; the form edits one at a time. */
 export type Moment = 'start' | 'end';
 
+/** How long the toast after adding, saving an edit or putting one back stays (owner: 3 s was too short, 6 s too long). */
+const FORM_TOAST_MS = 4_500;
+
 /** Takes back an edit: dropped if it has not been sent yet, otherwise the event is set back to `was`. */
 function takeBack(opId: string, id: string, was: EventCore): void {
   const r = engine.undo(opId, { action: 'update', id, patch: was });
@@ -116,7 +119,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     if (Number.isNaN(parseLocal(start || end))) return setError('תאריך או שעה לא תקינים');
     if (start && end && parseLocal(end) < parseLocal(start)) {
       setMoment('end');
-      return setError(errorText('invalid_event', 'end is before start')); // the wording stays as it was until the owner picks one
+      return setError(errorText('invalid_event', 'end is before start'));
     }
     // (owner) a sleep that overlaps another one is probably a mistake: say so once; a second tap saves anyway
     if (kind === 'sleep' && start && !overlapOk) {
@@ -135,9 +138,9 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
         ? engine.dispatch({ action: 'log', id: uid(), type, detail, start, ...(end ? { end } : {}), user: me, source: 'app', note })
         : engine.dispatch({ action: 'update', id: event!.id, patch: { type, detail, start, end, note } });
     if (!res.ok) return setError(errorText(res.error, res.detail));
-    if (mode === 'add') showToast({ text: `נוסף: ${label} ${timeOf(start || end)}` }, 3000);
+    if (mode === 'add') showToast({ text: `נוסף: ${label} ${timeOf(start || end)}` }, FORM_TOAST_MS);
     // (owner) an edit made by mistake: "בטל" puts back exactly what was there before it
-    else showToast({ text: 'השינויים נשמרו', undo: () => takeBack(res.opId, event!.id, coreOf(event!)) }, 6000);
+    else showToast({ text: 'השינויים נשמרו', undo: () => takeBack(res.opId, event!.id, coreOf(event!)) }, FORM_TOAST_MS);
     onClose();
   };
 
@@ -147,7 +150,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     if (!event || !before) return;
     const res = engine.dispatch({ action: 'update', id: event.id, patch: before });
     if (!res.ok) return setError(errorText(res.error, res.detail));
-    showToast({ text: 'הוחזר למה שהיה לפני העריכה', undo: () => takeBack(res.opId, event.id, coreOf(event)) }, 6000);
+    showToast({ text: 'הוחזר למה שהיה לפני העריכה', undo: () => takeBack(res.opId, event.id, coreOf(event)) }, FORM_TOAST_MS);
     onClose();
   };
   const describe = (c: EventCore): string => {

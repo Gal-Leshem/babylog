@@ -137,7 +137,7 @@ const ERRORS: Record<string, string> = {
 };
 
 const DETAILS: [RegExp, string][] = [
-  [/end is before start/, 'שעת הסיום קודמת להתחלה'],
+  [/end is before start/, 'שעת ההתעוררות לפני שעת ההירדמות'], // (owner) only a sleep has an end
   [/start is in the future/, 'השעה בעתיד'],
   [/end is in the future/, 'שעת הסיום בעתיד'],
   [/not a valid time/, 'השעה לא קיימת'],

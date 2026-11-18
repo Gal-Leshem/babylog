@@ -65,7 +65,7 @@ test('refuses a sleep that ends before it starts and keeps the form open', async
   await pickDate(page, 'end-date', yesterday);
   await page.getByTestId('end-time').fill('21:00');
   await page.getByTestId('save').click();
-  await expect(page.getByTestId('form-error')).toContainText('שעת הסיום קודמת להתחלה');
+  await expect(page.getByTestId('form-error')).toContainText('שעת ההתעוררות לפני שעת ההירדמות');
   await expect(page.getByTestId('event-form')).toBeVisible();
   expect(await allServerRows(request)).toHaveLength(0);
 });
@@ -295,7 +295,7 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
     await page.getByTestId('recent-row').filter({ hasText: 'נרדם' }).click();
     await page.getByTestId('start-time').fill('00:50');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('form-error')).toHaveText('שעת הסיום קודמת להתחלה');
+    await expect(page.getByTestId('form-error')).toHaveText('שעת ההתעוררות לפני שעת ההירדמות');
     await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
     expect((await sleepRow(request)).start.endsWith('00:05')).toBe(true);
   });
@@ -426,5 +426,30 @@ for (const height of [852, 700, 560]) {
     await expect(page.getByTestId('event-form')).toHaveCount(0);
     const e = (await allServerRows(request)).find((x) => x.id === 's1')!;
     expect([e.start, e.end, e.note, e.edited]).toEqual([`${d} 00:05`, `${d} 00:40`, 'ok', '']);
+  });
+}
+
+// Owner: after saving an edit the toast stayed too long (6 s), after adding something too short (3 s): both 4.5 s now.
+for (const kind of ['add', 'edit'] as const) {
+  test(`the toast after ${kind === 'add' ? 'adding' : 'saving an edit'} stays 4.5 seconds`, async ({ page, request }) => {
+    await page.clock.install();
+    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:10` }]);
+    await install(page);
+    if (kind === 'add') {
+      await page.getByTestId('add-late').click();
+      await page.getByTestId('kind-poop').click();
+      await page.getByTestId('back-10').click();
+    } else {
+      await page.getByTestId('recent-row').click();
+      await page.getByTestId('note').fill('x');
+    }
+    // freeze time just before saving, so only the toast's own time is measured
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('toast-text')).toHaveText(kind === 'add' ? /^נוסף: קקי/ : 'השינויים נשמרו');
+    await page.clock.runFor(4_300);
+    await expect(page.getByTestId('toast')).toBeVisible(); // longer than the old 3 s
+    await page.clock.runFor(400);
+    await expect(page.getByTestId('toast')).toHaveCount(0); // shorter than the old 6 s
   });
 }

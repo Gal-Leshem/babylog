@@ -281,6 +281,10 @@ No names, addresses or secrets in this file (the repository is public).
   opening a form or the window clears the toast. Browser test at 852 / 700 / 560: with a toast up, "ביטול" is on screen, not
   covered, closes the form and nothing changes (failed before at 560 and on the toast). The overlap message is as the owner
   wants it.
+- Toast times **(owner)**: after adding something in the form the toast stayed 3 s (too short), after saving an edit 6 s (too
+  long); both, and "הוחזר", now 4.5 s. The toasts after a one-tap log stay 6 s (8 s while the baby is marked asleep), deletes 5 s.
+  Wording **(owner)**: a wake-up before falling asleep says "שעת ההתעוררות לפני שעת ההירדמות". Browser tests with a frozen clock
+  (the toast is there at 4.4 s and gone at 4.8 s; both failed before; a clock that keeps running made one of them pass wrongly).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
