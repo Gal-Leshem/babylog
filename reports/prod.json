@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "3720175",
+  "sha": "36e0e87",
   "ref": "main",
-  "at": "2026-11-18T21:45:12.675Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44402747999",
+  "at": "2026-11-18T21:54:31.806Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44405437295",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -13,10 +13,10 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (production, 45 KB)",
-      "Pushed 2 files at 9:45:08 PM.",
+      "Pushed 2 files at 9:54:27 PM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 53)",
+      "redeployed existing web app deployment (version 54)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "deployment version=53 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
@@ -29,7 +29,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 8s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -43,7 +43,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 8s"
     ]
   }
 }
