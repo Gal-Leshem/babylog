@@ -298,6 +298,8 @@ No names, addresses or secrets in this file (the repository is public).
   עדיין ישן/ישנה, ישן/ישנה עכשיו, "עדיין מסומן שישן" / "עדיין מסומנת שישנה", in the tiles, buttons, recent list, toasts, the form
   and History. Default (older sheets): boy, the wording used before. Tests: server, sheet, browser (all the words, back to
   "בן", the other phone follows; proven to fail when the wording ignores the choice); tag at four sizes with a full list.
+- Toast after a one-tap log **(owner: still a little long)**: 5 s (was 6), 7 s while the baby is marked asleep (was 8), and 5 s
+  more after choosing "היה לפני". Browser test with a frozen clock (failed before).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

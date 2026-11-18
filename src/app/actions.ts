@@ -23,6 +23,10 @@ function savedText(label: string, time: string, pending: boolean): string {
   return `${pending ? 'ממתין לסנכרון' : 'נשמר'}: ${label} ${time}`;
 }
 
+/** How long the toast after a one-tap log stays (owner: 6 s was a little long), and while the baby is marked asleep. */
+export const TAP_TOAST_MS = 5_000;
+const TAP_TOAST_ASLEEP_MS = 7_000;
+
 /** Minutes offered in the toast after a one-tap log for "it happened earlier" (owner). */
 export const EARLIER_MIN = [5, 10, 15, 30] as const;
 
@@ -66,7 +70,7 @@ export function quickLog(kind: Kind): void {
   const label = KIND_LABEL[kind];
   const offline = engine.getState().status === 'offline';
   const vit = engine.getState().settings.medicines.find((m) => m.id === VITAMIN_D_ID);
-  const toastFor = (text: (t: string) => string, extra: Partial<Parameters<typeof showToast>[0]> = {}, ms = 6000) => {
+  const toastFor = (text: (t: string) => string, extra: Partial<Parameters<typeof showToast>[0]> = {}, ms = TAP_TOAST_MS) => {
     const mv = earlierFor(id, 'start', start, text);
     showToast({ text: text(start), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })), ...extra }, ms);
   };
@@ -77,7 +81,7 @@ export function quickLog(kind: Kind): void {
   // A feed or a diaper while the baby is marked asleep: often he really is still asleep (a night feed or change), so nothing
   // changes by itself; the toast says so and offers to mark him awake with one tap.
   if ((type === 'feed' || type === 'diaper') && openSleep(engine.getState().events)) {
-    return toastFor((t) => `${savedText(label, timeOf(t), offline)} · ${W().stillMarkedAsleep}`, { action: { label: W().wokeUp, run: toggleSleep } }, 8000);
+    return toastFor((t) => `${savedText(label, timeOf(t), offline)} · ${W().stillMarkedAsleep}`, { action: { label: W().wokeUp, run: toggleSleep } }, TAP_TOAST_ASLEEP_MS);
   }
   toastFor((t) => savedText(label, timeOf(t), offline));
 }
@@ -92,7 +96,7 @@ export function toggleSleep(): void {
     const res = engine.dispatch({ action: 'asleep', id, user: me(), source: 'app', start });
     if (!res.ok) return fail(res.error, res.detail);
     const mv = earlierFor(id, 'start', start, (t) => savedText(W().fellAsleep, timeOf(t), offline));
-    showToast({ text: savedText(W().fellAsleep, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, 6000);
+    showToast({ text: savedText(W().fellAsleep, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
     return;
   }
   const id = uid();
@@ -105,7 +109,7 @@ export function toggleSleep(): void {
   const slept = res.event?.start ? parseLocal(res.event.start) : NaN;
   const text = (t: string) => savedText(W().wokeUp, timeOf(t), offline) + (Number.isNaN(slept) ? '' : ` · ${W().slept} ${hm((parseLocal(t) - slept) / 60_000)}`);
   const mv = earlierFor(sleepId, 'end', start, text);
-  showToast({ text: text(start), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, inverse)) }, 6000);
+  showToast({ text: text(start), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, inverse)) }, TAP_TOAST_MS);
 }
 
 function undoOp(opId: string, inverse: ApiRequest): void {
@@ -145,7 +149,7 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
   if (toast) {
     const offline = engine.getState().status === 'offline';
     const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
-    showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, 6000);
+    showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
   }
   return { opId: res.opId, id, medicineId: m.id };
 }

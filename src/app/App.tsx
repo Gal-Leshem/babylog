@@ -10,7 +10,7 @@ import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
-import { EARLIER_MIN } from './actions';
+import { EARLIER_MIN, TAP_TOAST_MS } from './actions';
 import { engine, hideToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
@@ -139,7 +139,7 @@ function ToastView() {
               data-testid={`toast-back-${m}`}
               onClick={() => {
                 const text = t.earlier?.pick(m);
-                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m } }, 6000);
+                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m } }, TAP_TOAST_MS);
               }}
             >
               {m}

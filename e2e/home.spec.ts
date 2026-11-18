@@ -577,3 +577,24 @@ test.describe('wording for a girl', () => {
     await expect(page.getByTestId('btn-sleep')).toContainText('נרדמה', { timeout: 20_000 });
   });
 });
+
+// Owner: the toast after a one-tap log stayed a little too long (6 s, 8 s while asleep): one second less.
+test('the toast after a one-tap log stays 5 seconds (7 while the baby is marked asleep)', async ({ page }) => {
+  await page.clock.install();
+  await install(page);
+  const timeToast = async (tap: () => Promise<void>, seconds: number) => {
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
+    await tap();
+    await expect(page.getByTestId('toast')).toBeVisible();
+    await page.clock.runFor(seconds * 1000 - 300);
+    await expect(page.getByTestId('toast')).toBeVisible();
+    await page.clock.runFor(600);
+    await expect(page.getByTestId('toast')).toHaveCount(0);
+    await page.clock.resume();
+  };
+  await timeToast(() => page.getByTestId('btn-wet').click(), 5);
+  await expect(page.getByTestId('btn-sleep')).toBeEnabled();
+  await timeToast(() => page.getByTestId('btn-sleep').click(), 5);
+  await expect(page.getByTestId('btn-poop')).toBeEnabled();
+  await timeToast(() => page.getByTestId('btn-poop').click(), 7); // while asleep
+});
