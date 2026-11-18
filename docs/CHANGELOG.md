@@ -301,6 +301,14 @@ No names, addresses or secrets in this file (the repository is public).
 - Toast after a one-tap log **(owner: still a little long)**: 5 s (was 6), 7 s while the baby is marked asleep (was 8), and 5 s
   more after choosing "היה לפני". Browser test with a frozen clock (failed before).
 - Toast after a one-tap log **(owner: still a little long)**: 4 s (6 s while the baby is marked asleep), also after "היה לפני".
+- Sync log **(owner: catching up after opening is sometimes slow, and only when the other parent entered something)**:
+  Settings > מתקדם > "יומן סנכרון" opens a list of the last 60 exchanges with the server from this phone (kept on the phone,
+  times and sizes only): why (opening, return, check, tap, retry, ...), how long, the server's own part and "network and Google"
+  (the rest), where the server spent its time (opening the sheet, reading, settings, properties, lock), whether new data came
+  and how much, and for an opening: from the moment the app was opened until the data was on screen. Slow entries (over 3 s)
+  are marked; "העתקה" copies the list as text. Cleared on disconnect. Found in CI on the way: one live-test request took 41 s,
+  all of it in Google opening the spreadsheet. Next: read the owner's log and decide (lazy spreadsheet, a stuck request on
+  return, keeping the server warm, or a server move).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

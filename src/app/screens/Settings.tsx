@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
+import { SyncLog } from './SyncLog';
 
 const NIGHT: [NightMode, string][] = [
   ['auto', 'אוטומטי'],
@@ -33,6 +34,7 @@ export function Settings() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [medsOpen, setMedsOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const synced = useRef(JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]));
 
   // Pick up server changes (e.g. the other parent renamed something), but only when the values really
@@ -69,6 +71,14 @@ export function Settings() {
     setDirty(false);
     setMsg('נשמר');
   };
+
+  if (logOpen) {
+    return (
+      <section class="page" data-testid="settings">
+        <SyncLog onBack={() => setLogOpen(false)} />
+      </section>
+    );
+  }
 
   if (medsOpen) {
     return (
@@ -198,6 +208,10 @@ export function Settings() {
               פתיחת הגיליון (במחשב)
             </a>
           )}
+          {/* (owner) hidden behind a button: the times of the last syncs */}
+          <button type="button" data-testid="open-sync-log" onClick={() => setLogOpen(true)}>
+            יומן סנכרון
+          </button>
         </div>,
         <h3 key="h2">חיבור</h3>,
         <div class="actions" key="a2">

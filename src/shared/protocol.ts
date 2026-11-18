@@ -40,7 +40,7 @@ export type ApiRequest =
    * (the revision the phone holds), otherwise the list for the range. Without `rev` the list is always returned.
    * An operation marked `fresh` is leaving the phone for the first time, so the server skips the slow "seen this id?" lookup.
    */
-  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true })[] }
+  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true })[]; debug?: true }
   | { action: 'status' }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };

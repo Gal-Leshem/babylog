@@ -961,3 +961,43 @@ describe('what the screens are told', () => {
   });
 });
 
+
+// Owner: the sync log, to see why catching up after opening is sometimes slow.
+describe('the sync log', () => {
+  it('records each exchange: why, how long, the server part, whether the list came, and the time since opening', async () => {
+    const e = makeEngine();
+    await e.returned(); // the opening
+    server.append(ev({ id: 'x', type: 'feed', detail: 'right', start: '2026-11-14 11:00', user: 'P2' }));
+    server.bump();
+    await e.pollOnce();
+    e.dispatch(feed('a'));
+    await idle();
+    const log = e.syncLog(); // newest first
+    expect(log.map((x) => x.why)).toEqual(['tap', 'poll', 'open']);
+    expect(log.every((x) => x.result === 'ok' && x.totalMs >= 0)).toBe(true);
+    expect(log[2]).toMatchObject({ why: 'open', list: true }); // first contact: no revision yet
+    expect(log[2]!.sinceReturnMs).toBeGreaterThanOrEqual(0);
+    expect(log[1]).toMatchObject({ list: true, events: 1 });
+    expect(log[1]!.kb).toBeGreaterThan(0);
+    expect(log[0]).toMatchObject({ ops: 1, list: false });
+    expect(seen.filter((x) => x.action === 'sync').every((x) => x.debug === true)).toBe(true); // asks the server where its time went
+  });
+
+  it('a return after the first is a "return"; failures are logged too; kept across restarts, cleared on disconnect', async () => {
+    const e = makeEngine();
+    await e.returned();
+    clock += 60_000;
+    offline = true;
+    await e.returned();
+    expect(e.syncLog()[0]).toMatchObject({ why: 'return', result: 'offline' });
+    expect(makeEngine().syncLog()).toHaveLength(2); // the same phone, the app opened again
+    e.reset();
+    expect(makeEngine().syncLog()).toHaveLength(0);
+  });
+
+  it('keeps only the last 60', async () => {
+    const e = makeEngine();
+    for (let i = 0; i < 70; i++) await e.pollOnce();
+    expect(e.syncLog()).toHaveLength(60);
+  });
+});

@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 283 unit (Vitest) and 158 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
+- Tests: about 286 unit (Vitest) and 160 browser (Playwright); CI runs the browser suite twice (normal and against a slow mock server).
   The CI live test (real Google server, real sheet) reports `LIVE TEST PASSED`.
 - `dev` and `main` are identical except while a change is on its way: push to `dev`, wait for green CI, then fast-forward `main`.
 - The MVP is complete and in use by the owner. The owner reviews on real iPhones and sends feedback; every change so far came from that.
@@ -31,6 +31,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   declined (the look stays; do not propose them again unasked). The refactor is complete; further changes: the owner will say. Ask the owner
   what Settings > מתקדם shows as "סנכרון אחרון" on the phones (real numbers from real use).
   After each phase copy the `TIMING` numbers from the server report into the plan's section 7.
+- Open with the owner: send the sync log (Settings > מתקדם > יומן סנכרון > העתקה) after a slow opening; then pick the fix
+  (see CHANGELOG, "Sync log").
 - Open with the owner: confirm on the phone that the status bar now follows a day / night change without closing the app (the
   page reloads by itself; if the bar still keeps the old colour, a reload is not enough on iOS and another approach is needed).
 - Open with the owner: which of "סיכום" / "תובנות" and which insight cards get used (not enough insights shown yet), then reshape F8.

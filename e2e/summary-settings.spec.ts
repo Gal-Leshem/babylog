@@ -1,6 +1,6 @@
 import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { expect, test } from '@playwright/test';
-import { api, install, resetServer, seed, todayLocal, addDaysLocal } from './helpers';
+import { api, install, nowLocal, resetServer, seed, todayLocal, addDaysLocal } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -172,4 +172,25 @@ test('settings: back from the medicine form, and the Settings tab returns to Set
     await page.getByTestId('tab-settings').click();
     await expect(page.getByTestId('sect-family')).toBeVisible();
   }
+});
+
+// Owner: a sync log, hidden behind a button in Settings > advanced.
+test('settings: "יומן סנכרון" opens the log of the last syncs; back returns to Settings', async ({ page, request }) => {
+  await install(page);
+  await api(request, { action: 'log', id: 'other-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
+  await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 15_000 });
+  await page.reload(); // the app is opened again
+  await expect(page.getByTestId('home')).toBeVisible();
+  await page.waitForTimeout(1_000);
+  await page.getByTestId('tab-settings').click();
+  await expect(page.getByTestId('sync-log')).toHaveCount(0); // hidden until asked for
+  await page.getByTestId('open-sync-log').click();
+  const entries = page.getByTestId('log-entry');
+  await expect(entries.first()).toBeVisible();
+  // the newest entry is that opening, with how long it took until the data was on screen
+  await expect(entries.first().locator('.lh')).toContainText(/^\d\d:\d\d:\d\d · היום · פתיחה · \d+\.\d ש׳/);
+  await expect(entries.first()).toContainText(/מהפתיחה עד שהנתונים הוצגו: \d+\.\d ש׳/);
+  await expect(entries.filter({ hasText: 'נתונים חדשים: ' }).first()).toContainText(/שרת \d+\.\d ש׳ · רשת וגוגל \d+\.\d ש׳/);
+  await page.getByTestId('log-back').click();
+  await expect(page.getByTestId('sect-advanced')).toBeVisible();
 });

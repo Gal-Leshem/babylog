@@ -40,6 +40,33 @@ export interface SyncTiming {
   list: boolean;
 }
 
+/** Why a sync ran (for the sync log). */
+export type SyncWhy = 'open' | 'return' | 'poll' | 'tap' | 'full' | 'retry' | 'online' | 'manual';
+
+/**
+ * One line of the sync log (owner: to see why the app is sometimes slow to catch up after opening). Kept on this phone only,
+ * the last LOG_MAX; it holds times and sizes, never data.
+ */
+export interface SyncLogEntry {
+  /** when the request finished (epoch ms) */
+  at: number;
+  why: SyncWhy;
+  result: 'ok' | 'offline' | 'timeout' | 'error' | 'auth';
+  /** the request itself, as the phone saw it */
+  totalMs: number;
+  /** the part spent in the server's own code (null: unknown) */
+  serverMs: number | null;
+  /** where the server spent it (ms per kind of work, "<kind>#" = calls) */
+  t?: Record<string, number>;
+  /** for an open or a return: from that moment until the data was on screen (includes waiting for an earlier request) */
+  sinceReturnMs?: number;
+  /** the answer carried the list (something had changed) */
+  list?: boolean;
+  events?: number;
+  kb?: number;
+  ops?: number;
+}
+
 export interface EngineState {
   configured: boolean;
   /** What to show: the last known server state with pending operations replayed on top. Deleted events excluded. */
@@ -79,6 +106,8 @@ export interface EngineOptions {
 }
 
 const STATE_KEY = 'bl.state.v1';
+const LOG_KEY = 'bl.synclog.v1';
+const LOG_MAX = 60;
 const CONFIG_KEY = 'bl.config.v1';
 const RETRY_MS = [3_000, 6_000, 12_000, 30_000, 60_000];
 /**
@@ -147,6 +176,10 @@ export class Engine {
   /** The server does not know `sync` (an older deployment): talk to it the old way for this session. */
   private legacy = false;
   private timing: SyncTiming | null = null;
+  /** the app was opened or returned to at this moment and its data is not on screen yet (for the sync log) */
+  private returnAt: number | null = null;
+  private opened = false;
+  private log: SyncLogEntry[] = [];
   private checking = false;
   private arrived: { ids: ReadonlySet<string>; at: number } = { ids: new Set(), at: 0 };
   private lastBeaconAt = -Infinity;
@@ -168,6 +201,8 @@ export class Engine {
     this.beacon = opts.beacon ?? sendAway;
     this.random = opts.random ?? Math.random;
     this.stopwatch = opts.stopwatch ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
+    const savedLog = this.storage.get<SyncLogEntry[]>(LOG_KEY);
+    this.log = Array.isArray(savedLog) ? savedLog.slice(-LOG_MAX) : [];
     this.config = this.storage.get<Config>(CONFIG_KEY);
     const saved = this.storage.get<Persisted>(STATE_KEY);
     this.p = {
@@ -279,6 +314,8 @@ export class Engine {
     this.legacy = false;
     this.storage.remove(CONFIG_KEY);
     this.storage.remove(STATE_KEY);
+    this.log = [];
+    this.storage.remove(LOG_KEY);
     this.lastError = null;
     this.status = 'idle';
     this.emit();
@@ -309,7 +346,7 @@ export class Engine {
     this.p.queue.push(op);
     this.persist();
     this.emit();
-    void this.sync('rev');
+    void this.sync('rev', false, 'tap');
     return { ok: true, opId: op.opId, event: r.event, warning: r.warning, queued: true };
   }
 
@@ -345,7 +382,7 @@ export class Engine {
    * `soft` marks an "I am back" event, which is dropped when a sync has only just started.
    * Returns true when new data arrived or operations were delivered.
    */
-  private async sync(mode: 'rev' | 'full', soft = false): Promise<boolean> {
+  private async sync(mode: 'rev' | 'full', soft = false, why: SyncWhy = 'poll'): Promise<boolean> {
     const ep = this.endpoint();
     if (!ep) return false;
     const age = this.now() - this.syncStartedAt;
@@ -366,10 +403,12 @@ export class Engine {
       this.retryTimer = null;
     }
     let got = false;
+    const t0 = this.stopwatch();
     try {
-      got = this.legacy ? await this.legacyExchange(ep, mode, seq) : await this.exchange(ep, mode, seq);
+      got = this.legacy ? await this.legacyExchange(ep, mode, seq) : await this.exchange(ep, mode, seq, why);
     } catch (e) {
       if (!(e instanceof NetworkError)) throw e;
+      this.note({ at: this.now(), why, result: /abort/i.test(e.message) ? 'timeout' : 'offline', totalMs: Math.round(this.stopwatch() - t0), serverMs: null });
       if (seq === this.syncSeq) {
         this.inFlight.clear();
         this.setStatus('offline');
@@ -386,13 +425,13 @@ export class Engine {
         // A remembered request, a second batch, or taps made meanwhile. Not after a failure: the retry timer and the next check take over.
         const next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
         this.again = false;
-        if (next) void this.sync(next);
+        if (next) void this.sync(next, false, this.returnAt !== null ? 'return' : 'poll');
       }
     }
     return got;
   }
 
-  private async exchange(ep: Endpoint, mode: 'rev' | 'full', seq: number): Promise<boolean> {
+  private async exchange(ep: Endpoint, mode: 'rev' | 'full', seq: number, why: SyncWhy = 'poll'): Promise<boolean> {
     const batch = this.p.queue.slice(0, MAX_OPS);
     for (const op of batch) this.inFlight.add(op.opId);
     if (batch.length) this.setStatus('syncing');
@@ -402,7 +441,8 @@ export class Engine {
     // a check with nothing to send gives up sooner: the next one is seconds away
     const ops = this.wireOps(batch);
     // a request that carries entries is marked keepalive: the browser should finish it even if the phone is locked right after
-    const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(ops.length ? { ops } : {}) }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000, batch.length > 0);
+    const meta: { bytes?: number } = {};
+    const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(ops.length ? { ops } : {}), debug: true }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000, batch.length > 0, meta);
     if (seq !== this.syncSeq) return false; // declared dead meanwhile: a newer sync owns the state (anything sent is sent again; ids make that safe)
     if (!res.ok) {
       if (res.error === 'unknown_action') {
@@ -410,6 +450,7 @@ export class Engine {
         this.inFlight.clear();
         return this.legacyExchange(ep, mode, seq);
       }
+      this.note({ at: this.now(), why, result: res.error === 'unauthorized' ? 'auth' : 'error', totalMs: Math.round(this.stopwatch() - t0), serverMs: null });
       if (res.error === 'unauthorized') this.setStatus('auth');
       else {
         this.setStatus('error');
@@ -417,6 +458,21 @@ export class Engine {
       }
       return false;
     }
+    const sinceReturnMs = this.returnAt !== null ? Math.max(0, Math.round(this.now() - this.returnAt)) : undefined;
+    this.returnAt = null;
+    this.note({
+      at: this.now(),
+      why,
+      result: 'ok',
+      totalMs: Math.round(this.stopwatch() - t0),
+      serverMs: typeof res.ms === 'number' ? res.ms : null,
+      ...(res.t ? { t: res.t } : {}),
+      ...(sinceReturnMs !== undefined ? { sinceReturnMs } : {}),
+      list: !res.unchanged,
+      ...(res.events ? { events: res.events.length } : {}),
+      ...(meta.bytes !== undefined ? { kb: Math.round(meta.bytes / 102.4) / 10 } : {}),
+      ops: batch.length,
+    });
     this.timing = { totalMs: Math.round(this.stopwatch() - t0), serverMs: typeof res.ms === 'number' ? res.ms : null, ops: batch.length, list: !res.unchanged };
 
     // our operations, one answer each
@@ -574,7 +630,7 @@ export class Engine {
     this.retryStep++;
     this.retryTimer = this.setTimer(() => {
       this.retryTimer = null;
-      void this.sync('rev');
+      void this.sync('rev', false, 'retry');
     }, ms);
   }
 
@@ -588,7 +644,7 @@ export class Engine {
    * With a range (an older day in History or Summary): fetches those days and merges them into the local copy.
    */
   async refresh(range?: { from: string; to: string }): Promise<boolean> {
-    if (!range) return this.sync('full');
+    if (!range) return this.sync('full', false, 'manual');
     const ep = this.endpoint();
     if (!ep) return false;
     const startEpoch = this.epoch;
@@ -647,7 +703,27 @@ export class Engine {
    * Until this check is back the state says `checking`.
    */
   async returned(): Promise<void> {
-    await this.sync('rev', true);
+    // the first return of this page load is the opening of the app
+    const why: SyncWhy = this.opened ? 'return' : 'open';
+    this.opened = true;
+    if (this.returnAt === null) this.returnAt = this.now();
+    await this.sync('rev', true, why);
+  }
+
+  /** The sync log, newest first (owner: Settings > advanced > "יומן סנכרון"). */
+  syncLog(): SyncLogEntry[] {
+    return [...this.log].reverse();
+  }
+
+  clearSyncLog(): void {
+    this.log = [];
+    this.storage.remove(LOG_KEY);
+  }
+
+  private note(e: SyncLogEntry): void {
+    this.log.push(e);
+    if (this.log.length > LOG_MAX) this.log.splice(0, this.log.length - LOG_MAX);
+    this.storage.set(LOG_KEY, this.log);
   }
 
   /**
@@ -667,7 +743,7 @@ export class Engine {
     };
     const closing = () => void this.leave();
     const online = () => {
-      if (visible()) void this.sync('rev'); // never coalesced: the running request may be the one that just failed
+      if (visible()) void this.sync('rev', false, 'online'); // never coalesced: the running request may be the one that just failed
     };
     let poll: ReturnType<typeof setTimeout>;
     const tick = () => {
@@ -676,7 +752,7 @@ export class Engine {
     };
     poll = setTimeout(tick, POLL_ACTIVE_MS);
     const full = setInterval(() => {
-      if (visible()) void this.sync('full');
+      if (visible()) void this.sync('full', false, 'full');
     }, FULL_REFRESH_MS);
     window.addEventListener('online', online);
     window.addEventListener('focus', resume);

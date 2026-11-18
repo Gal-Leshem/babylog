@@ -71,6 +71,9 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
 - The view (`events`, `allEvents`, `settings` in the engine's state) is rebuilt only when data changed; a check that found nothing
   new or a status change hands the screens the very same objects, so `useMemo` on them works (Insights, the recent list).
   At start the stored copy drops days from before the usual window (History fetches an older day again when it is opened).
+- Sync log (`SyncLogEntry`, `bl.synclog.v1`, last 60, per phone): every exchange with why it ran, its time, the server's part
+  and breakdown (`debug: true` on every sync), size, and for an opening or return the time until the data was on screen. Shown
+  in Settings > מתקדם > "יומן סנכרון" (`SyncLog.tsx`).
 - Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
   work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.

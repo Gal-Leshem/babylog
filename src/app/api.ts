@@ -14,7 +14,7 @@ export type FetchLike = typeof fetch;
  * `keepalive`: the request should be finished by the browser even if the app is closed or the phone locked right after
  * (used for requests that carry the parents' entries).
  */
-export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLike = fetch, timeoutMs = 20_000, keepalive = false): Promise<ApiResponse> {
+export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLike = fetch, timeoutMs = 20_000, keepalive = false, meta?: { bytes?: number }): Promise<ApiResponse> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -28,6 +28,7 @@ export async function callApi(ep: Endpoint, req: ApiRequest, fetchImpl: FetchLik
       ...(keepalive ? { keepalive: true } : {}),
     });
     const text = await res.text();
+    if (meta) meta.bytes = text.length;
     try {
       const parsed = JSON.parse(text) as ApiResponse;
       if (typeof parsed !== 'object' || parsed === null || typeof parsed.ok !== 'boolean') throw new Error('shape');
