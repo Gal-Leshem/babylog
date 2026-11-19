@@ -341,7 +341,9 @@ No names, addresses or secrets in this file (the repository is public).
   runtime (a phone behind costs ONE properties call and no sheet read; the journal stays under the limit with long Hebrew notes;
   far behind gets the list), the engine (4: news, edits / deletes / settings, a tap with news, the fallback), the browser
   (opening after the other parent logged is one `sync` answered with changes, shown as news), and the live test against real
-  Google. Proven to fail with the server answer switched off (8 tests) and with the app not asking (3).
+  Google. Proven to fail with the server answer switched off (8 tests) and with the app not asking (3). Live (real Google test
+  server, one run): catching up after a foreign write took 1258 ms with the list (server 558) and 590 ms with changes (server
+  49), the same as a check with nothing new.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

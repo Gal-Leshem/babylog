@@ -251,3 +251,5 @@ Seen once: right after a deploy a few answers came back without `ms` (probably s
 | After the settings copy | `sync` with the list | 900-1300 | 340-460 | events read 80-100; no settings read |
 | After the settings copy | `sync`, nothing new | 570-860 | 26-32 | one properties call |
 | After the settings copy | `sync`, one tap | 2300-4200 | 1500-3500 | find 700-780, write 170-1500 (very variable) |
+| After "changes since your version" (API 0.5.0) | `sync` after a foreign write, list | 1258 | 558 | events read 130 |
+| After "changes since your version" (API 0.5.0) | `sync` after a foreign write, changes | 590 | 49 | one properties call, no sheet: the same as "nothing new" (606 / 24) |
