@@ -4,7 +4,7 @@ import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { KIND_LABEL, errorText, fromKind, hm, kindOf, nowLocal, timeOf, type Kind } from './labels';
-import { engine, hideToast, showToast } from './state';
+import { engine, showToast } from './state';
 import { babyWords } from './words';
 
 const W = () => babyWords(engine.getState().settings.babySex);
@@ -23,9 +23,12 @@ function savedText(label: string, time: string, pending: boolean): string {
   return `${pending ? 'ממתין לסנכרון' : 'נשמר'}: ${label} ${time}`;
 }
 
-/** How long the toast after a one-tap log stays (owner: 6 s and then 5 s were a little long), and while the baby is marked asleep. */
-export const TAP_TOAST_MS = 4_000;
-const TAP_TOAST_ASLEEP_MS = 6_000;
+/**
+ * How long the toast after a one-tap log stays when none of its buttons is used (owner: 6, 5 and then 4 s were still long), and
+ * while the baby is marked asleep (one more row to read). A used button closes it sooner (TOAST_DONE_MS).
+ */
+export const TAP_TOAST_MS = 3_000;
+const TAP_TOAST_ASLEEP_MS = 5_000;
 
 /** Minutes offered in the toast after a one-tap log for "it happened earlier" (owner). */
 export const EARLIER_MIN = [5, 10, 15, 30] as const;
@@ -113,9 +116,9 @@ export function toggleSleep(): void {
   showToast({ text: text(start), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, inverse)) }, TAP_TOAST_MS);
 }
 
+/** The toast's undo (the toast itself shows "בוטל" for a moment and goes; a failure replaces it with its own). */
 function undoOp(opId: string, inverse: ApiRequest): void {
   const r = engine.undo(opId, inverse);
-  hideToast();
   if (!r.ok) fail(r.error, r.detail);
 }
 

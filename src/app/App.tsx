@@ -10,8 +10,8 @@ import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
-import { EARLIER_MIN, TAP_TOAST_MS } from './actions';
-import { engine, hideToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
+import { EARLIER_MIN } from './actions';
+import { TOAST_DONE_MS, engine, hideToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
 const TABS: [Tab, string, string][] = [
@@ -105,9 +105,13 @@ function ToastView() {
         <button
           type="button"
           data-testid="toast-undo"
+          class={t.done === 'undo' ? 'on' : ''}
+          aria-pressed={t.done === 'undo'}
+          disabled={t.done === 'undo'}
           onClick={() => {
             t.undo?.();
-            hideToast();
+            // (owner) a moment with "בטל" lit, then gone; a failure has already put its own toast in place (another id: no change)
+            updateToast(t.id, { text: 'בוטל', done: 'undo' }, TOAST_DONE_MS);
           }}
         >
           בטל
@@ -117,6 +121,7 @@ function ToastView() {
         <button
           type="button"
           data-testid="toast-action"
+          disabled={t.done === 'undo'}
           onClick={() => {
             hideToast();
             t.action?.run();
@@ -135,6 +140,7 @@ function ToastView() {
           <button
             type="button"
             data-testid="toast-action"
+            disabled={t.done === 'undo'}
             onClick={() => {
               hideToast();
               t.action?.run();
@@ -154,10 +160,12 @@ function ToastView() {
               key={m}
               class={t.earlier?.chosen === m ? 'on' : ''}
               aria-pressed={t.earlier?.chosen === m}
+              disabled={t.done === 'undo'}
               data-testid={`toast-back-${m}`}
               onClick={() => {
                 const text = t.earlier?.pick(m);
-                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m } }, TAP_TOAST_MS);
+                // (owner) the new time with the minute lit for a moment, then the toast goes
+                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m }, done: 'earlier' }, TOAST_DONE_MS);
               }}
             >
               {m}

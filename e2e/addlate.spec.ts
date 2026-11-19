@@ -365,18 +365,21 @@ test.describe('taking back an edit', () => {
 });
 
 // Owner-approved: a sleep that overlaps another one is probably a mistake; say so, and a second tap saves anyway.
+// (yesterday: just after midnight today's 00:30 and 01:00 are still in the future, which the form refuses)
 test('a sleep that overlaps another asks first; a second tap saves; changing the time asks again', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = addDaysLocal(todayLocal(), -1);
   await seed(request, [{ id: 'a', type: 'sleep', start: `${d} 00:10`, end: `${d} 00:50` }]);
   await install(page);
   await page.getByTestId('add-late').click();
   await page.getByTestId('kind-sleep').click();
+  await pickDate(page, 'start-date', d);
   await page.getByTestId('start-time').fill('00:30');
   await page.getByTestId('moment-end').click();
   await page.getByTestId('still-asleep').uncheck();
+  await pickDate(page, 'end-date', d);
   await page.getByTestId('end-time').fill('01:00');
   await page.getByTestId('save').click();
-  await expect(page.getByTestId('form-error')).toHaveText('חופף לשינה אחרת (נרדם 00:10 · התעורר 00:50). לשמור בכל זאת?');
+  await expect(page.getByTestId('form-error')).toHaveText('חופף לשינה אחרת (נרדם 00:10 · אתמול · התעורר 00:50 · אתמול). לשמור בכל זאת?');
   await expect(page.getByTestId('save')).toHaveText('לשמור בכל זאת');
   expect(await allServerRows(request)).toHaveLength(1);
   await page.getByTestId('end-time').fill('01:05'); // a change asks again
@@ -389,7 +392,7 @@ test('a sleep that overlaps another asks first; a second tap saves; changing the
 });
 
 test('editing a sleep does not count it as overlapping itself', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = addDaysLocal(todayLocal(), -1); // (not today: just after midnight 00:55 is still in the future)
   await seed(request, [{ id: 'a', type: 'sleep', start: `${d} 00:10`, end: `${d} 00:50` }]);
   await install(page);
   await page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).click();

@@ -5,7 +5,7 @@ import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared
 import { deleteEvent } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
-import { engine, hideToast, showToast, useEngine } from '../state';
+import { engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 import { babyWords } from '../words';
 
@@ -29,7 +29,6 @@ const FORM_TOAST_MS = 4_500;
 /** Takes back an edit: dropped if it has not been sent yet, otherwise the event is set back to `was`. */
 function takeBack(opId: string, id: string, was: EventCore): void {
   const r = engine.undo(opId, { action: 'update', id, patch: was });
-  hideToast();
   if (!r.ok) showToast({ text: `לא נשמר: ${errorText(r.error, r.detail)}`, tone: 'error' }, 6000);
 }
 

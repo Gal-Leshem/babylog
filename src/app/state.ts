@@ -55,7 +55,16 @@ export interface Toast {
    * returns the toast's new text (null when it could not be moved); `chosen` is the button in effect.
    */
   earlier?: { pick: (mins: number) => string | null; chosen?: number };
+  /**
+   * (owner) A button in the toast was used: the toast stays for TOAST_DONE_MS with that button lit, so the parent sees the tap
+   * worked, and then goes. 'undo': taken back (nothing else can be used any more); 'earlier': moved (another minute can still be
+   * picked in that moment, counted from the logged time as before).
+   */
+  done?: 'undo' | 'earlier';
 }
+
+/** How long the toast stays after one of its buttons was used (owner: a moment of feedback, then gone). */
+export const TOAST_DONE_MS = 1_000;
 
 let toast: Toast | null = null;
 let toastSeq = 0;

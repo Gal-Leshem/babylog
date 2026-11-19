@@ -95,16 +95,13 @@ test('undo within the toast takes the entry back', async ({ page, request }) => 
   await page.getByTestId('btn-wet').click();
   await expect(page.getByTestId('toast')).toBeVisible();
   await page.getByTestId('toast-undo').click();
-  await expect(page.getByTestId('toast')).toBeHidden();
+  // (owner) a moment of feedback: "בוטל" with the button lit, nothing else usable; then the toast goes by itself
+  await expect(page.getByTestId('toast-text')).toHaveText('בוטל');
+  await expect(page.getByTestId('toast-undo')).toHaveClass(/\bon\b/);
+  await expect(page.getByTestId('toast-back-5')).toBeDisabled();
+  await expect(page.getByTestId('toast')).toBeHidden({ timeout: 2_000 });
   await expect(page.getByTestId('recent')).toContainText('עדיין לא תועד כלום');
   await expect.poll(async () => (await serverEvents(request)).length).toBe(0);
-});
-
-test('the toast disappears by itself after five seconds', async ({ page }) => {
-  await install(page);
-  await page.getByTestId('btn-both').click();
-  await expect(page.getByTestId('toast')).toBeVisible();
-  await expect(page.getByTestId('toast')).toBeHidden({ timeout: 7000 });
 });
 
 test('the sleep button switches between asleep and awake with one sleep row', async ({ page, request }) => {
@@ -412,9 +409,9 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await page.getByTestId('toast-back-15').click();
     await expect(page.getByTestId('toast-back-15')).toHaveClass(/\bon\b/);
     await expect(page.getByTestId('toast-text')).toContainText(`נשמר: פיפי ${minus(logged, 15).slice(11)}`);
-    await expect.poll(async () => (await serverEvents(request))[0]!.start).toBe(minus(logged, 15));
-    await page.getByTestId('toast-back-10').click(); // changed my mind: 10, not 25
+    await page.getByTestId('toast-back-10').click(); // changed my mind within the moment the toast still shows: 10, not 25
     await expect(page.getByTestId('toast-back-15')).not.toHaveClass(/\bon\b/);
+    await expect(page.getByTestId('toast-back-10')).toHaveClass(/\bon\b/);
     await expect.poll(async () => (await serverEvents(request))[0]!.start).toBe(minus(logged, 10));
     expect(await serverEvents(request)).toHaveLength(1);
     await expect(page.getByTestId('recent-row').first()).toContainText(minus(logged, 10).slice(11));
@@ -454,13 +451,44 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await expect(page.getByTestId('toast-text')).toContainText(/התעורר \d\d:\d\d · ישן 0:3\d/);
     await page.getByTestId('toast-back-5').click();
     await expect(page.getByTestId('toast-text')).toContainText(/ישן 0:2\d/); // five minutes shorter
-    await expect.poll(async () => (await sleep()).end).not.toBe('');
-    const s = await sleep();
-    expect((parseLocal(s.end) - parseLocal(s.start)) / 60_000).toBeLessThan(30);
-    await page.getByTestId('toast-undo').click(); // undo after the move: the sleep is open again
+    await page.getByTestId('toast-undo').click(); // undo after the move, in the moment the toast still shows: the sleep is open again
     await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
     await expect.poll(async () => (await sleep()).end).toBe('');
     await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+  });
+
+  // Owner: a used button closes the toast, after a moment in which the parent sees that the tap worked.
+  test('a minute picked in the toast stays lit for a moment, then the toast goes (long before it would by itself)', async ({ page }) => {
+    await page.clock.install();
+    await install(page);
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
+    await page.getByTestId('btn-wet').click();
+    await page.clock.runFor(1_000); // read it for a second, then pick
+    await page.getByTestId('toast-back-5').click();
+    await page.clock.runFor(700);
+    await expect(page.getByTestId('toast-back-5')).toHaveClass(/\bon\b/); // the feedback: still there, the minute lit
+    await page.clock.runFor(500);
+    await expect(page.getByTestId('toast')).toHaveCount(0); // gone about a second after the tap
+    await page.clock.resume();
+  });
+
+  test('"לסמן שהתעורר" in the toast turns it into the wake-up toast, with the same buttons and the same closing', async ({ page, request }) => {
+    await install(page);
+    await page.getByTestId('btn-sleep').click();
+    await page.getByTestId('toast-back-30').click(); // fell asleep half an hour ago (so waking 5 minutes earlier still comes after it)
+    await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
+    await page.getByTestId('btn-feed_left').click();
+    await page.getByTestId('toast-action').click();
+    await expect(page.getByTestId('toast-text')).toHaveText(/^נשמר: התעורר \d\d:\d\d · ישן 0:(29|30)$/);
+    await expect(page.getByTestId('toast-asleep')).toHaveCount(0);
+    await expect(page.getByTestId('toast-undo')).toBeEnabled();
+    const woke = (await page.getByTestId('toast-text').textContent())!.match(/(\d\d:\d\d)/)![1]!;
+    await page.getByTestId('toast-back-5').click();
+    await expect(page.getByTestId('toast-back-5')).toHaveClass(/\bon\b/);
+    await expect(page.getByTestId('toast')).toBeHidden({ timeout: 2_500 });
+    const sleep = async () => (await serverEvents(request)).find((e) => e.type === 'sleep');
+    await expect.poll(async () => (await sleep())?.end.slice(11) ?? '').toBe(formatLocal(parseLocal(`2000-01-02 ${woke}`) - 5 * 60_000).slice(11));
+    await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
   });
 
   test('the medicine button and a feed while asleep get the same buttons', async ({ page }) => {
@@ -591,8 +619,8 @@ test.describe('wording for a girl', () => {
   });
 });
 
-// Owner: the toast after a one-tap log stayed a little too long (6 s, 8 s while asleep): two seconds less, in two steps.
-test('the toast after a one-tap log stays 4 seconds (6 while the baby is marked asleep)', async ({ page }) => {
+// Owner: the toast after a one-tap log stayed too long (6 s, 8 s while asleep): three seconds less, in three steps.
+test('the toast after a one-tap log stays 3 seconds (5 while the baby is marked asleep)', async ({ page }) => {
   await page.clock.install();
   await install(page);
   const timeToast = async (tap: () => Promise<void>, seconds: number) => {
@@ -605,9 +633,9 @@ test('the toast after a one-tap log stays 4 seconds (6 while the baby is marked 
     await expect(page.getByTestId('toast')).toHaveCount(0);
     await page.clock.resume();
   };
-  await timeToast(() => page.getByTestId('btn-wet').click(), 4);
+  await timeToast(() => page.getByTestId('btn-wet').click(), 3);
   await expect(page.getByTestId('btn-sleep')).toBeEnabled();
-  await timeToast(() => page.getByTestId('btn-sleep').click(), 4);
+  await timeToast(() => page.getByTestId('btn-sleep').click(), 3);
   await expect(page.getByTestId('btn-poop')).toBeEnabled();
-  await timeToast(() => page.getByTestId('btn-poop').click(), 6); // while asleep
+  await timeToast(() => page.getByTestId('btn-poop').click(), 5); // while asleep
 });

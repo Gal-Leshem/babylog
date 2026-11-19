@@ -318,6 +318,24 @@ No names, addresses or secrets in this file (the repository is public).
   repository; `PROGRESS.md` has the open topic (slow catching up after opening, the sync log, the proposed fixes) and a new resume
   prompt for the next session.
 
+## Fourth working session
+- The owner's sync log, read (three openings with news, one phone, two days): an opening that brings the other parent's entry
+  takes 2.5 to 4.0 s until the data is on screen; one with nothing new 1.7 to 2.2 s; a check while open 1.0 to 1.5 s. No request
+  waited for an earlier one, none timed out, no 41 s stall. Server part of an opening with news: 0.7 to 1.2 s, of which the row
+  read is only 0.1 s; the rest is sheet calls that are not timed (finding the tab, the row count, the sheet's address: the sheet
+  really opens on the first of them). The answer is the whole 14 days (about 175 events, 40 KB) every time, and its trip is
+  0.5 to 1.5 s longer than a "nothing changed" answer. Moving an entry ("היה לפני") searches the whole sheet (0.4 to 2.6 s on the
+  server). Recommendation to the owner (pending): "changes since your version" (no sheet and a tiny answer when the phone is a
+  little behind); details in `PROGRESS.md`.
+- Toast **(owner)**: a used button closes it. After "היה לפני" a minute (or "בטל") the toast stays one second with that button lit
+  (after "בטל" the text says "בוטל" and the other buttons are dimmed), then goes; another minute can still be picked in that
+  second. "☀️ לסמן שהתעורר" turns the toast into the wake-up toast, with the same buttons and the same closing. Without a tap the
+  toast stays 3 s (5 s while the baby is marked asleep; was 4 and 6). Browser tests with a frozen clock for the second of
+  feedback, the "בוטל" state, the wake-up toast and the new times; all five failed on the old code.
+- Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
+  then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
+  midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

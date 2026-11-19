@@ -140,7 +140,11 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
 - **Toast after a one-tap log** (owner): besides "בטל" (and "התעורר" while asleep), one quiet row "היה לפני 5 · 10 · 15 · 30
   דק׳" moves the entry just logged to that many minutes before the logged time (`earlierFor` in `actions.ts`; counted from the
   logged time, so another choice replaces the first). Two taps in all. "בטל" first takes the moves back, then the entry. The
-  wake-up toast also says how long the sleep was. Toasts with these buttons stay 4 s (6 s while asleep; `TAP_TOAST_MS`); the toast after adding, saving an edit or putting one back stays 4.5 s (owner).
+  wake-up toast also says how long the sleep was. Toasts with these buttons stay 3 s (5 s while asleep; `TAP_TOAST_MS`); the toast after adding, saving an edit or putting one back stays 4.5 s (owner).
+  A used button closes the toast (owner): it stays `TOAST_DONE_MS` (1 s) with that button lit so the tap is seen to work, then goes
+  (`done` in the toast state). A minute: the new time is shown and another minute can still be picked in that second. "בטל": the
+  text becomes "בוטל" and nothing else can be used. "☀️ לסמן שהתעורר" replaces the toast with the wake-up toast (same buttons,
+  same closing). A failed undo puts its own error toast in place instead.
 - **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
   protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
 - **Sheets** (add / edit form, medicines window): the row of buttons is pinned to the bottom of the sheet (`.sheet > .actions`,

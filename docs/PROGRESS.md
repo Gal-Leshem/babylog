@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 286 unit (Vitest) and 160 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 286 unit (Vitest) and 161 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -22,28 +22,35 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   day/night change (reload), sleep editing by moment, quick "לפני X" buttons, "היה לפני" in the toast, undo of an edit (`prev`
   column), sleep tile / forgotten wake-up / overlap warning, the baby's sex with matching wording, "הנקה הבאה" tag, toast timings,
   the wake-up offer as its own row in the toast, and a sync log.
+- Fourth session: the owner's sync log read (findings and the recommendation below); the toast closes one second after a
+  used button (with that button lit), the wake-up offer turns into the wake-up toast, toast 3 s (5 s while asleep).
 
-## Where we are: slow catching up after opening (the open topic)
-- The owner sees that the app is sometimes slow to catch up when it is opened, and ONLY when the other parent entered something
-  (so it is the path that reads the sheet, not the tiny "nothing changed" check).
-- To find out why, the owner collects the sync log on the phone: Settings > מתקדם > "יומן סנכרון" > "העתקה", pasted into the
-  chat. Each line: why (פתיחה / חזרה לאפליקציה / בדיקה / רישום ...), total time, "שרת" (our code) vs "רשת וגוגל" (the rest:
-  Google's routing and start-up plus the phone's network), the server breakdown (פתיחת גיליון, קריאה, הגדרות, מאפיינים, נעילה),
-  whether new data came and its size, and for an opening the time until the data was on screen. Slow lines (> 3 s) are marked.
-- Known from CI: Google usually answers a request in 0.6 to 1.4 s; once in about 24 live tests a request took 41 s, all of it in
-  Google opening the spreadsheet. A list answer costs about 0.9 to 1.7 s in total.
-- Two proposed fixes, both inside Google (decide after reading the log; build nothing before the owner chooses):
-  1. **Changes since your version** (recommended if the log shows sheet work is the slow part): the server keeps the last few
-     dozen changes in script properties (the same fast store as the revision); a phone that is a little behind gets only what
-     changed since its revision, with no sheet read at all; the sheet stays the store; a phone too far behind falls back to the
-     list as today. Watch the limits: 9 KB per property value, 500 KB in all.
-  2. **CacheService**: the last 14 days of events as JSON in Google's in-memory cache, rewritten on every write, read instead of the
-     sheet; expires after up to 6 hours (then the sheet). Value limit 100 KB (split if needed).
-  Other candidates already discussed: keep the server warm (a time-driven trigger every few minutes; helps only if the log shows
-  "רשת וגוגל" / start-up is the slow part), a lazy spreadsheet (do not open it for a "nothing changed" check), abandon a request
-  that was frozen while the phone was locked, and, last, moving off Apps Script (decided later by the owner).
-  A Drive file as a "database" was considered and rejected (the app cannot read Drive without a sign-in; reading a Drive file in
-  Apps Script is as slow as the sheet; two parents writing one file risk overwriting each other).
+## Where we are: slow catching up after opening (the open topic; the owner decides next)
+- The owner sees that the app is sometimes slow to catch up when it is opened, and ONLY when the other parent entered something.
+- The sync log (Settings > מתקדם > "יומן סנכרון" > "העתקה"; last 60 exchanges per phone, so copy soon after a slow opening:
+  checks every 5 s fill it in a few minutes) was read in the fourth session. Findings (three openings with news, two days):
+  - Opening with news: 2.5 to 4.0 s to data on screen. Opening with nothing new: 1.7 to 2.2 s. A check while open: 1.0 to 1.5 s
+    (that is Google plus the phone's network: our code takes about 0 ms). The first request after the phone was idle is 0.5 to
+    1.5 s slower even when nothing changed (phone network waking, new connections): no server change can remove that.
+  - The extra cost of news: the server 0.7 to 1.2 s (only 0.1 s of it is reading rows; the rest is untimed sheet calls in the
+    list path: `getSheetByName`, `getLastRow` twice, `getUrl`; the spreadsheet really loads on the first of them, `open` itself
+    shows 0) plus a 40 KB answer (the whole 14 days, ~175 events) that travels 0.5 to 1.5 s longer than a tiny one.
+  - Not seen: waiting for an earlier frozen request, timeouts, the rare 41 s stall (CI saw it once in Google opening the sheet).
+  - Side findings: a "היה לפני" move is an `update` that searches the whole sheet (find 0.4 to 2.6 s; 6.7 s for three ops);
+    right after a return that fetched the list a second full list came 3 s later (probably the 5-minute full refresh falling
+    due); taps that waited behind a running sync are labelled "בדיקה" in the log instead of "רישום".
+- Recommendation given to the owner (build nothing before they choose):
+  1. **Changes since your version** (main fix): the server keeps the last few dozen changed events in script properties (the
+     fast store already read on every request; limits 9 KB per value, 500 KB in all); a phone a little behind gets only those
+     (a few hundred bytes, no sheet at all); too far behind, unknown revision or anything odd: the full list as today. Expected:
+     an opening with news costs about what an opening without news costs (about 1.5 to 2.2 s instead of 2.5 to 4.0). Size M
+     (server + engine + tests + live test), risk medium (guarded by the fallback to the full list).
+  2. Small extras: look in the tail rows before searching the sheet for an `update` (the "היה לפני" moves); do not fetch the list
+     twice right after an opening; label queued taps correctly in the log.
+  3. Not recommended now: CacheService (still sends the 40 KB and only saves the 0.1 s read), keeping the server warm (the
+     log shows no Google cold start pattern that the phone's own wake-up does not explain), a second request when the first is
+     slow (nothing stalled in the log; keep for later), a read copy outside Google or leaving Apps Script (would remove the
+     remaining 1 to 1.5 s floor, but a third party holds the data; only if the owner finds the floor itself too slow).
 - Other open items with the owner: confirm the status bar follows a day/night change without closing the app (the page reloads
   by itself); which insight cards get used (reshape F8 later).
 
@@ -91,6 +98,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   server job failed: pages wait only for the tests; production waits for tests AND the live test).
 - Never push to `dev` while a `main` run is still going (or the other way round) unless you must: the server jobs now queue
   (`concurrency: test-server`), but only one can wait; a third push cancels the waiting one.
+- About two dozen browser tests seed "today 00:xx" times, which are in the future during the first hour after midnight (Israel
+  time): they fail then, locally and in CI. Run the suite and push outside 00:00-01:10 (or make those tests use yesterday).
 - Run one Playwright run at a time: inside a run the workers have their own mock servers (ports 8787-8790), but two runs would
   share them and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.

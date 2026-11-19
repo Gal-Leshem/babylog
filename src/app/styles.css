@@ -257,6 +257,9 @@ button.tile { font: inherit; color: inherit; width: 100%; cursor: pointer; }
 .toast .tback { display: flex; align-items: center; gap: 6px; font-size: 13px; opacity: 0.9; }
 .toast .tback button { min-width: 40px; height: 34px; padding: 0 8px; border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; border-color: color-mix(in srgb, currentColor 45%, transparent); }
 .toast .tback button.on { background: var(--toast-fg); color: var(--toast-bg); border-color: var(--toast-fg); }
+/* (owner) the button just used stays lit for a moment before the toast goes; after an undo the others cannot be used */
+.toast .trow button.on { background: var(--toast-fg); color: var(--toast-bg); border-color: var(--toast-fg); }
+.toast button:disabled:not(.on) { opacity: 0.4; }
 .toast.warn { outline: 2px solid var(--warn); }
 .toast.error { outline: 2px solid var(--danger); }
 .toast button { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 10px; padding: 6px 14px; font-weight: 700; }
