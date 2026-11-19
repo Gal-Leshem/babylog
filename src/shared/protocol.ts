@@ -1,7 +1,7 @@
 import type { MedicineChange } from './medicines';
 import type { BabyEvent, EventType, Settings, Source } from './types';
 
-export const API_VERSION = '0.4.0';
+export const API_VERSION = '0.5.0';
 
 export interface EventPatch {
   type?: EventType;
@@ -40,7 +40,11 @@ export type ApiRequest =
    * (the revision the phone holds), otherwise the list for the range. Without `rev` the list is always returned.
    * An operation marked `fresh` is leaving the phone for the first time, so the server skips the slow "seen this id?" lookup.
    */
-  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true })[]; debug?: true }
+  /**
+   * `delta` (API 0.5.0): the phone can take `changes` instead of the list: when the server's journal of recent changes reaches
+   * back to `rev`, the answer carries only the events changed since then (in their new state, deleted ones too, marked).
+   */
+  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true })[]; debug?: true; delta?: true }
   | { action: 'status' }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
@@ -84,6 +88,11 @@ export interface ApiOk {
   results?: ApiResponse[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
   unchanged?: true;
+  /**
+   * `sync` with `delta`: instead of the list, the events changed since the phone's revision (deleted ones marked `deleted`),
+   * and `settings` only when they changed. Anything else the phone holds stays as it is.
+   */
+  changes?: BabyEvent[];
   /** Time the server spent on the request, in milliseconds (the real server only). */
   ms?: number;
   /** With `debug: true` in the request: where the server spent its time (milliseconds and calls per kind of work). */

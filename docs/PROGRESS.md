@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 286 unit (Vitest) and 161 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 306 unit (Vitest) and 161 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -22,10 +22,11 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   day/night change (reload), sleep editing by moment, quick "לפני X" buttons, "היה לפני" in the toast, undo of an edit (`prev`
   column), sleep tile / forgotten wake-up / overlap warning, the baby's sex with matching wording, "הנקה הבאה" tag, toast timings,
   the wake-up offer as its own row in the toast, and a sync log.
-- Fourth session: the owner's sync log read (findings and the recommendation below); the toast closes one second after a
-  used button (with that button lit), the wake-up offer turns into the wake-up toast, toast 3 s (5 s while asleep).
+- Fourth session: the owner's sync log read (findings and the recommendation below); "changes since your version" built (API
+  0.5.0); the toast closes one second after a used button (with that button lit), the wake-up offer turns into the wake-up
+  toast, toast 3 s (5 s while asleep).
 
-## Where we are: slow catching up after opening (the open topic; the owner decides next)
+## Where we are: slow catching up after opening (fix 1 built; the owner checks the log on the phone)
 - The owner sees that the app is sometimes slow to catch up when it is opened, and ONLY when the other parent entered something.
 - The sync log (Settings > מתקדם > "יומן סנכרון" > "העתקה"; last 60 exchanges per phone, so copy soon after a slow opening:
   checks every 5 s fill it in a few minutes) was read in the fourth session. Findings (three openings with news, two days):
@@ -39,8 +40,11 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   - Side findings: a "היה לפני" move is an `update` that searches the whole sheet (find 0.4 to 2.6 s; 6.7 s for three ops);
     right after a return that fetched the list a second full list came 3 s later (probably the 5-minute full refresh falling
     due); taps that waited behind a running sync are labelled "בדיקה" in the log instead of "רישום".
-- Recommendation given to the owner (build nothing before they choose):
-  1. **Changes since your version** (main fix): the server keeps the last few dozen changed events in script properties (the
+- The owner chose fix 1; it is built (API 0.5.0, see `ARCHITECTURE.md` "Changes since your version"). Next: the owner opens the
+  app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
+  0 and a total close to an opening with nothing new. Items 2 (small extras) were offered and not yet chosen.
+- Recommendation given to the owner (for reference):
+  1. **Changes since your version** (main fix, built): the server keeps the last few dozen changed events in script properties (the
      fast store already read on every request; limits 9 KB per value, 500 KB in all); a phone a little behind gets only those
      (a few hundred bytes, no sheet at all); too far behind, unknown revision or anything odd: the full list as today. Expected:
      an opening with news costs about what an opening without news costs (about 1.5 to 2.2 s instead of 2.5 to 4.0). Size M

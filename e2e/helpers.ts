@@ -92,7 +92,7 @@ export async function resetCalls(request: APIRequestContext): Promise<void> {
 
 /**
  * What the mock server received since the last reset, in order: the action; a `sync` also says how many operations it carried
- * and whether the answer carried the list ("sync", "sync:2", "sync+list", "sync:1+list").
+ * and whether the answer carried the list or only the changes ("sync", "sync:2", "sync+list", "sync:1+list", "sync+changes").
  */
 export async function actionsSeen(request: APIRequestContext): Promise<string[]> {
   return (await (await request.get(`${MOCK}/__calls`)).json()) as string[];

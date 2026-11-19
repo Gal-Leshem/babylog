@@ -699,6 +699,72 @@ describe('polling for changes made on the other phone', () => {
 });
 
 // Phase 2 / 3 of docs/REFACTOR_PLAN.md: the server's duplicate lookup is slow, and a tap followed by locking the phone must still arrive.
+// Owner, after reading the sync log: catching up after the other parent wrote brings only what changed (API 0.5.0).
+describe('changes since our revision', () => {
+  const other = (req: Record<string, unknown>) => handle({ key: KEY, ...req }, deps());
+  const theirs = (id: string, extra: Record<string, unknown> = {}) =>
+    other({ action: 'log', id, type: 'diaper', detail: 'wet', start: '2026-11-14 11:00', user: 'P2', source: 'app', ...extra });
+
+  it("the other parent's entry arrives as a change (not the whole list), shows, and is marked as news", async () => {
+    const e = makeEngine();
+    e.dispatch(feed('mine'));
+    await idle();
+    theirs('t1');
+    seen = [];
+    expect(await e.pollOnce()).toBe(true);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ action: 'sync', delta: true });
+    expect(e.getState().events.map((x) => x.id).sort()).toEqual(['mine', 't1']);
+    expect([...e.getState().arrived.ids]).toEqual(['t1']);
+    expect(e.syncLog()[0]).toMatchObject({ list: true, delta: true, events: 1 });
+    expect(await e.pollOnce()).toBe(false); // and then nothing new
+  });
+
+  it('edits, deletes and settings made on the other phone arrive the same way', async () => {
+    const e = makeEngine();
+    e.dispatch(feed('a'));
+    await idle();
+    theirs('t1');
+    theirs('t2');
+    await e.pollOnce();
+    other({ action: 'update', id: 'a', patch: { detail: 'right' } });
+    other({ action: 'delete', id: 't1' });
+    other({ action: 'settings', set: { babyName: 'New' } });
+    await e.pollOnce();
+    expect(e.syncLog()[0]).toMatchObject({ delta: true, events: 2 });
+    const st = e.getState();
+    expect(st.events.map((x) => [x.id, x.detail]).sort()).toEqual([['a', 'right'], ['t2', 'wet']]);
+    expect(st.settings.babyName).toBe('New');
+    // and a restart keeps exactly that
+    const again = makeEngine();
+    expect(again.getState().events.map((x) => x.id).sort()).toEqual(['a', 't2']);
+  });
+
+  it('a tap and the other phone\'s news travel in one request, nothing twice', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    theirs('t1');
+    seen = [];
+    e.dispatch(feed('a'));
+    await idle();
+    expect(seen).toHaveLength(1);
+    expect(e.getState().events.map((x) => x.id).sort()).toEqual(['a', 't1']);
+    expect(e.getState().pending).toBe(0);
+    expect(server.all().map((x) => x.id)).toEqual(['t1', 'a']);
+  });
+
+  it('when the server cannot tell what changed (too far behind), the list comes as before', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    server.append(ev({ id: 'x', type: 'feed', detail: 'right', start: '2026-11-14 11:00', user: 'P2' }));
+    server.bump(); // written without saying what changed
+    await e.pollOnce();
+    expect(e.syncLog()[0]).toMatchObject({ list: true });
+    expect(e.syncLog()[0]!.delta).toBeUndefined();
+    expect(e.getState().events.map((x) => x.id)).toEqual(['x']);
+  });
+});
+
 describe('first attempts, retries and leaving the app', () => {
   let beacons: Array<Record<string, any>>;
   let ticks: number;

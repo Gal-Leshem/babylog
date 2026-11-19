@@ -5,6 +5,7 @@ import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
 import { encodeInstallCode, makeCheckKey } from './auth';
 import { type Deps, type Store, handle } from './core';
+import { type Change, type Since, parseJournal, record, since } from './journal';
 import { README_ROWS } from './readme';
 
 /** Replaced at build time. Non-empty only in the TEST build. */
@@ -227,10 +228,18 @@ class SheetStore implements Store {
   revision(): string {
     return P().REV ?? '0';
   }
-  bump(): void {
-    const next = String(Number(P().REV ?? '0') + 1); // read under the lock (the lock drops the snapshot)
-    timed('props', () => props().setProperty('REV', next));
+  /** The revision and the journal of recent changes move together, in one call (both read under the lock: it drops the snapshot). */
+  bump(change?: Change): void {
+    const prev = P().REV ?? '0';
+    const next = String(Number(prev) + 1);
+    const journal = JSON.stringify(record(parseJournal(P().JOURNAL), prev, next, change));
+    timed('props', () => props().setProperties({ REV: next, JOURNAL: journal }));
     P().REV = next;
+    P().JOURNAL = journal;
+  }
+  /** Answered from the properties every request reads anyway: no sheet. A journal that does not end at REV is not used. */
+  changesSince(rev: string): Since | null {
+    return since(parseJournal(P().JOURNAL), rev, this.revision());
   }
 }
 

@@ -57,7 +57,7 @@ const timings: { what: string; total: number; server: number | null; t?: Record<
 let label = '';
 function record(body: Record<string, unknown>, total: number, json: R): void {
   const ops = Array.isArray(body.ops) ? ` ops=${body.ops.length}` : '';
-  const kind = body.action === 'sync' ? (json.unchanged ? ' unchanged' : ' list') : '';
+  const kind = body.action === 'sync' ? (json.unchanged ? ' unchanged' : json.changes ? ' changes' : ' list') : '';
   timings.push({ what: `${label || String(body.action)}${label ? '' : ops + kind}`, total, server: typeof json.ms === 'number' ? json.ms : null, t: json.t });
   label = '';
 }
@@ -190,6 +190,16 @@ check('sync answers every operation in order (the repeated one as a duplicate)',
 as('sync: after a foreign write (list)');
 const s4 = await call({ action: 'sync', ...range, rev: s1.json?.rev, debug: true });
 check('sync with an older revision brings the list', (s4.json?.events ?? []).some((e: R) => e.id === id('sync2')), JSON.stringify(s4.json).slice(0, 200));
+// (API 0.5.0, owner) a phone a little behind gets only what changed since its revision, without the sheet being opened
+as('sync: after a foreign write (changes)');
+const s5 = await call({ action: 'sync', ...range, rev: s1.json?.rev, delta: true, debug: true });
+const s5ids = (s5.json?.changes ?? []).map((e: R) => e.id);
+check(
+  'sync with "delta" brings only the changes since that revision, in their newest state, and no list',
+  s5.json?.events === undefined && s5ids.includes(id('sync1')) && s5ids.includes(id('sync2')) && (s5.json?.changes ?? []).find((e: R) => e.id === id('sync2'))?.note === 'live' && s5.json?.rev === s4.json?.rev,
+  JSON.stringify(s5.json).slice(0, 300),
+);
+check('...and opens no sheet for it', !s5.json?.t?.['read#'] && !s5.json?.t?.['find#'], JSON.stringify(s5.json?.t ?? {}));
 // What a browser beacon does when the app is being left: it posts and does not wait for, or follow, the answer.
 // Apps Script answers a POST with a redirect to the stored output, so the write must already have happened by then.
 const beacon = await fetch(url, {

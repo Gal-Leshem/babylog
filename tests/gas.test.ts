@@ -248,6 +248,33 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect([check.props, check.values, check.find]).toEqual([1, 0, 0]);
     });
 
+    // Owner, after reading the sync log: catching up after the other parent wrote must not open the sheet.
+    it('a phone a little behind gets only the changes: ONE call to Google (the properties) and no sheet read', () => {
+      const { post, key, count } = start();
+      const first = post({ key, action: 'sync', ...range });
+      post({ key, action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P2', source: 'app' });
+      post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'f1', patch: { note: 'שקט' } }] });
+      const behind = count(() => post({ key, action: 'sync', ...range, rev: first.rev, delta: true }));
+      expect(behind.out.changes.map((e: { id: string; note: string }) => [e.id, e.note])).toEqual([['f1', 'שקט']]);
+      expect(behind.out.events).toBeUndefined();
+      expect([behind.props, behind.values, behind.find]).toEqual([1, 0, 0]);
+    });
+
+    it('the revision and the journal of changes are written together in one call, and stay within the property limit', () => {
+      const { rt, post, key, count } = start();
+      const first = post({ key, action: 'sync', ...range });
+      const tap = count(() => post({ key, action: 'log', id: 'n0', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' }));
+      expect(tap.props, 'read, read under the lock, one write').toBe(3);
+      const note = 'הערה ארוכה בעברית על הלילה 🌙 '.repeat(6).slice(0, 200);
+      for (let i = 1; i <= 80; i++) expect(post({ key, action: 'log', id: `n${i}`, type: 'diaper', detail: 'wet', start: `${day} 02:00`, user: 'P', source: 'app', note }).ok).toBe(true);
+      expect(Buffer.byteLength(rt.props.get('JOURNAL')!, 'utf8')).toBeLessThan(9000);
+      const recent = post({ key, action: 'sync', ...range, rev: String(Number(rt.props.get('REV')) - 3), delta: true });
+      expect(recent.changes.map((e: { id: string }) => e.id)).toEqual(['n78', 'n79', 'n80']);
+      const far = post({ key, action: 'sync', ...range, rev: first.rev, delta: true }); // dropped out of the journal long ago
+      expect(far.changes).toBeUndefined();
+      expect(far.events).toHaveLength(81);
+    });
+
     it('a saved change shows at once, on this request and the next ones', () => {
       const { post, key } = start();
       post({ key, action: 'sync', ...range });

@@ -109,6 +109,12 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
           if (v.length > 9000) throw new Error('Argument too large: value'); // the real limit is about 9 KB per value
           props.set(k, v);
         },
+        setProperties: (o: Record<string, string>) => {
+          calls.props++;
+          // the real limit is about 9 KB per value, in bytes (Hebrew letters take two)
+          for (const v of Object.values(o)) if (Buffer.byteLength(v, 'utf8') > 9000) throw new Error('Argument too large: value');
+          for (const [k, v] of Object.entries(o)) props.set(k, v);
+        },
         deleteProperty: (k: string) => (calls.props++, void props.delete(k)),
       }),
     },

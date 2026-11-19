@@ -76,8 +76,8 @@ export function startMockServer(port = 8787, key = 'test-key') {
         const t0 = Date.now();
         const answer = old && (parsed as { action?: string } | null)?.action === 'sync' ? { ok: false, error: 'unknown_action', detail: 'sync' } : handle(parsed, deps);
         const p = parsed as { action?: string; ops?: unknown[] } | null;
-        const a = answer as { unchanged?: boolean; events?: unknown };
-        kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}` : (p?.action ?? '?'));
+        const a = answer as { unchanged?: boolean; events?: unknown; changes?: unknown };
+        kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}${a.changes ? '+changes' : ''}` : (p?.action ?? '?'));
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ...answer, ms: Date.now() - t0 }));
       }, delayMs);
     });

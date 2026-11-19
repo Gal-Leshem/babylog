@@ -60,8 +60,10 @@ export interface SyncLogEntry {
   t?: Record<string, number>;
   /** for an open or a return: from that moment until the data was on screen (includes waiting for an earlier request) */
   sinceReturnMs?: number;
-  /** the answer carried the list (something had changed) */
+  /** the answer carried data (something had changed) */
   list?: boolean;
+  /** ...only the changes since our revision, not the whole list */
+  delta?: boolean;
   events?: number;
   kb?: number;
   ops?: number;
@@ -436,7 +438,8 @@ export class Engine {
     for (const op of batch) this.inFlight.add(op.opId);
     if (batch.length) this.setStatus('syncing');
     const range = this.defaultRange();
-    const rev = mode === 'rev' && this.p.rev ? { rev: this.p.rev } : {};
+    // with the revision we hold, the server may answer with only what changed since (API 0.5.0; older servers ignore `delta`)
+    const rev = mode === 'rev' && this.p.rev ? { rev: this.p.rev, delta: true as const } : {};
     const t0 = this.stopwatch();
     // a check with nothing to send gives up sooner: the next one is seconds away
     const ops = this.wireOps(batch);
@@ -469,7 +472,7 @@ export class Engine {
       ...(res.t ? { t: res.t } : {}),
       ...(sinceReturnMs !== undefined ? { sinceReturnMs } : {}),
       list: !res.unchanged,
-      ...(res.events ? { events: res.events.length } : {}),
+      ...(res.changes ? { delta: true, events: res.changes.length } : res.events ? { events: res.events.length } : {}),
       ...(meta.bytes !== undefined ? { kb: Math.round(meta.bytes / 102.4) / 10 } : {}),
       ops: batch.length,
     });
@@ -493,7 +496,12 @@ export class Engine {
     });
 
     // everything else that changed on the server
-    if (!res.unchanged) {
+    if (res.changes) {
+      // only what changed since our revision (deleted entries come marked and drop out of the view like our own deletes)
+      this.noteArrivals(res.changes);
+      for (const e of res.changes) this.putServerEvent(e);
+      if (res.settings) this.p.settings = withDefaults(res.settings);
+    } else if (!res.unchanged) {
       this.merge(range, res.events ?? []);
       if (res.settings) this.p.settings = withDefaults(res.settings);
       if (res.sheetUrl) this.p.sheetUrl = res.sheetUrl;

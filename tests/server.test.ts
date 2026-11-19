@@ -569,6 +569,90 @@ describe('sync: one round trip for a phone (API 0.4.0)', () => {
 });
 
 // The sheet grows by some 25 rows a day for good; a list must not read all of it.
+// Owner, after reading the sync log: a phone a little behind gets only what changed since its revision (API 0.5.0).
+describe('sync: changes since your version', () => {
+  const range = { from: '2026-11-01', to: '2026-11-14' };
+  const sync = (extra: Record<string, unknown> = {}) => ok(call({ action: 'sync', ...range, ...extra }));
+  const countReads = () => {
+    let reads = 0;
+    for (const m of ['all', 'recent', 'find', 'getSettings'] as const) {
+      const orig = (store[m] as (...a: unknown[]) => unknown).bind(store);
+      (store as unknown as Record<string, unknown>)[m] = (...a: unknown[]) => {
+        reads++;
+        return orig(...a);
+      };
+    }
+    return () => reads;
+  };
+
+  it('a phone a little behind gets only the changes, without reading any data', () => {
+    log('feed', 'left', '2026-11-14 10:00');
+    const mine = sync().rev!;
+    const theirs = ok(log('diaper', 'wet', '2026-11-14 11:00')).event!;
+    const reads = countReads();
+    const r = sync({ rev: mine, delta: true });
+    expect(r.changes).toEqual([theirs]);
+    expect(r.events).toBeUndefined();
+    expect(r.settings).toBeUndefined(); // they did not change
+    expect(r.rev).toBe(store.revision());
+    expect(reads()).toBe(0);
+  });
+
+  it('an app that does not ask for changes (an older one) still gets the list', () => {
+    log('feed', 'left', '2026-11-14 10:00');
+    const mine = sync().rev!;
+    log('diaper', 'wet', '2026-11-14 11:00');
+    const r = sync({ rev: mine });
+    expect(r.changes).toBeUndefined();
+    expect(r.events).toHaveLength(2);
+  });
+
+  it('edits, deletes and wake-ups arrive in their new state (a deleted one marked as such)', () => {
+    const f = ok(log('feed', 'left', '2026-11-14 10:00')).event!;
+    const d = ok(log('diaper', 'wet', '2026-11-14 10:30')).event!;
+    ok(call({ action: 'asleep', id: 's1', user: 'Parent 2', source: 'app', start: '2026-11-14 10:40' }));
+    const mine = sync().rev!;
+    ok(call({ action: 'update', id: f.id, patch: { detail: 'right' } }));
+    ok(call({ action: 'delete', id: d.id }));
+    ok(call({ action: 'awake', id: 'w1', user: 'Parent 2', source: 'app', end: '2026-11-14 11:30' }));
+    const r = sync({ rev: mine, delta: true });
+    expect(r.changes!.map((e) => [e.id, e.detail, e.deleted, e.end])).toEqual([
+      [f.id, 'right', false, ''],
+      [d.id, 'wet', true, ''],
+      ['s1', '', false, '2026-11-14 11:30'],
+    ]);
+  });
+
+  it('settings changed on the other phone come along (only then)', () => {
+    const mine = sync().rev!;
+    ok(call({ action: 'settings', set: { babyName: 'New' } }));
+    const r = sync({ rev: mine, delta: true });
+    expect(r.changes).toEqual([]);
+    expect(r.settings?.babyName).toBe('New');
+  });
+
+  it("the phone's own operations and the other phone's changes travel in one answer", () => {
+    const mine = sync().rev!;
+    const theirs = ok(log('diaper', 'wet', '2026-11-14 11:00')).event!;
+    const r = sync({ rev: mine, delta: true, ops: [{ action: 'log', id: 'my1', type: 'feed', detail: 'left', start: '2026-11-14 11:50', user: 'Parent 1', source: 'app' }] });
+    expect(r.results?.[0]).toMatchObject({ ok: true, event: { id: 'my1' } });
+    expect(r.changes!.map((e) => e.id)).toEqual([theirs.id, 'my1']);
+    expect(r.rev).toBe(store.revision());
+    expect(sync({ rev: r.rev, delta: true }).unchanged).toBe(true);
+  });
+
+  it('when the journal cannot tell (too far behind, a revision it does not know, a write it was not told about): the list', () => {
+    log('feed', 'left', '2026-11-14 10:00');
+    const mine = sync().rev!;
+    expect(sync({ rev: 'abc', delta: true }).events).toHaveLength(1);
+    store.bump(); // a write that did not say what it changed
+    log('diaper', 'wet', '2026-11-14 11:00');
+    const r = sync({ rev: mine, delta: true });
+    expect(r.changes).toBeUndefined();
+    expect(r.events).toHaveLength(2);
+  });
+});
+
 describe('a list reads only the tail of a long sheet', () => {
   /** `n` rows, 20 a day, in creation order, ending on 2026-11-14. */
   const fill = (n: number) => {

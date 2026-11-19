@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
 import type { Store } from './core';
+import { type Change, type Journal, type Since, record, since } from './journal';
 
 const copySettings = (s: Settings): Settings => ({
   ...s,
@@ -12,6 +13,7 @@ export class MemoryStore implements Store {
   private rows: BabyEvent[];
   private settings: Settings;
   private rev: number;
+  private journal: Journal | null = null;
 
   constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS, rev = 0) {
     this.rev = rev;
@@ -53,7 +55,12 @@ export class MemoryStore implements Store {
   revision(): string {
     return String(this.rev);
   }
-  bump(): void {
+  bump(change?: Change): void {
+    const prev = String(this.rev);
     this.rev += 1;
+    this.journal = record(this.journal, prev, String(this.rev), change);
+  }
+  changesSince(rev: string): Since | null {
+    return since(this.journal, rev, String(this.rev));
   }
 }

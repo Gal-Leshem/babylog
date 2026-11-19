@@ -35,7 +35,7 @@ export function logLines(e: SyncLogEntry): string[] {
   const lines = [`${clock(e.at)} · ${day(e.at)} · ${WHY[e.why]} · ${s(e.totalMs)}${e.result === 'ok' ? '' : ` · ${RESULT[e.result]}`}`];
   if (e.sinceReturnMs !== undefined) lines.push(`מהפתיחה עד שהנתונים הוצגו: ${s(e.sinceReturnMs)}`);
   if (e.result === 'ok') {
-    const what = e.list ? `נתונים חדשים${e.events !== undefined ? `: ${e.events} אירועים` : ''}${e.kb !== undefined ? `, ${e.kb}KB` : ''}` : 'בלי שינוי';
+    const what = e.list ? `${e.delta ? 'שינויים בלבד' : 'נתונים חדשים'}${e.events !== undefined ? `: ${e.events} אירועים` : ''}${e.kb !== undefined ? `, ${e.kb}KB` : ''}` : 'בלי שינוי';
     lines.push(`${e.serverMs !== null ? `שרת ${s(e.serverMs)} · רשת וגוגל ${s(Math.max(0, e.totalMs - e.serverMs))} · ` : ''}${what}${e.ops ? ` · ${e.ops} נשלחו` : ''}`);
   }
   if (e.t) {

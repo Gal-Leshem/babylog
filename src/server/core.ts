@@ -1,4 +1,5 @@
 import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
+import type { Change, Since } from './journal';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
 import {
@@ -37,7 +38,13 @@ export interface Store {
   sheetUrl(): string;
   /** Changes whenever data is written through the API; lets clients poll cheaply. */
   revision(): string;
-  bump(): void;
+  /**
+   * Moves the revision on by one. `change`: what this revision changed (events in their new state, settings), kept in the
+   * journal of recent changes; without it the journal starts over (nobody is told "only this changed" across it).
+   */
+  bump(change?: Change): void;
+  /** What changed after revision `rev` (from the journal of recent changes), or null when that cannot be told. */
+  changesSince(rev: string): Since | null;
 }
 
 export interface Deps {
@@ -249,7 +256,7 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       if (o.set === undefined) return { ok: true, settings: settingsOf(store), sheetUrl: store.sheetUrl() };
       return deps.withLock(() => {
         const r = saveSettings(o.set, deps, now);
-        store.bump();
+        store.bump({ events: [], settings: true });
         return r;
       });
     }
@@ -360,6 +367,7 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
       const before = store.revision();
       const out: ApiResponse[] = [];
       let changed = false;
+      const change: { events: BabyEvent[]; settings: boolean } = { events: [], settings: false };
       for (const raw of ops as unknown[]) {
         let r: ApiResponse;
         try {
@@ -369,13 +377,17 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
           r = e instanceof ApiException ? { ok: false, error: e.code, ...(e.detail ? { detail: e.detail } : {}) } : { ok: false, error: 'server_error', detail: e instanceof Error ? e.message : String(e) };
         }
         if (r.ok) {
-          if (!r.duplicate && !r.noop) changed = true;
+          if (!r.duplicate && !r.noop) {
+            changed = true;
+            if (r.event) change.events = [...change.events.filter((e) => e.id !== r.event!.id), r.event];
+            if ((raw as Obj).action === 'settings') change.settings = true;
+          }
           delete r.speech; // only Siri needs sentences
         }
         out.push(r);
         if (!r.ok && r.error === 'server_error') break;
       }
-      if (changed) store.bump();
+      if (changed) store.bump(change);
       return { out, before };
     });
     results = done.out;
@@ -386,6 +398,11 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
   const rev = results ? store.revision() : revBefore;
   const extra = results ? { results } : {};
   if (clientRev !== null && clientRev === revBefore) return { ok: true, rev, serverNow: stamp(now), unchanged: true, ...extra };
+  // (API 0.5.0) a phone a little behind gets only what changed since its revision: no sheet read, a tiny answer
+  if (clientRev !== null && o.delta === true) {
+    const d = store.changesSince(clientRev);
+    if (d) return { ok: true, rev: d.rev, serverNow: stamp(now), changes: d.events, ...(d.settings ? { settings: settingsOf(store) } : {}), ...extra };
+  }
   return { ...listRange(store, from, to, now), rev, ...extra };
 }
 
@@ -393,7 +410,7 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
 function write(deps: Deps, fn: () => ApiResponse): ApiResponse {
   return deps.withLock(() => {
     const r = fn();
-    if (r.ok && !r.duplicate && !r.noop) deps.store.bump();
+    if (r.ok && !r.duplicate && !r.noop) deps.store.bump({ events: r.event ? [r.event] : [] });
     return r;
   });
 }

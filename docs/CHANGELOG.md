@@ -332,6 +332,16 @@ No names, addresses or secrets in this file (the repository is public).
   second. "☀️ לסמן שהתעורר" turns the toast into the wake-up toast, with the same buttons and the same closing. Without a tap the
   toast stays 3 s (5 s while the baby is marked asleep; was 4 and 6). Browser tests with a frozen clock for the second of
   feedback, the "בוטל" state, the wake-up toast and the new times; all five failed on the old code.
+- Changes since your version **(owner's choice after the sync log)**, API 0.5.0: the server keeps a journal of the recent
+  changes next to the revision (one script property, written in the same call as the revision, under 8 KB: a few dozen events);
+  a phone that is a little behind gets only the events changed since its revision (`changes`), with no sheet opened and an answer
+  of a few hundred bytes instead of the whole fortnight (40 KB). Too far behind, or anything the journal cannot vouch for: the
+  full list as before; the full list every 5 minutes stays as the safety net. Older apps and an older server keep working. The
+  sync log says "שינויים בלבד" for such an answer. Tests: the journal (8), the server (6), the built bundle in the fake Google
+  runtime (a phone behind costs ONE properties call and no sheet read; the journal stays under the limit with long Hebrew notes;
+  far behind gets the list), the engine (4: news, edits / deletes / settings, a tap with news, the fallback), the browser
+  (opening after the other parent logged is one `sync` answered with changes, shown as news), and the live test against real
+  Google. Proven to fail with the server answer switched off (8 tests) and with the app not asking (3).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

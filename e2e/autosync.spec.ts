@@ -58,8 +58,10 @@ test('opening the app after the other parent logged something: one request bring
   await resetCalls(request);
   await page.goto('/');
   await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 5_000 });
+  await expect(page.locator('.rrow.new')).toHaveCount(1); // news from the other phone
   await page.waitForTimeout(1_500);
-  expect(await actionsSeen(request)).toEqual(['sync+list']);
+  // (owner, after reading the sync log) only the change travels, not the whole fortnight, and the server opens no sheet for it
+  expect(await actionsSeen(request)).toEqual(['sync+changes']);
 });
 
 test('a tap is one request and downloads no list', async ({ page, request }) => {

@@ -45,6 +45,16 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
 - The revision is a script property `REV`, bumped under the lock on every real write (not by reads, duplicates, no-ops or refused
   writes). The phone stores the revision with its copy of the data (`rev` in `bl.state.v1`), so opening the app with nothing new
   is one tiny request.
+- Changes since your version (API 0.5.0, owner, after reading the sync log): with every bump the server also writes, in the same
+  property call, a journal of the recent changes (`JOURNAL`, `src/server/journal.ts`): each event changed in revisions `base` to
+  `head`, in its newest state (an event changed twice is kept once), and whether the settings changed; the oldest drop out to
+  keep it under 8 KB (a property holds about 9 KB, Hebrew takes two bytes a letter). A phone sends `delta: true` with its
+  revision; when the journal ends at the current revision and reaches back to the phone's, the answer is `changes` (plus
+  `settings` only when they changed) instead of the list: no sheet is opened and the answer is a few hundred bytes. Anything the
+  journal cannot vouch for (too far behind, an unknown revision, a journal that does not end at `REV`, a write that did not say
+  what it changed) gets the full list as before. The phone puts each change into its copy (`putServerEvent`; a deleted one drops
+  out of the view like a local delete) and marks new ones from the other phone as news. Older apps do not send `delta` and get
+  the list; an older server ignores it.
 - The engine runs one exchange at a time (`Engine.sync`). A request made meanwhile is remembered and runs right after (never
   dropped); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
   requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
