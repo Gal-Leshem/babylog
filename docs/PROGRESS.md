@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 306 unit (Vitest) and 161 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 308 unit (Vitest) and 164 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -42,7 +42,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
     due); taps that waited behind a running sync are labelled "בדיקה" in the log instead of "רישום".
 - The owner chose fix 1; it is built (API 0.5.0, see `ARCHITECTURE.md` "Changes since your version"). Next: the owner opens the
   app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
-  0 and a total close to an opening with nothing new. Items 2 (small extras) were offered and not yet chosen.
+  0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
+- Owner bug (toast tap went through to the screen under it) fixed with a tap shield; the "could not get back" part was not
+  reproduced: ask for a screenshot if it happens again.
 - Recommendation given to the owner (for reference):
   1. **Changes since your version** (main fix, built): the server keeps the last few dozen changed events in script properties (the
      fast store already read on every request; limits 9 KB per value, 500 KB in all); a phone a little behind gets only those

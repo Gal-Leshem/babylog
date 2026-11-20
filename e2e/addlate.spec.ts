@@ -451,8 +451,10 @@ for (const kind of ['add', 'edit'] as const) {
     await page.getByTestId('save').click();
     await expect(page.getByTestId('toast-text')).toHaveText(kind === 'add' ? /^נוסף: קקי/ : 'השינויים נשמרו');
     await page.clock.runFor(4_300);
-    await expect(page.getByTestId('toast')).toBeVisible(); // longer than the old 3 s
+    await expect(page.getByTestId('toast')).not.toHaveAttribute('data-gone', '1'); // longer than the old 3 s
     await page.clock.runFor(400);
-    await expect(page.getByTestId('toast')).toHaveCount(0); // shorter than the old 6 s
+    await expect(page.getByTestId('toast')).toHaveAttribute('data-gone', '1'); // shorter than the old 6 s (then it still catches a late tap)
+    await page.clock.runFor(700);
+    await expect(page.getByTestId('toast')).toHaveCount(0);
   });
 }

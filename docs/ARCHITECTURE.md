@@ -60,13 +60,16 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
   because every operation has an id. The answer's events replace the phone's guesses (server time stamps).
 - While the app is open and visible: a check every 5 s for two minutes after it was opened, returned to or used to log
-  something, then every 15 s (`pollDelay`); a forced full list every 5 minutes (safety net); an immediate check on
+  something, then every 15 s (`pollDelay`); a forced full list after 5 minutes open since the last full list, opening or
+  return (safety net; looked at every 30 s, and a look that comes far too late means timers were frozen while hidden and counts
+  as a return, so a return is never followed by a second, full download); an immediate check on
   return to the foreground (visibilitychange, focus, pageshow: the several events of one return within 0.4 s count as one) and
   when the network returns. Nothing is sent while the app is hidden.
 - First attempt or retry: an operation that leaves the phone for the first time travels with `fresh: true` and is marked `sent`
   in the stored queue before the request goes. For a fresh operation the server skips the whole-sheet id lookup (0.3 to 0.5 s)
   and only checks the recent rows it reads anyway; a retry, Siri and older apps get the full lookup. Within one request a row
-  found once is not searched again (`SheetStore.rows`).
+  found or read once is not searched again (`SheetStore.rows`). An edit or delete looks for its event in the recent rows first
+  (`lookUp` in `core.ts`) and searches the whole sheet only for an older one.
 - Leaving the app: requests that carry operations use `keepalive`; when the app is hidden or closed with operations that no
   request is carrying, `Engine.leave()` hands them to the browser (`navigator.sendBeacon`). No answer is read: they stay queued
   and the next sync sends them again as retries, recognised by their ids. (Whether iOS always completes these is not testable
@@ -155,6 +158,9 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   (`done` in the toast state). A minute: the new time is shown and another minute can still be picked in that second. "בטל": the
   text becomes "בוטל" and nothing else can be used. "☀️ לסמן שהתעורר" replaces the toast with the wake-up toast (same buttons,
   same closing). A failed undo puts its own error toast in place instead.
+  A toast whose time is up turns invisible first and its place keeps swallowing taps for `TOAST_SHIELD_MS` (0.6 s) before it
+  is removed (owner bug: a tap aimed at it as it went opened what lay under it); a finger resting on it keeps it (`holdToast`,
+  then 1.5 s after the finger leaves). Opening a form removes it at once (`hideToast`).
 - **Buttons:** at least 56px tall at any supported screen height; after a tap the same button rests for 1.5 s (double-tap
   protection) and the others for 0.4 s (so "פיפי" and then "נרדם" is not blocked); a 5 s undo toast.
 - **Sheets** (add / edit form, medicines window): the row of buttons is pinned to the bottom of the sheet (`.sheet > .actions`,

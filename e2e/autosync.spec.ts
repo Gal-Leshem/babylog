@@ -64,6 +64,31 @@ test('opening the app after the other parent logged something: one request bring
   expect(await actionsSeen(request)).toEqual(['sync+changes']);
 });
 
+// Owner's sync log: right after a return the whole list came a second time (iOS fires the timers that were frozen while the app
+// was hidden, the 5-minute safety net among them). A return is one check; the safety net counts from there.
+test('coming back after a while: one check and not also the whole list; the 5-minute safety net still runs while open', async ({ page, request }) => {
+  await page.clock.install();
+  await install(page);
+  await page.clock.runFor(2_000);
+  await page.waitForTimeout(1_500); // real time: the setup's own requests are answered (a slow server answers late)
+  await resetCalls(request);
+  await page.clock.fastForward(8 * 60_000); // the phone slept: no timer ran, then everything due fires at once
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('focus'));
+  });
+  await page.clock.runFor(10_000);
+  await expect.poll(async () => (await actionsSeen(request)).length).toBeGreaterThan(0);
+  expect((await actionsSeen(request)).filter((a) => a.includes('+list'))).toEqual([]);
+  for (let i = 0; i < 24; i++) {
+    // the app stays open: time passes one check at a time, and the (real) server answers in between (a bigger jump would
+    // let a request's own time limit run out while it is still on its way)
+    await page.clock.runFor(15_000);
+    await page.waitForTimeout(700);
+  }
+  await expect.poll(async () => (await actionsSeen(request)).filter((a) => a === 'sync+list').length).toBe(1);
+});
+
 test('a tap is one request and downloads no list', async ({ page, request }) => {
   await install(page);
   await page.waitForTimeout(600);

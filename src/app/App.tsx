@@ -11,7 +11,7 @@ import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
 import { EARLIER_MIN } from './actions';
-import { TOAST_DONE_MS, engine, hideToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
+import { TOAST_DONE_MS, engine, hideToast, holdToast, isToastGone, releaseToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
 const TABS: [Tab, string, string][] = [
@@ -97,8 +97,21 @@ function SyncMark() {
 function ToastView() {
   const t = useToast();
   if (!t) return null;
+  // gone by itself: invisible, but its place still catches a tap that was aimed at it (owner bug: the tap opened what lay under it)
+  const gone = isToastGone();
   return (
-    <div class={`toast ${t.tone ?? 'ok'}`} role="status" aria-live="polite" data-testid="toast" key={t.id}>
+    <div
+      class={`toast ${t.tone ?? 'ok'}${gone ? ' gone' : ''}`}
+      role="status"
+      aria-live="polite"
+      aria-hidden={gone}
+      data-testid="toast"
+      data-gone={gone ? '1' : undefined}
+      key={t.id}
+      onPointerDown={() => holdToast(t.id)}
+      onPointerUp={() => releaseToast(t.id)}
+      onPointerCancel={() => releaseToast(t.id)}
+    >
       <div class="trow">
       <span data-testid="toast-text">{t.text}</span>
       {t.undo && (

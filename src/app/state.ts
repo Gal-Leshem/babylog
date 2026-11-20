@@ -65,32 +65,67 @@ export interface Toast {
 
 /** How long the toast stays after one of its buttons was used (owner: a moment of feedback, then gone). */
 export const TOAST_DONE_MS = 1_000;
+/**
+ * (owner bug) A tap aimed at the toast just as it went landed on what lay under it (an entry in the recent list opened its edit
+ * window; near the bottom, a tab). So a toast that goes by itself is first only made invisible: its place keeps catching taps
+ * for this long, and only then is it removed.
+ */
+export const TOAST_SHIELD_MS = 600;
+/** After a finger leaves a toast it was resting on, the toast stays at least this long. */
+const TOAST_AFTER_TOUCH_MS = 1_500;
 
 let toast: Toast | null = null;
+/** The toast on screen has gone by itself: invisible, still catching taps (TOAST_SHIELD_MS). */
+let toastGone = false;
 let toastSeq = 0;
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 const toastListeners = new Set<() => void>();
 const emitToast = () => toastListeners.forEach((l) => l());
 
+/** The toast's time is up: invisible at once, removed after the shield time. */
+function fadeToast(): void {
+  clearTimeout(toastTimer);
+  if (!toast) return;
+  toastGone = true;
+  toast = { ...toast };
+  emitToast();
+  toastTimer = setTimeout(hideToast, TOAST_SHIELD_MS);
+}
+
 export function showToast(t: Omit<Toast, 'id'>, ms = 5000): void {
   toast = { ...t, id: ++toastSeq };
+  toastGone = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, ms);
+  toastTimer = setTimeout(fadeToast, ms);
   emitToast();
 }
-/** Changes the toast on screen (if it is still the same one) and gives it a fresh `ms` before it goes. */
+/** Changes the toast on screen (if it is still the same one and still shown) and gives it a fresh `ms` before it goes. */
 export function updateToast(id: number, patch: Partial<Omit<Toast, 'id'>>, ms = 5000): void {
-  if (!toast || toast.id !== id) return;
+  if (!toast || toast.id !== id || toastGone) return;
   toast = { ...toast, ...patch };
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, ms);
+  toastTimer = setTimeout(fadeToast, ms);
   emitToast();
 }
+/** A finger is on the toast: it does not go from under it. */
+export function holdToast(id: number): void {
+  if (!toast || toast.id !== id || toastGone) return;
+  clearTimeout(toastTimer);
+}
+/** The finger left the toast (a button's own action, which comes right after, may set its own time). */
+export function releaseToast(id: number): void {
+  if (!toast || toast.id !== id || toastGone) return;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(fadeToast, TOAST_AFTER_TOUCH_MS);
+}
+/** Removes the toast at once (e.g. a form is opening: its buttons must be reachable right away). */
 export function hideToast(): void {
   clearTimeout(toastTimer);
   toast = null;
+  toastGone = false;
   emitToast();
 }
+export const isToastGone = (): boolean => toastGone;
 export const useToast = (): Toast | null =>
   useSyncExternalStore(
     (fn) => {

@@ -335,7 +335,22 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(retry.find).toBe(1);
       const edit = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'f1', patch: { note: 'x' } }] }));
       expect(edit.out.results[0].event.note).toBe('x');
-      expect(edit.find, 'the row found for reading is reused for writing').toBe(1);
+      // (owner's sync log: each "היה לפני" move searched the whole sheet) a recent entry is found in the recent rows
+      expect(edit.find, 'a recent entry is not searched for').toBe(0);
+      const del = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'delete', id: 'f1' }] }));
+      expect([del.out.results[0].event.deleted, del.find]).toEqual([true, 0]);
+    });
+
+    it('an edit of an entry older than the recent rows still finds it (one search) and writes the right row', () => {
+      const { rt, post, key, count } = start();
+      post({ key, action: 'log', id: 'old', type: 'feed', detail: 'left', start: `${day} 00:30`, user: 'P', source: 'app' });
+      for (let i = 0; i < 520; i++) post({ key, action: 'log', id: `n${i}`, type: 'diaper', detail: 'wet', start: `${day} 01:00`, user: 'P', source: 'app' });
+      const edit = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'old', patch: { note: 'x' } }] }));
+      expect(edit.out.results[0].event.note).toBe('x');
+      expect(edit.find).toBe(1);
+      const rows = rt.sheets.get('Events')!;
+      expect(rows.find((r) => r[0] === 'old')![7]).toBe('x');
+      expect(rows.filter((r) => r[7] === 'x')).toHaveLength(1);
     });
 
     it('the revision is read under the lock: a write that slipped in while waiting for it is not missed', () => {

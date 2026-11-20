@@ -344,6 +344,22 @@ No names, addresses or secrets in this file (the repository is public).
   Google. Proven to fail with the server answer switched off (8 tests) and with the app not asking (3). Live (real Google test
   server, one run): catching up after a foreign write took 1258 ms with the list (server 558) and 590 ms with changes (server
   49), the same as a check with nothing new.
+- Bug **(owner)**: after logging vitamin D, a tap on "5" in the toast was not taken; instead the screen behind it opened (in
+  the reproduction: the edit window of the entry under the toast, which covers the tab bar) and the owner had to close the
+  app. The toast had gone at the moment of the tap, so the tap went through to what lay under it. Now a toast whose time is up
+  first turns invisible and its place swallows taps for 0.6 s before it is removed, and a finger resting on the toast keeps it
+  (then 1.5 s after the finger leaves). Browser tests with a frozen clock: the late tap opens nothing (it opened the vitamin D
+  entry on the old code) and the resting finger; both failed before. The "stuck" part could not be reproduced: the edit window
+  always offered "ביטול"; the owner sends a screenshot if it happens again.
+- Small extras from the sync log **(owner approved)**: (1) moving or deleting a recent entry ("היה לפני", undo) finds it in the
+  recent rows (one fast read) instead of searching the whole sheet (0.3 to 0.8 s each; the rows read are remembered, so the
+  write needs no search either); an older entry is still searched once. (2) The 5-minute full list no longer comes right after
+  a return: iOS fires the timers frozen while the app was hidden, which fetched the whole list a second time 3 s after the
+  return's own check; the safety net now counts from the last opening, return or full list, and a timer that fires far too
+  late counts as a return. (3) Taps that waited behind a running exchange are labelled "רישום" in the sync log (were
+  "בדיקה"). Tests: Google bundle (a recent edit and delete search 0 times, an old one once and writes the right row), browser
+  (after a frozen-timer return: no list; the safety net still comes after 5 minutes open), engine (the label); all failed on
+  the old code.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

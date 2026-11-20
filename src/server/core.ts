@@ -521,10 +521,16 @@ function sleepMinutes(e: BabyEvent): number | null {
   return (parseLocal(e.end) - parseLocal(e.start)) / MIN;
 }
 
+/**
+ * An event that is about to be changed. Usually it is recent (owner's sync log: "היה לפני" moves the entry just logged), and the
+ * recent rows are one fast read; searching the whole sheet for the id took 0.3 to 0.8 s, so that comes only when they lack it.
+ */
+const lookUp = (store: Store, id: string): BabyEvent | undefined => store.recent(RECENT_ROWS).find((e) => e.id === id) ?? store.find(id);
+
 function update(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
-  const base = store.find(id);
+  const base = lookUp(store, id);
   if (!base) return fail('not_found');
   // the version before this edit is kept with the event (one step back), so it can be restored later (owner)
   const next = { ...applyPatch(base, parsePatch(o.patch)), edited: stamp(now), prev: JSON.stringify(coreOf(base)) };
@@ -540,7 +546,7 @@ function update(o: Obj, deps: Deps, now: number): ApiResponse {
 
 function setDeleted(id: string, deleted: boolean, deps: Deps, now: number): ApiResponse {
   if (!id) return fail('bad_request', 'id missing');
-  const base = deps.store.find(id);
+  const base = lookUp(deps.store, id);
   if (!base) return fail('not_found');
   if (base.deleted === deleted) return { ok: true, noop: true, event: base };
   const next = { ...base, deleted, edited: stamp(now) };

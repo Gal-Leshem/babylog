@@ -122,6 +122,8 @@ export const ACTIVE_FOR_MS = 2 * 60_000;
 export const pollDelay = (sinceActiveMs: number): number => (sinceActiveMs < ACTIVE_FOR_MS ? POLL_ACTIVE_MS : POLL_IDLE_MS);
 /** Full refresh even without a reported change, to catch edits made directly in the sheet. */
 export const FULL_REFRESH_MS = 5 * 60_000;
+/** How often the full-refresh clock is looked at (a look that comes much later than this means timers were frozen). */
+const FULL_CHECK_MS = 30_000;
 /** A sync that has been running this long is considered dead and no longer blocks new ones. */
 const SYNC_STALE_MS = 30_000;
 /**
@@ -171,6 +173,8 @@ export class Engine {
   private syncSeq = 0;
   /** A sync was requested while one was running: run another one as soon as that one ends (never drop the request). */
   private again: false | 'rev' | 'full' = false;
+  /** When the whole list last arrived, or the app was last opened or returned to (the safety-net refresh counts from there). */
+  private fullAt = 0;
   /** Operations travelling in the running request (they can no longer be dropped by an undo). */
   private inFlight = new Set<string>();
   /** Bumped whenever the stored server copy changes, so a slower answer for an older day can tell it is out of date. */
@@ -427,7 +431,8 @@ export class Engine {
         // A remembered request, a second batch, or taps made meanwhile. Not after a failure: the retry timer and the next check take over.
         const next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
         this.again = false;
-        if (next) void this.sync(next, false, this.returnAt !== null ? 'return' : 'poll');
+        // (owner's sync log) taps that waited behind a running exchange are labelled as taps, not as checks
+        if (next) void this.sync(next, false, this.returnAt !== null ? 'return' : this.p.queue.length ? 'tap' : 'poll');
       }
     }
     return got;
@@ -502,6 +507,7 @@ export class Engine {
       for (const e of res.changes) this.putServerEvent(e);
       if (res.settings) this.p.settings = withDefaults(res.settings);
     } else if (!res.unchanged) {
+      this.fullAt = this.now();
       this.merge(range, res.events ?? []);
       if (res.settings) this.p.settings = withDefaults(res.settings);
       if (res.sheetUrl) this.p.sheetUrl = res.sheetUrl;
@@ -714,6 +720,8 @@ export class Engine {
     // the first return of this page load is the opening of the app
     const why: SyncWhy = this.opened ? 'return' : 'open';
     this.opened = true;
+    // (owner's sync log) a return is checked right now; the safety-net full list is due only after the app has been open a while
+    this.fullAt = Math.max(this.fullAt, this.now());
     if (this.returnAt === null) this.returnAt = this.now();
     await this.sync('rev', true, why);
   }
@@ -759,9 +767,20 @@ export class Engine {
       poll = setTimeout(tick, pollDelay(this.now() - this.lastActive));
     };
     poll = setTimeout(tick, POLL_ACTIVE_MS);
+    // The safety net: the whole list after FULL_REFRESH_MS of the app being open since the last list, opening or return.
+    // (owner's sync log) iOS freezes timers while the app is hidden and fires them on return, which fetched the whole list a
+    // second time right after the return's own check: a look that comes far later than planned counts as a return instead.
+    let lastLook = this.now();
     const full = setInterval(() => {
-      if (visible()) void this.sync('full', false, 'full');
-    }, FULL_REFRESH_MS);
+      const now = this.now();
+      const late = now - lastLook > FULL_CHECK_MS * 2;
+      lastLook = now;
+      if (late) this.fullAt = Math.max(this.fullAt, now);
+      else if (visible() && this.config && now - this.fullAt >= FULL_REFRESH_MS) {
+        this.fullAt = now;
+        void this.sync('full', false, 'full');
+      }
+    }, FULL_CHECK_MS);
     window.addEventListener('online', online);
     window.addEventListener('focus', resume);
     window.addEventListener('pageshow', resume);

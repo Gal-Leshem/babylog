@@ -753,6 +753,22 @@ describe('changes since our revision', () => {
     expect(server.all().map((x) => x.id)).toEqual(['t1', 'a']);
   });
 
+  it('a tap that waited behind a running check is called a tap in the sync log (owner: it said "בדיקה")', async () => {
+    const e = makeEngine();
+    await e.refresh();
+    let open!: () => void;
+    gate = new Promise((r) => (open = r));
+    const running = e.pollOnce();
+    await idle();
+    e.dispatch(feed('a'));
+    open();
+    gate = null;
+    await running;
+    await idle();
+    await idle();
+    expect(e.syncLog()[0]).toMatchObject({ why: 'tap', ops: 1 });
+  });
+
   it('when the server cannot tell what changed (too far behind), the list comes as before', async () => {
     const e = makeEngine();
     await e.refresh();

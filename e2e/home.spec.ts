@@ -468,7 +468,54 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await page.clock.runFor(700);
     await expect(page.getByTestId('toast-back-5')).toHaveClass(/\bon\b/); // the feedback: still there, the minute lit
     await page.clock.runFor(500);
-    await expect(page.getByTestId('toast')).toHaveCount(0); // gone about a second after the tap
+    await expect(page.getByTestId('toast')).toHaveAttribute('data-gone', '1'); // gone about a second after the tap
+    await page.clock.runFor(700);
+    await expect(page.getByTestId('toast')).toHaveCount(0);
+    await page.clock.resume();
+  });
+
+  // Owner bug: a tap aimed at the toast just as it went opened what lay under it (an entry's edit window, or a tab).
+  test('a tap aimed at the toast as it goes is caught, not passed to what lies under it', async ({ page }) => {
+    await page.clock.install();
+    await install(page);
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
+    await page.getByTestId('btn-wet').click();
+    await page.clock.runFor(500);
+    await page.getByTestId('btn-vitamin_d').click(); // the vitamin D toast, as in the owner's report
+    const box = (await page.getByTestId('toast-back-5').boundingBox())!;
+    const under = await page.evaluate(([x, y]) => {
+      const t = document.querySelector('[data-testid="toast"]') as HTMLElement;
+      t.style.visibility = 'hidden';
+      const el = document.elementFromPoint(x!, y!)?.closest('button');
+      t.style.visibility = '';
+      return el?.dataset.testid ?? '';
+    }, [box.x + box.width / 2, box.y + box.height / 2]);
+    expect(under, 'something tappable lies under "5"').not.toBe('');
+    await page.clock.runFor(3_050); // the toast's time is up: it is not to be seen any more
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); // the late tap
+    await page.clock.runFor(100);
+    await expect(page.getByTestId('event-form')).toHaveCount(0); // (it opened the vitamin D entry under it)
+    await expect(page.getByTestId('tab-home')).toHaveClass(/\bon\b/);
+    await expect(page.getByTestId('home')).toBeVisible();
+    await page.clock.runFor(700);
+    await expect(page.getByTestId('toast')).toHaveCount(0);
+    await page.clock.resume();
+  });
+
+  test('a finger resting on the toast keeps it there', async ({ page }) => {
+    await page.clock.install();
+    await install(page);
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100);
+    await page.getByTestId('btn-wet').click();
+    await page.clock.runFor(2_500);
+    await page.getByTestId('toast').dispatchEvent('pointerdown');
+    await page.clock.runFor(3_000);
+    await expect(page.getByTestId('toast')).not.toHaveAttribute('data-gone', '1');
+    await page.getByTestId('toast').dispatchEvent('pointerup');
+    await page.clock.runFor(1_300);
+    await expect(page.getByTestId('toast')).not.toHaveAttribute('data-gone', '1');
+    await page.clock.runFor(400);
+    await expect(page.getByTestId('toast')).toHaveAttribute('data-gone', '1');
     await page.clock.resume();
   });
 
@@ -628,8 +675,10 @@ test('the toast after a one-tap log stays 3 seconds (5 while the baby is marked 
     await tap();
     await expect(page.getByTestId('toast')).toBeVisible();
     await page.clock.runFor(seconds * 1000 - 300);
-    await expect(page.getByTestId('toast')).toBeVisible();
+    await expect(page.getByTestId('toast')).not.toHaveAttribute('data-gone', '1');
     await page.clock.runFor(600);
+    await expect(page.getByTestId('toast')).toHaveAttribute('data-gone', '1'); // invisible; its place still catches a late tap
+    await page.clock.runFor(700);
     await expect(page.getByTestId('toast')).toHaveCount(0);
     await page.clock.resume();
   };

@@ -81,9 +81,15 @@ class SheetStore implements Store {
     const last = sh.getLastRow();
     if (last < 2) return [];
     const start = Math.max(2, fromRow);
-    return timed('read', () => sh.getRange(start, 1, last - start + 1, COLS).getValues())
-      .filter((r) => r[0] !== '')
-      .map(rowToEvent);
+    const values = timed('read', () => sh.getRange(start, 1, last - start + 1, COLS).getValues());
+    const out: BabyEvent[] = [];
+    values.forEach((r, i) => {
+      if (r[0] === '') return;
+      const e = rowToEvent(r);
+      this.rows.set(e.id, start + i); // a row read is a row found: an edit of it needs no search of the whole sheet
+      out.push(e);
+    });
+    return out;
   }
   recent(n: number): BabyEvent[] {
     return this.read(this.events().getLastRow() - n + 1);
