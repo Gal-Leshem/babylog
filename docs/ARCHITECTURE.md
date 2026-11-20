@@ -86,6 +86,11 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
 - The view (`events`, `allEvents`, `settings` in the engine's state) is rebuilt only when data changed; a check that found nothing
   new or a status change hands the screens the very same objects, so `useMemo` on them works (Insights, the recent list).
   At start the stored copy drops days from before the usual window (History fetches an older day again when it is opened).
+- Feedback (owner): `feedback` / `feedbackList` / `feedbackClear` are sent directly (`Engine.ask`, not queued and not inside
+  `sync`) from Settings > מתקדם > "🐞 משוב" (`Feedback.tsx`). Items live in the sheet's "משוב" tab (number, created, who, kind
+  in Hebrew, text, version, sync log, id); the number comes from the script property `FEEDBACK_SEQ` under the lock and is never
+  reset (clearing empties the rows' contents and keeps the titles); the uuid `id` makes a retry harmless. Not log data: the
+  revision does not move.
 - Sync log (`SyncLogEntry`, `bl.synclog.v1`, last 60, per phone): every exchange with why it ran, its time, the server's part
   and breakdown (`debug: true` on every sync), size, and for an opening or return the time until the data was on screen. Shown
   in Settings > מתקדם > "יומן סנכרון" (`SyncLog.tsx`).

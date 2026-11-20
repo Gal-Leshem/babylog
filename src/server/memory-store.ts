@@ -1,3 +1,4 @@
+import type { FeedbackItem } from '../shared/protocol';
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
 import type { Store } from './core';
 import { type Change, type Journal, type Since, record, since } from './journal';
@@ -14,6 +15,8 @@ export class MemoryStore implements Store {
   private settings: Settings;
   private rev: number;
   private journal: Journal | null = null;
+  private feedback: FeedbackItem[] = [];
+  private feedbackSeq = 0;
 
   constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS, rev = 0) {
     this.rev = rev;
@@ -62,5 +65,16 @@ export class MemoryStore implements Store {
   }
   changesSince(rev: string): Since | null {
     return since(this.journal, rev, String(this.rev));
+  }
+  feedbackAll(): FeedbackItem[] {
+    return this.feedback.map((f) => ({ ...f }));
+  }
+  feedbackAdd(item: Omit<FeedbackItem, 'no'>): FeedbackItem {
+    const stored = { ...item, no: ++this.feedbackSeq };
+    this.feedback.push(stored);
+    return { ...stored };
+  }
+  feedbackClear(): void {
+    this.feedback = [];
   }
 }

@@ -37,6 +37,10 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
         setFontWeight: () => self,
         setFontSize: () => self,
         setNumberFormat: () => self,
+        clearContent: () => {
+          for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) if (rows()[r0 - 1 + i]) rows()[r0 - 1 + i]![c0 - 1 + j] = '';
+          return self;
+        },
         createTextFinder: (text: string) => {
           let entire = false;
           const f: any = {

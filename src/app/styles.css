@@ -438,3 +438,9 @@ input, textarea, select {
 .loglist .lh { font-weight: 700; }
 .loglist .ld { color: var(--muted); }
 .loglist li.slow .lh { color: var(--warn); }
+/* (owner) feedback: the text box, the attach line, the main button at full size, the items' text as written */
+.fbtext { width: 100%; box-sizing: border-box; min-height: 120px; font-size: 17px; resize: vertical; }
+.fbattach { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.fbattach input { width: 22px; height: 22px; flex: none; }
+.actions .fbsend { min-height: 56px; min-width: 120px; font-size: 18px; }
+.fblist .fbbody { font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }

@@ -1,6 +1,6 @@
 /// <reference types="google-apps-script" />
 import { type Medicine, normalizeMedicine } from '../shared/medicines';
-import { API_VERSION } from '../shared/protocol';
+import { API_VERSION, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
 import { encodeInstallCode, makeCheckKey } from './auth';
@@ -28,6 +28,10 @@ const MED_HEADER = ['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_ho
 const HEADER = ['id', 'type', 'detail', 'start', 'end', 'user', 'source', 'note', 'created', 'edited', 'deleted', 'prev'];
 const COLS = HEADER.length;
 const DATE_FORMAT = 'yyyy-mm-dd hh:mm';
+/** (owner) Feedback: its own tab, readable in the sheet (the kind in Hebrew). The number comes from `FEEDBACK_SEQ`. */
+const FEEDBACK = 'משוב';
+const FB_HEADER = ['מספר', 'נוצר', 'מי', 'סוג', 'טקסט', 'גרסה', 'יומן סנכרון', 'id'];
+const FB_KIND: Record<FeedbackKind, string> = { bug: 'באג', idea: 'רעיון', other: 'אחר' };
 
 function toLocal(v: unknown): string {
   if (v instanceof Date) return formatLocal(v.getTime());
@@ -242,6 +246,54 @@ class SheetStore implements Store {
     timed('props', () => props().setProperties({ REV: next, JOURNAL: journal }));
     P().REV = next;
     P().JOURNAL = journal;
+  }
+  private feedbackSheet(create: boolean): GoogleAppsScript.Spreadsheet.Sheet | null {
+    const sh = this.ss.getSheetByName(FEEDBACK);
+    if (sh || !create) return sh;
+    const made = this.ss.insertSheet(FEEDBACK);
+    made.getRange(1, 1, 1, FB_HEADER.length).setValues([FB_HEADER]).setFontWeight('bold');
+    made.setFrozenRows(1);
+    made.getRange(2, 2, made.getMaxRows() - 1, 1).setNumberFormat(DATE_FORMAT);
+    return made;
+  }
+  feedbackAll(): FeedbackItem[] {
+    const sh = this.feedbackSheet(false);
+    const last = sh ? sh.getLastRow() : 0;
+    if (!sh || last < 2) return [];
+    const kinds = Object.entries(FB_KIND);
+    return timed('read', () => sh.getRange(2, 1, last - 1, FB_HEADER.length).getValues())
+      .filter((r) => r[0] !== '' && r[7] !== '')
+      .map((r) => ({
+        no: Number(r[0]),
+        created: toLocal(r[1]),
+        user: String(r[2] ?? ''),
+        kind: (kinds.find(([, label]) => label === r[3])?.[0] ?? 'other') as FeedbackKind,
+        text: String(r[4] ?? ''),
+        version: String(r[5] ?? ''),
+        log: String(r[6] ?? ''),
+        id: String(r[7] ?? ''),
+      }));
+  }
+  feedbackAdd(item: Omit<FeedbackItem, 'no'>): FeedbackItem {
+    const no = Number(P().FEEDBACK_SEQ ?? '0') + 1; // read under the lock (the lock drops the snapshot)
+    const sh = this.feedbackSheet(true)!;
+    timed('write', () => {
+      sh.appendRow([no, toCell(item.created), item.user, FB_KIND[item.kind], item.text, item.version, item.log, item.id]);
+      SpreadsheetApp.flush();
+    });
+    timed('props', () => props().setProperty('FEEDBACK_SEQ', String(no)));
+    P().FEEDBACK_SEQ = String(no);
+    return { ...item, no };
+  }
+  /** Empties the tab below its titles (the numbering in FEEDBACK_SEQ goes on). Rows are cleared, not deleted: a sheet refuses to lose all its unfrozen rows. */
+  feedbackClear(): void {
+    const sh = this.feedbackSheet(false);
+    const last = sh ? sh.getLastRow() : 0;
+    if (!sh || last < 2) return;
+    timed('write', () => {
+      sh.getRange(2, 1, last - 1, FB_HEADER.length).clearContent();
+      SpreadsheetApp.flush();
+    });
   }
   /** Answered from the properties every request reads anyway: no sheet. A journal that does not end at REV is not used. */
   changesSince(rev: string): Since | null {

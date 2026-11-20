@@ -1,5 +1,6 @@
 import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
 import type { Change, Since } from './journal';
+import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
 import { type Voice, voiceFor } from '../shared/speech';
@@ -40,6 +41,12 @@ export interface Store {
   bump(change?: Change): void;
   /** What changed after revision `rev` (from the journal of recent changes), or null when that cannot be told. */
   changesSince(rev: string): Since | null;
+  /** (owner) Feedback items, oldest first. */
+  feedbackAll(): FeedbackItem[];
+  /** Stores one item under the next number of a sequence that is never reset (call under the lock). */
+  feedbackAdd(item: Omit<FeedbackItem, 'no'>): FeedbackItem;
+  /** Removes every item; the numbering goes on where it was (call under the lock). */
+  feedbackClear(): void;
 }
 
 export interface Deps {
@@ -255,6 +262,16 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
         return r;
       });
     }
+
+    case 'feedback':
+      return deps.withLock(() => addFeedback(o, store, now));
+    case 'feedbackList':
+      return { ok: true, feedback: store.feedbackAll() };
+    case 'feedbackClear':
+      return deps.withLock(() => {
+        store.feedbackClear();
+        return { ok: true, feedback: [] };
+      });
 
     case 'log':
       return write(deps, () => logEvent(o, deps, now));
@@ -528,6 +545,25 @@ function sleepMinutes(e: BabyEvent): number | null {
  * An event that is about to be changed. Usually it is recent (owner's sync log: "היה לפני" moves the entry just logged), and the
  * recent rows are one fast read; searching the whole sheet for the id took 0.3 to 0.8 s, so that comes only when they lack it.
  */
+/**
+ * (owner) One feedback item: checked, cut to size, stored with the next number. A send that was retried (the same `id`) gets
+ * the stored item back and writes nothing. Feedback is not log data: the data revision does not move.
+ */
+function addFeedback(o: Obj, store: Store, now: number): ApiResponse {
+  const id = reqString(o, 'id', 64);
+  const kind = o.kind as FeedbackKind;
+  if (!FEEDBACK_KINDS.includes(kind)) return fail('bad_request', 'kind must be bug, idea or other');
+  const text = typeof o.text === 'string' ? o.text.trim() : '';
+  if (!text) return fail('bad_request', 'text missing');
+  if (text.length > FEEDBACK_TEXT_MAX) return fail('bad_request', `text longer than ${FEEDBACK_TEXT_MAX}`);
+  const user = reqString(o, 'user', 20);
+  const seen = store.feedbackAll().find((f) => f.id === id);
+  if (seen) return { ok: true, duplicate: true, item: seen };
+  const version = typeof o.version === 'string' ? o.version.slice(0, 40) : '';
+  const log = typeof o.log === 'string' ? o.log.slice(0, FEEDBACK_LOG_MAX) : '';
+  return { ok: true, item: store.feedbackAdd({ id, created: stamp(now), user, kind, text, version, log }) };
+}
+
 /** The sentences for Siri in the language the request asks for (owner: Hebrew for one phone). */
 const voiceOf = (o: Obj, store: Store): Voice => voiceFor(o.lang, () => settingsOf(store).babySex);
 

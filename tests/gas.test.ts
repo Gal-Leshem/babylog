@@ -424,6 +424,34 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'settings' }).settings.babySex).toBe('girl');
   });
 
+  // Owner: feedback in its own readable tab; the number lives in a script property and survives clearing.
+  it('feedback: a readable "משוב" tab, numbers that go on after clearing, a retry stored once', () => {
+    const b = boot();
+    b.g.setup!();
+    const key = b.rt.props.get('API_KEY')!;
+    const send = (id: string, kind: string, text: string) => b.post({ key, action: 'feedback', id, kind, text, user: 'P', version: 'abc1234', log: 'line' });
+    expect(b.post({ key, action: 'feedbackList' }).feedback).toEqual([]); // no tab yet: nothing, and nothing created
+    expect(b.rt.sheets.has('משוב')).toBe(false);
+    expect(send('a', 'bug', 'טקסט ראשון').item.no).toBe(1);
+    expect(send('b', 'idea', 'רעיון חדש').item.no).toBe(2);
+    expect(send('a', 'bug', 'טקסט ראשון').duplicate).toBe(true);
+    const tab = b.rt.sheets.get('משוב')!;
+    expect(tab[0]).toEqual(['מספר', 'נוצר', 'מי', 'סוג', 'טקסט', 'גרסה', 'יומן סנכרון', 'id']);
+    expect(tab[2]!.slice(2, 6)).toEqual(['P', 'רעיון', 'רעיון חדש', 'abc1234']);
+    const list = b.post({ key, action: 'feedbackList' }).feedback;
+    expect(list.map((f: { no: number; kind: string; log: string }) => [f.no, f.kind, f.log])).toEqual([
+      [1, 'bug', 'line'],
+      [2, 'idea', 'line'],
+    ]);
+    expect(list[0].created).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d$/);
+    expect(b.post({ key, action: 'feedbackClear' }).feedback).toEqual([]);
+    expect(b.post({ key, action: 'feedbackList' }).feedback).toEqual([]);
+    expect(tab[0]![0]).toBe('מספר'); // the titles stay
+    expect(send('c', 'other', 'עוד').item.no).toBe(3);
+    expect(b.rt.props.get('FEEDBACK_SEQ')).toBe('3');
+    expect(b.post({ key, action: 'feedbackList' }).feedback.map((f: { no: number }) => f.no)).toEqual([3]);
+  });
+
   it('rotateKey invalidates the old key', () => {
     const { rt, g, post } = boot();
     g.setup!();

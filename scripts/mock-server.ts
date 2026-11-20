@@ -74,7 +74,9 @@ export function startMockServer(port = 8787, key = 'test-key') {
         if (gen !== generation) return void req.socket.destroy(); // sent before a reset: belongs to the previous test
         calls.push(parsed);
         const t0 = Date.now();
-        const answer = old && (parsed as { action?: string } | null)?.action === 'sync' ? { ok: false, error: 'unknown_action', detail: 'sync' } : handle(parsed, deps);
+        // "old": a server from before `sync` (and so also before feedback)
+        const act = String((parsed as { action?: string } | null)?.action ?? '');
+        const answer = old && (act === 'sync' || act.startsWith('feedback')) ? { ok: false, error: 'unknown_action', detail: act } : handle(parsed, deps);
         const p = parsed as { action?: string; ops?: unknown[] } | null;
         const a = answer as { unchanged?: boolean; events?: unknown; changes?: unknown };
         kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}${a.changes ? '+changes' : ''}` : (p?.action ?? '?'));

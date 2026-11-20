@@ -405,6 +405,21 @@ No names, addresses or secrets in this file (the repository is public).
   (4 tests failed on the old script).
 - CI: two unit tests that send 500+ requests through the built bundle took over 5 s on a busy runner (a `main` run stopped
   there; production was not deployed); they now have 60 s.
+- Feedback **(owner: a quick place for either parent to note a bug, an idea or anything else)**: Settings > מתקדם > "🐞 משוב",
+  next to "יומן סנכרון", opens a screen like the sync log: kind (🐞 באג / 💡 רעיון / 💬 אחר), a text box, "לצרף את יומן הסנכרון
+  (זמנים בלבד)" (on for a bug, off for the others), "שליחה"; below, everything sent,
+  newest first ("#7 · 🐞 באג · היום 07:55 · <who> · גרסה <commit>" and the text), "העתקה" (the whole list as text, attached
+  sync-log lines included, for pasting into a chat) and "ניקוי הרשימה" (a second tap confirms). No statuses (owner). Stored in a
+  new "משוב" tab of the sheet (readable columns, the kind in Hebrew); the server gives each item a number from the script
+  property `FEEDBACK_SEQ`, never reused, also not after clearing, so repeats are recognisable; a uuid makes a retried send
+  harmless. Server actions `feedback`, `feedbackList`, `feedbackClear` (not allowed inside `sync`, the data revision does not
+  move). The app sends them directly (`Engine.ask`), not through the queue: without a connection it says so and keeps the
+  text; an older server says it is not updated yet. Found by the slow-server run: the answer to one send wiped what was typed
+  meanwhile; now only the text that was sent is cleared (regression test with a 1.5 s server). Tests: server (numbering,
+  retry, clearing keeps the numbering, limits, not in sync), the built bundle in the fake Google runtime (tab, columns, the
+  property, clearing keeps the titles), browser (each kind, the other phone, copy format, clear, no connection, older server,
+  back to Settings, layout at 852 / 700 / 560); proven to fail with the duplicate check, the numbering or the attach default
+  broken.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

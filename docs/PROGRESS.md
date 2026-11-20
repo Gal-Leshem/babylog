@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 323 unit (Vitest) and 169 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 329 unit (Vitest) and 178 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -45,6 +45,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
 - Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A
   medicine done for today fades (30%, grey) on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
+- Feedback in the app (owner): Settings > מתקדם > "🐞 משוב" next to the sync log; items in the sheet's "משוב" tab with a
+  number that is never reused. The owner pastes the list into a session when he wants (manual for now); do not ask for it.
 - Siri commands in Hebrew and English (owner: options A + B; owner's Siri English, the other parent's Hebrew; a MacBook is
   available): built (see BACKLOG F11 and INSTALL.he.md section 4). Waiting for the owner: the 5-minute check on the Hebrew phone
   (locked phone, Hebrew name recognised, how long it takes), then running `sign.sh` on the Mac and AirDrop. Not verified on a
@@ -132,6 +134,8 @@ You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, 
 First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
 
 Then tell me briefly in Hebrew whether everything is green (or what is not), and pick up the open topic.
+
+Feedback: do not ask for it. I may paste the feedback list from the app (Settings > מתקדם > משוב > העתקה); show it to me and let me decide what to act on. Recognise items already seen by their #number.
 
 The open topic: the app is sometimes slow to catch up when it is opened, and only when the other parent entered something. I will paste the sync log from the phone (Settings > מתקדם > יומן סנכרון > העתקה). Before that, tell me:
 1. Roughly how many log lines, and of which kind (how many openings after the other parent entered something, how many ordinary ones, over how many days and from which phone), you need for the log to be worth analysing, and what exactly to do on the phones to produce them.

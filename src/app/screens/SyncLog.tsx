@@ -21,8 +21,8 @@ const SLOW_MS = 3_000;
 const s = (ms: number) => `${(ms / 1000).toFixed(1)} ש׳`;
 const clock = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jerusalem' });
 const dayOf = (t: number) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
-/** "היום" / "אתמול" / "16.11": words keep the time and the date from being reordered in right-to-left text */
-const day = (t: number) => {
+/** "היום" / "אתמול" / "16.11": words keep the time and the date from being reordered in right-to-left text (also the feedback list) */
+export const day = (t: number) => {
   const d = dayOf(t);
   const today = dayOf(Date.now());
   if (d === today) return 'היום';

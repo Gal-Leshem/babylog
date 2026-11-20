@@ -11,6 +11,9 @@ Add items here as the owner reports them (date, what was seen, screenshot/record
 - Slow sync and performance **(owner report)**: diagnosis and a phased plan in `docs/REFACTOR_PLAN.md` (owner: the full plan).
   Phases 0 and 1 are done; the order of the rest is in `PROGRESS.md`. Phase 5 (look and feel): screenshots to the owner first.
 
+- Feedback from the app **(owner, November 2026)**: built (Settings > מתקדם > "🐞 משוב"). The owner pastes the list into a
+  session now and then; later, if wanted: a 🐞 shortcut elsewhere, a screenshot with an item, or statuses.
+
 Owner-only steps still open (from `PROGRESS.md`): install on the second parent's phone; optionally `rotateKey` once more and reinstall the code on both phones.
 
 ## Track 2: features (proposed order; the owner decides)

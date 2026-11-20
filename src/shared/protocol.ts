@@ -47,8 +47,33 @@ export type ApiRequest =
    */
   | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true; queuedAt?: number })[]; debug?: true; delta?: true }
   | { action: 'status' }
+  /**
+   * (owner) Feedback: a bug, an idea or anything else, kept in the sheet's "משוב" tab with a number the server assigns (never
+   * reused, also not after clearing). `id` makes a retried send harmless. Sent directly by the app, not through `sync`.
+   */
+  | { action: 'feedback'; id: string; kind: FeedbackKind; text: string; user: string; version?: string; log?: string }
+  | { action: 'feedbackList' }
+  | { action: 'feedbackClear' }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
+
+export type FeedbackKind = 'bug' | 'idea' | 'other';
+export const FEEDBACK_KINDS: readonly FeedbackKind[] = ['bug', 'idea', 'other'];
+/** Longest feedback text, and longest attached sync log (characters). */
+export const FEEDBACK_TEXT_MAX = 2000;
+export const FEEDBACK_LOG_MAX = 4000;
+
+/** One feedback item as stored: `no` is the server's number (#N), `created` local time "YYYY-MM-DD HH:mm". */
+export interface FeedbackItem {
+  no: number;
+  id: string;
+  created: string;
+  user: string;
+  kind: FeedbackKind;
+  text: string;
+  version: string;
+  log: string;
+}
 
 /** What goes over the wire: the request plus the shared secret. */
 export type WireRequest = ApiRequest & { key: string };
@@ -87,6 +112,9 @@ export interface ApiOk {
   version?: string;
   /** `sync`: one answer per operation sent, in order (shorter when the batch stopped on a server error). */
   results?: ApiResponse[];
+  /** `feedback`: the item as stored (with its number); `feedbackList` / `feedbackClear`: all items, oldest first. */
+  item?: FeedbackItem;
+  feedback?: FeedbackItem[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
   unchanged?: true;
   /**

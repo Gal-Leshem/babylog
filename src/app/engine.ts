@@ -373,6 +373,16 @@ export class Engine {
 
   // ---------- talking to the server ----------
 
+  /**
+   * A single request outside the sync (owner's feedback screen): not queued, so the caller says when it failed. Throws
+   * `NetworkError` when the server cannot be reached.
+   */
+  async ask(req: ApiRequest): Promise<ApiResponse> {
+    const ep = this.endpoint();
+    if (!ep) return { ok: false, error: 'unauthorized' };
+    return callApi(ep, req, this.fetchImpl);
+  }
+
   private endpoint(): Endpoint | null {
     return this.config ? { url: this.config.url, key: this.config.key } : null;
   }

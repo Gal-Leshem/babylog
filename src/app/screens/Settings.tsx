@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
+import { Feedback } from './Feedback';
 import { SyncLog } from './SyncLog';
 
 const NIGHT: [NightMode, string][] = [
@@ -35,6 +36,7 @@ export function Settings() {
   const [dirty, setDirty] = useState(false);
   const [medsOpen, setMedsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [fbOpen, setFbOpen] = useState(false);
   const synced = useRef(JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]));
 
   // Pick up server changes (e.g. the other parent renamed something), but only when the values really
@@ -71,6 +73,14 @@ export function Settings() {
     setDirty(false);
     setMsg('נשמר');
   };
+
+  if (fbOpen) {
+    return (
+      <section class="page" data-testid="settings">
+        <Feedback onBack={() => setFbOpen(false)} />
+      </section>
+    );
+  }
 
   if (logOpen) {
     return (
@@ -211,6 +221,10 @@ export function Settings() {
           {/* (owner) hidden behind a button: the times of the last syncs */}
           <button type="button" data-testid="open-sync-log" onClick={() => setLogOpen(true)}>
             יומן סנכרון
+          </button>
+          {/* (owner) a quick place to note a bug or an idea, next to the sync log */}
+          <button type="button" data-testid="open-feedback" onClick={() => setFbOpen(true)}>
+            <span class="emo">🐞</span> משוב
           </button>
         </div>,
         <h3 key="h2">חיבור</h3>,
