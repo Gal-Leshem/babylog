@@ -350,7 +350,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect([later.out.results[0].ok, later.find]).toEqual([true, 0]);
       const old = count(() => post({ key, action: 'sync', ...range, ops: [{ ...op, id: 'r2' }] }));
       expect([old.out.results[0].ok, old.find]).toEqual([true, 1]);
-    });
+    }, 60_000); // 500+ requests through the built bundle: about 1 s here, over 5 s on a busy CI runner
 
     it('an edit of an entry older than the recent rows still finds it (one search) and writes the right row', () => {
       const { rt, post, key, count } = start();
@@ -362,7 +362,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       const rows = rt.sheets.get('Events')!;
       expect(rows.find((r) => r[0] === 'old')![7]).toBe('x');
       expect(rows.filter((r) => r[7] === 'x')).toHaveLength(1);
-    });
+    }, 60_000); // 500+ requests through the built bundle: about 1 s here, over 5 s on a busy CI runner
 
     it('the revision is read under the lock: a write that slipped in while waiting for it is not missed', () => {
       const { rt, post, key } = start();

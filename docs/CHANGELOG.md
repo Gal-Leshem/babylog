@@ -403,6 +403,8 @@ No names, addresses or secrets in this file (the repository is public).
   the file's extension; the script handed it `work.plist`. Now `work.shortcut` (confirmed on the owner's Mac with a template),
   and each step (lint, convert, sign) says which shortcut failed. The test's stand-in for the tool now refuses other extensions
   (4 tests failed on the old script).
+- CI: two unit tests that send 500+ requests through the built bundle took over 5 s on a busy runner (a `main` run stopped
+  there; production was not deployed); they now have 60 s.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).
