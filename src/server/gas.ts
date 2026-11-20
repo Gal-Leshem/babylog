@@ -32,6 +32,9 @@ const DATE_FORMAT = 'yyyy-mm-dd hh:mm';
 const FEEDBACK = 'משוב';
 const FB_HEADER = ['מספר', 'נוצר', 'מי', 'סוג', 'טקסט', 'גרסה', 'יומן סנכרון', 'id'];
 const FB_KIND: Record<FeedbackKind, string> = { bug: 'באג', idea: 'רעיון', other: 'אחר' };
+/** A cell that starts with = + - or @ would be taken as a formula: an apostrophe in front keeps it text (Sheets hides it). */
+const asText = (t: string): string => (/^[=+\-@]/.test(t) ? `'${t}` : t);
+const fromText = (v: unknown): string => String(v ?? '').replace(/^'(?=[=+\-@])/, '');
 
 function toLocal(v: unknown): string {
   if (v instanceof Date) return formatLocal(v.getTime());
@@ -268,9 +271,9 @@ class SheetStore implements Store {
         created: toLocal(r[1]),
         user: String(r[2] ?? ''),
         kind: (kinds.find(([, label]) => label === r[3])?.[0] ?? 'other') as FeedbackKind,
-        text: String(r[4] ?? ''),
+        text: fromText(r[4]),
         version: String(r[5] ?? ''),
-        log: String(r[6] ?? ''),
+        log: fromText(r[6]),
         id: String(r[7] ?? ''),
       }));
   }
@@ -278,7 +281,7 @@ class SheetStore implements Store {
     const no = Number(P().FEEDBACK_SEQ ?? '0') + 1; // read under the lock (the lock drops the snapshot)
     const sh = this.feedbackSheet(true)!;
     timed('write', () => {
-      sh.appendRow([no, toCell(item.created), item.user, FB_KIND[item.kind], item.text, item.version, item.log, item.id]);
+      sh.appendRow([no, toCell(item.created), item.user, FB_KIND[item.kind], asText(item.text), item.version, asText(item.log), item.id]);
       SpreadsheetApp.flush();
     });
     timed('props', () => props().setProperty('FEEDBACK_SEQ', String(no)));

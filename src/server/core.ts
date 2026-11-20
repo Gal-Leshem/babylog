@@ -542,10 +542,6 @@ function sleepMinutes(e: BabyEvent): number | null {
 }
 
 /**
- * An event that is about to be changed. Usually it is recent (owner's sync log: "היה לפני" moves the entry just logged), and the
- * recent rows are one fast read; searching the whole sheet for the id took 0.3 to 0.8 s, so that comes only when they lack it.
- */
-/**
  * (owner) One feedback item: checked, cut to size, stored with the next number. A send that was retried (the same `id`) gets
  * the stored item back and writes nothing. Feedback is not log data: the data revision does not move.
  */
@@ -567,6 +563,10 @@ function addFeedback(o: Obj, store: Store, now: number): ApiResponse {
 /** The sentences for Siri in the language the request asks for (owner: Hebrew for one phone). */
 const voiceOf = (o: Obj, store: Store): Voice => voiceFor(o.lang, () => settingsOf(store).babySex);
 
+/**
+ * An event that is about to be changed. Usually it is recent (owner's sync log: "היה לפני" moves the entry just logged), and the
+ * recent rows are one fast read; searching the whole sheet for the id took 0.3 to 0.8 s, so that comes only when they lack it.
+ */
 const lookUp = (store: Store, id: string): BabyEvent | undefined => store.recent(RECENT_ROWS).find((e) => e.id === id) ?? store.find(id);
 
 function update(o: Obj, deps: Deps, now: number): ApiResponse {

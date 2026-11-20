@@ -424,6 +424,18 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'settings' }).settings.babySex).toBe('girl');
   });
 
+  // A text that starts like a formula must stay text in the sheet (Sheets would compute "=1+1").
+  it('feedback starting with = + - or @ is kept as text in the sheet and comes back unchanged', () => {
+    const b = boot();
+    b.g.setup!();
+    const key = b.rt.props.get('API_KEY')!;
+    const r = b.post({ key, action: 'feedback', id: 'fx', kind: 'other', text: '=1+1 ולא 2', user: 'P', version: 'v' });
+    expect(r.ok).toBe(true);
+    const row = b.rt.sheets.get('משוב')!.find((x) => x[7] === 'fx')!;
+    expect(row[4]).toBe("'=1+1 ולא 2");
+    expect(b.post({ key, action: 'feedbackList' }).feedback[0].text).toBe('=1+1 ולא 2');
+  });
+
   // Owner: feedback in its own readable tab; the number lives in a script property and survives clearing.
   it('feedback: a readable "משוב" tab, numbers that go on after clearing, a retry stored once', () => {
     const b = boot();
