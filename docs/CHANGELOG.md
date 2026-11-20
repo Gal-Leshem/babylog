@@ -377,6 +377,9 @@ No names, addresses or secrets in this file (the repository is public).
   Tests: unit (once a day, X times, every X hours, as needed, several), browser (single and several, still asks / opens;
   dashed and transparent), layout at 852 / 700 / 560 (the words stay inside, at least 56 px, Home does not scroll: the first
   layout with the ✓ above the name did not fit at 560 and the test caught it).
+- Medicines **(owner)**: a medicine done for today shows a ✓ instead of its icon, on the several-medicines button (the title
+  stays "תרופות" and a tap still opens the window; the owner first considered the name of the one left, then kept "תרופות")
+  and in the medicines window. Browser test (failed on the old code); screenshots day / night / 560.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

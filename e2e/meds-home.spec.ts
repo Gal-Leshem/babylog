@@ -126,7 +126,15 @@ test('several medicines: the button turns quiet only when every medicine with a 
   await row(page, 'm1').click();
   await page.getByTestId('meds-done').click();
   await expect(btn).not.toHaveAttribute('data-done', '1'); // בפנטן: one of two
-  await expect(btn.locator('.ico')).toHaveText('☀️🍓🧸');
+  // (owner) a medicine done for today shows a ✓ instead of its icon, on the button and in the window; the title stays
+  await expect(btn.locator('.ico')).toHaveText('✓🍓🧸');
+  await expect(btn.locator('.lbl')).toHaveText('תרופות');
+  await btn.click();
+  await expect(row(page, 'vitamin_d').getByTestId('meds-done-mark')).toHaveText('✓');
+  await expect(row(page, 'm1').getByTestId('meds-done-mark')).toHaveCount(0);
+  await expect(row(page, 'm1').locator('.mi')).toHaveText('🍓');
+  await expect(row(page, 'm2').locator('.mi')).toHaveText('🧸'); // as needed: never "done"
+  await page.getByTestId('meds-done').click();
   await api(request, { action: 'log', id: 'b2', type: 'medicine', detail: 'm1', start: (await doseTime(request)), user: 'Parent Two', source: 'app' });
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(btn).toHaveAttribute('data-done', '1');

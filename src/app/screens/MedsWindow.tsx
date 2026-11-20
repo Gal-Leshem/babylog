@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type Medicine, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
+import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
 import { type Mark, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
@@ -69,7 +69,14 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
                   data-id={m.id}
                   onClick={() => (warn.length ? setPending(m) : give(m))}
                 >
-                  <span class="mi emo">{m.icon}</span>
+                  {/* (owner) a medicine done for today shows a ✓ instead of its icon */}
+                  {doneToday(m, events, now) ? (
+                    <span class="mi done" data-testid="meds-done-mark">
+                      ✓
+                    </span>
+                  ) : (
+                    <span class="mi emo">{m.icon}</span>
+                  )}
                   <span class="mtext">
                     <span class="mn">
                       <bdi>{m.name}</bdi>

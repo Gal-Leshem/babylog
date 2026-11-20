@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { byTimeDesc, clock, elapsedHM, forgottenWake, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
-import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
+import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { logMedicine, quickLog, toggleSleep } from '../actions';
@@ -160,7 +160,18 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
       <button type="button" class={`big ${done ? 'done' : ''}`} data-testid="btn-meds" data-done={done ? '1' : undefined} onClick={onOpenMeds}>
         {!done && (
           <span class="ico" data-testid="btn-meds-icons">
-            {list.length > 3 ? GENERIC_ICON : list.map((m) => m.icon).join('')}
+            {/* (owner) a medicine done for today shows a ✓ instead of its icon */}
+            {list.length > 3
+              ? GENERIC_ICON
+              : list.map((m) =>
+                  doneToday(m, events, now) ? (
+                    <span key={m.id} class="tickmark">
+                      ✓
+                    </span>
+                  ) : (
+                    m.icon
+                  ),
+                )}
           </span>
         )}
         <span class="lbl">
