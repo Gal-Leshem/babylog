@@ -123,7 +123,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
   When every medicine with a daily amount is given today (`allDoneToday`; as-needed ones do not count) the button is quiet
   (`.big.done`: transparent, dashed, muted, "✓" beside the name, a line saying when / how many); it works as before (owner).
-  Before that, each medicine done for today shows a "✓" in place of its icon on the button and in the window (`doneToday`).
+  Before that, each medicine done for today fades to half on the button and shows a "✓" in place of its icon in the window
+  (`doneToday`).
 - **Sleep on Home** (owner): while asleep the tile says "נרדם ב-HH:MM"; a sleep open longer than the longest finished sleep of
   the last 7 days plus an hour (at least 6 hours; `forgottenWake` in `domain.ts`) turns the tile into a warning button
   "שכחתם התעוררות?" that opens the sleep on its wake-up side, ready to record it. The form warns once when a sleep overlaps

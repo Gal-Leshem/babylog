@@ -126,8 +126,10 @@ test('several medicines: the button turns quiet only when every medicine with a 
   await row(page, 'm1').click();
   await page.getByTestId('meds-done').click();
   await expect(btn).not.toHaveAttribute('data-done', '1'); // בפנטן: one of two
-  // (owner) a medicine done for today shows a ✓ instead of its icon, on the button and in the window; the title stays
-  await expect(btn.locator('.ico')).toHaveText('✓🍓🧸');
+  // (owner) a medicine done for today fades on the button and shows a ✓ instead of its icon in the window; the title stays
+  await expect(btn.locator('.ico')).toHaveText('☀️🍓🧸');
+  const fade = await btn.locator('.ico > span').evaluateAll((xs) => xs.map((x) => getComputedStyle(x).opacity));
+  expect(fade).toEqual(['0.5', '1', '1']); // (owner) vitamin D given today: its icon at half
   await expect(btn.locator('.lbl')).toHaveText('תרופות');
   await btn.click();
   await expect(row(page, 'vitamin_d').getByTestId('meds-done-mark')).toHaveText('✓');

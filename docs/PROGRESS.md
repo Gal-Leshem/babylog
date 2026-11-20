@@ -43,8 +43,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - The owner chose fix 1; it is built (API 0.5.0, see `ARCHITECTURE.md` "Changes since your version"). Next: the owner opens the
   app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
   0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
-- Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A ✓
-  replaces the icon of a medicine done for today (button and window); the title stays "תרופות" (owner).
+- Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A
+  medicine done for today fades to half on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
 - Next topic: Siri commands in Hebrew and English for logging hands-free (owner, for the other parent while nursing). A plan
   was given to the owner; nothing is built before they decide (see the session report and BACKLOG F11).
 - Owner bug (toast tap went through to the screen under it) fixed with a tap shield; the "could not get back" part was not

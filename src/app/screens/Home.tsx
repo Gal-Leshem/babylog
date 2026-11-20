@@ -160,18 +160,14 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
       <button type="button" class={`big ${done ? 'done' : ''}`} data-testid="btn-meds" data-done={done ? '1' : undefined} onClick={onOpenMeds}>
         {!done && (
           <span class="ico" data-testid="btn-meds-icons">
-            {/* (owner) a medicine done for today shows a ✓ instead of its icon */}
+            {/* (owner) a medicine done for today: its icon half transparent (the window shows a ✓ instead) */}
             {list.length > 3
               ? GENERIC_ICON
-              : list.map((m) =>
-                  doneToday(m, events, now) ? (
-                    <span key={m.id} class="tickmark">
-                      ✓
-                    </span>
-                  ) : (
-                    m.icon
-                  ),
-                )}
+              : list.map((m) => (
+                  <span key={m.id} class={doneToday(m, events, now) ? 'given' : undefined} data-given={doneToday(m, events, now) ? '1' : undefined}>
+                    {m.icon}
+                  </span>
+                ))}
           </span>
         )}
         <span class="lbl">
