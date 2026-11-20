@@ -28,7 +28,8 @@ beforeAll(async () => {
   execFileSync('mkdir', ['-p', bin]);
   // stand-ins for Apple's tools: "plutil" does nothing, "shortcuts sign" copies the input
   writeFileSync(join(bin, 'plutil'), '#!/bin/sh\nexit 0\n');
-  writeFileSync(join(bin, 'shortcuts'), '#!/bin/sh\nwhile [ $# -gt 0 ]; do case "$1" in --input) i="$2"; shift;; --output) o="$2"; shift;; esac; shift; done\ncp "$i" "$o"\n');
+  // (owner's Mac) the real tool refuses an input that is not named .shortcut: "isn't in the correct format"
+  writeFileSync(join(bin, 'shortcuts'), '#!/bin/sh\nwhile [ $# -gt 0 ]; do case "$1" in --input) i="$2"; shift;; --output) o="$2"; shift;; esac; shift; done\ncase "$i" in *.shortcut) ;; *) echo "Error: The file couldn\'t be opened because it isn\'t in the correct format." >&2; exit 1;; esac\ncp "$i" "$o"\n');
   chmodSync(join(bin, 'plutil'), 0o755);
   chmodSync(join(bin, 'shortcuts'), 0o755);
 

@@ -98,10 +98,13 @@ for ME in "$P1" "$P2"; do
     case "$lang" in he) sub='עברית' ;; *) sub='English' ;; esac
     folder="$OUT/$(printf '%s' "$ME" | tr '/:' '--')/$sub"
     mkdir -p "$folder"
-    sed -e "s|@@URL@@|$u|g" -e "s|@@KEY@@|$k|g" -e "s|@@ME@@|$m|g" "$TMP/$file" > "$TMP/work.plist"
-    if grep -q '@@' "$TMP/work.plist"; then die "A placeholder was left in $file."; fi
-    "$PLUTIL" -convert binary1 "$TMP/work.plist"
-    "$SIGN" sign --mode anyone --input "$TMP/work.plist" --output "$folder/$name.shortcut"
+    # (owner's Mac: "isn't in the correct format") Apple's signing tool goes by the file's extension: it must be .shortcut
+    work="$TMP/work.shortcut"
+    sed -e "s|@@URL@@|$u|g" -e "s|@@KEY@@|$k|g" -e "s|@@ME@@|$m|g" "$TMP/$file" > "$work"
+    if grep -q '@@' "$work"; then die "A placeholder was left in $file."; fi
+    "$PLUTIL" -lint "$work" >/dev/null || die "$name ($file): the template is not a valid property list."
+    "$PLUTIL" -convert binary1 "$work" || die "$name ($file): plutil could not convert it."
+    "$SIGN" sign --mode anyone --input "$work" --output "$folder/$name.shortcut" || die "$name ($file): Apple's shortcuts sign refused it (see the message above)."
     count=$((count + 1))
   done < "$TMP/index.txt"
 done
