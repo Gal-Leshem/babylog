@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, allServerRows, api, install, nowLocal, resetServer, seed, todayLocal } from './helpers';
+import { formatLocal } from '../src/shared/tz';
+import { addDaysLocal, allServerRows, api, install, pinPageDay, pinnedDay, resetServer, seed } from './helpers';
 
-test.beforeEach(async ({ request }) => {
+// The page's today is yesterday, from 12:00 (see pinPageDay): the times seeded below (00:01 to 00:55) are then always in the past.
+const today = pinnedDay().day;
+
+test.beforeEach(async ({ page, request }) => {
   await resetServer(request);
+  await pinPageDay(page, today);
 });
-
-const today = todayLocal();
 
 async function seedToday(request: Parameters<typeof seed>[0]) {
   await seed(request, [
@@ -138,7 +141,7 @@ test('an open sleep is shown as still sleeping', async ({ page, request }) => {
 // Owner screenshot: a sleep's time range ("17:30–18:23") wrapped onto two lines in the 92px time column and stretched the row.
 // The time column fits a range on one line, centred, like the icons; a sleep row is no taller than a feed row.
 test('history: a sleep time range stays on one line, centred, and its row is as tall as the others', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = today;
   await seed(request, [
     { type: 'sleep', start: `${d} 00:10`, end: `${d} 00:53` },
     { type: 'feed', detail: 'right', start: `${d} 00:55` },
@@ -165,7 +168,7 @@ test('history: a sleep time range stays on one line, centred, and its row is as 
 
 // Owner feedback #1: in History, the last 24 hours across midnight besides day by day.
 test('history: "24 שעות אחרונות" shows exactly the last 24 hours with the day where it changes, and is remembered', async ({ page, request }) => {
-  const at = (minsAgo: number) => nowLocal(-minsAgo);
+  const at = (minsAgo: number) => formatLocal(pinnedDay(today).noon - minsAgo * 60_000); // before the page's now (12:00, pinned)
   await seed(request, [
     { id: 'h1', type: 'feed', detail: 'left', start: at(60) },
     { id: 'h20', type: 'diaper', detail: 'wet', start: at(20 * 60) },
@@ -180,7 +183,7 @@ test('history: "24 שעות אחרונות" shows exactly the last 24 hours with
   await expect(page.getByTestId('history-row')).toHaveCount(2);
   await expect(page.getByTestId('history-row').first()).toContainText(at(60).slice(11));
   await expect(page.getByTestId('history-row').nth(1)).toContainText(at(20 * 60).slice(11));
-  const name = (d: string) => (d === todayLocal() ? 'היום' : 'אתמול');
+  const name = (d: string) => (d === today ? 'היום' : 'אתמול');
   const days = [...new Set([at(60), at(20 * 60)].map((t) => name(t.slice(0, 10))))];
   await expect(page.getByTestId('history-day')).toHaveText(days);
   await page.getByTestId('filter-diaper').click(); // the kind filter still works

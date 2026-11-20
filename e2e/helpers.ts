@@ -1,6 +1,6 @@
 import { type APIRequestContext, type Page, expect } from '@playwright/test';
 import { encodeSetupCode } from '../src/app/config';
-import { addDays, formatLocal, localDate } from '../src/shared/tz';
+import { addDays, formatLocal, localDate, parseLocal } from '../src/shared/tz';
 import type { BabyEvent } from '../src/shared/types';
 
 /**
@@ -15,6 +15,21 @@ export const CODE = encodeSetupCode(`${MOCK}/`, KEY);
 export const nowLocal = (offsetMin = 0): string => formatLocal(Date.now() + offsetMin * 60_000);
 export const todayLocal = (): string => localDate(Date.now());
 export const addDaysLocal = addDays;
+
+/**
+ * For tests that seed or type times early in the day ("00:05", "00:40"): the page's day is yesterday, starting at 12:00, so
+ * those times are always in the past. The real today would not do: just after midnight its 00:30 is still in the future,
+ * which the app and the server refuse. Yesterday (not a fixed date) keeps the mock server, which runs on the real time,
+ * accepting them, and keeps them inside the last two days that `serverEvents` / `allServerRows` read.
+ */
+export const pinnedDay = (day = addDays(todayLocal(), -1)): { day: string; noon: number } => ({ day, noon: parseLocal(`${day} 12:00`) });
+
+/** Sets the page's clock to 12:00 on `pinnedDay()` (the clock keeps running, timers stay real) and returns that day. Call before `install`. */
+export async function pinPageDay(page: Page, day?: string): Promise<string> {
+  const p = pinnedDay(day);
+  await page.clock.setSystemTime(p.noon);
+  return p.day;
+}
 
 export async function resetServer(request: APIRequestContext): Promise<void> {
   await request.get(`${MOCK}/__control?reset=1`);

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { encodeSetupCode } from '../src/app/config';
 import { formatLocal, parseLocal } from '../src/shared/tz';
-import { MOCK, api, control, install, installExisting, nowLocal, resetServer, seed, serverEvents, todayLocal } from './helpers';
+import { MOCK, api, control, install, installExisting, nowLocal, pinPageDay, resetServer, seed, serverEvents, todayLocal } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -190,8 +190,9 @@ test('two phones stay in step through the shared sheet', async ({ page, browser,
 });
 
 test('seeded events from the server show up on the home screen', async ({ page, request }) => {
+  const d = await pinPageDay(page); // (a day whose 00:01 is past: see pinPageDay)
   await install(page);
-  await seed(request, [{ id: 'old', type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:01` }]);
+  await seed(request, [{ id: 'old', type: 'diaper', detail: 'wet', start: `${d} 00:01` }]);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByTestId('recent-row')).toHaveCount(1);
 });
@@ -199,9 +200,10 @@ test('seeded events from the server show up on the home screen', async ({ page, 
 // Owner screenshot: in the recent list "💧💩" wrapped onto two lines (the icon column was 24px), making that row taller, and a single
 // icon looked off-centre. Icons stay on one line, centred in a column wide enough for two; the same in History.
 test('recent list and history: two icons stay on one line, centred like a single icon', async ({ page, request }) => {
+  const d = await pinPageDay(page);
   await seed(request, [
-    { type: 'diaper', detail: 'both', start: `${todayLocal()} 00:02` },
-    { type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:01` },
+    { type: 'diaper', detail: 'both', start: `${d} 00:02` },
+    { type: 'diaper', detail: 'wet', start: `${d} 00:01` },
   ]);
   await install(page);
   const measure = (rowSel: string, iconSel: string) =>
@@ -232,7 +234,7 @@ test('recent list and history: two icons stay on one line, centred like a single
 
 // Owner: the recent list shows falling asleep and waking up as separate rows, so a missing wake-up is easy to spot.
 test('recent list: a sleep shows as "נרדם" and "התעורר" at their own times; an open sleep only as "נרדם"', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = await pinPageDay(page);
   await seed(request, [
     { type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` },
     { type: 'diaper', detail: 'wet', start: `${d} 00:20` },
@@ -291,7 +293,7 @@ test('a feed or diaper while asleep offers "התעורר" in the confirmation; a
 // Owner screenshot: in the recent list the time moved with the length of the parent's name. The time sits at a fixed place;
 // a long name is cut with "…" instead of pushing it.
 test('recent list: the time stays in place whatever the length of the name', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = await pinPageDay(page);
   await seed(request, [
     { type: 'feed', detail: 'left', start: `${d} 00:01`, user: 'א' },
     { type: 'feed', detail: 'right', start: `${d} 00:02`, user: 'שם ארוך מאוד מאוד' },
