@@ -395,6 +395,10 @@ No names, addresses or secrets in this file (the repository is public).
   shortcuts run by the interpreter (Hebrew answers and failures, the asking shortcut with and without an answer), the signing
   script (folders, a girl's wording), and a Hebrew check in the live test. `INSTALL.he.md` section 4 rewritten (phrases, how to
   add a phrasing on the phone).
+- Fix **(owner's Mac: "curl: (56) ... 405")**: `sign.sh` asked the real server with `curl -X POST -L`, which forces POST also on the
+  redirect Google answers with, to an address that takes only GET. Now plain `--data` (curl switches to GET on the redirect).
+  The signing test now also runs against a stand-in that redirects like Google (failed on the old script). Workaround given to
+  the owner for the copy already downloaded.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

@@ -9,6 +9,8 @@ import { startMockServer } from '../scripts/mock-server';
 
 let mock: ReturnType<typeof startMockServer>;
 let site: Server;
+let google: Server;
+let googleUrl = '';
 let siteUrl = '';
 let mockUrl = '';
 let work = '';
@@ -35,6 +37,29 @@ beforeAll(async () => {
   mockUrl = `http://127.0.0.1:${mock.port()}/`;
   await fetch(mockUrl, { method: 'POST', body: JSON.stringify({ key: 'test-key', action: 'settings', set: { parents: ['Tom & Jerry', 'Ann <B>'] } }) });
 
+  // like Google: the web app takes the POST, then redirects (302) to an address that answers only GET (POST there: 405)
+  const answers = new Map<string, string>();
+  google = createServer((req, res) => {
+    const u = new URL(req.url!, 'http://x');
+    if (u.pathname === '/exec' && req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', async () => {
+        const answer = await (await fetch(mockUrl, { method: 'POST', body })).text();
+        const token = String(answers.size + 1);
+        answers.set(token, answer);
+        res.writeHead(302, { Location: `/echo?t=${token}` }).end();
+      });
+      return;
+    }
+    if (u.pathname === '/echo') {
+      if (req.method !== 'GET') return void res.writeHead(405).end('Method Not Allowed');
+      return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(answers.get(u.searchParams.get('t') ?? '') ?? '');
+    }
+    res.writeHead(404).end();
+  });
+  googleUrl = `http://127.0.0.1:${await listen(google)}/exec`;
+
   site = createServer((req, res) => {
     try {
       const file = join(process.cwd(), 'dist', decodeURIComponent(new URL(req.url!, 'http://x').pathname));
@@ -49,6 +74,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await mock.close();
   site.close();
+  google.close();
 });
 
 // Asynchronous on purpose: the script talks to servers hosted by this very process.
@@ -84,6 +110,13 @@ describe('Mac signing script', () => {
     expect(left).toContain('test-key');
     expect(left).toContain('Tom &amp; Jerry'); // XML-escaped
     expect(readFileSync(join(r.out, 'Ann <B>', 'עברית', 'הנקה ימין.shortcut'), 'utf8')).toContain('Ann &lt;B&gt;');
+  });
+
+  // Owner's Mac: "curl: (56) The requested URL returned error: 405" against the real server.
+  it('works with a server that redirects the POST to an address that only answers GET (as Google does)', async () => {
+    const r = await sign({ BABYLOG_CODE: encodeSetupCode(googleUrl, 'test-key') }, 'google');
+    expect(r.status, r.stderr).toBe(0);
+    expect(readFileSync(join(r.out, 'Tom & Jerry', 'English', 'Left feed.shortcut'), 'utf8')).toContain(googleUrl);
   });
 
   it('a girl: the Hebrew sleep shortcuts use her words', async () => {

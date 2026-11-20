@@ -61,7 +61,9 @@ case "$URL" in
 esac
 
 # 2. ask the server for the two parent names (this also proves that the code works)
-reply="$(curl -fsS -L -X POST -H 'Content-Type: text/plain' --data "{\"key\":\"$KEY\",\"action\":\"settings\"}" "$URL")" \
+# (owner's Mac: 405) Google answers a POST with a redirect to an address that only takes GET: let curl switch to GET there,
+# so no -X POST (it would force POST on the redirect too)
+reply="$(curl -fsS -L -H 'Content-Type: text/plain' --data "{\"key\":\"$KEY\",\"action\":\"settings\"}" "$URL")" \
   || die 'Could not reach the server. Check the internet connection and the code.'
 case "$reply" in *'"ok":true'*) ;; *) die 'The server did not accept the code (wrong key, or the server was not set up yet).' ;; esac
 names="$(printf '%s' "$reply" | sed -n 's/.*"parents":\["\([^"]*\)","\([^"]*\)"\].*/\1\
