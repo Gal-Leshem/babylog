@@ -399,6 +399,10 @@ No names, addresses or secrets in this file (the repository is public).
   redirect Google answers with, to an address that takes only GET. Now plain `--data` (curl switches to GET on the redirect).
   The signing test now also runs against a stand-in that redirects like Google (failed on the old script). Workaround given to
   the owner for the copy already downloaded.
+- Fix **(owner's Mac: "The file couldn't be opened because it isn't in the correct format")**: Apple's `shortcuts sign` decides by
+  the file's extension; the script handed it `work.plist`. Now `work.shortcut` (confirmed on the owner's Mac with a template),
+  and each step (lint, convert, sign) says which shortcut failed. The test's stand-in for the tool now refuses other extensions
+  (4 tests failed on the old script).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).
