@@ -65,21 +65,37 @@ function sign(env: Record<string, string>, outName: string): Promise<{ status: n
 }
 
 describe('Mac signing script', () => {
-  it('creates nine signed shortcuts per parent with the secrets filled in', async () => {
+  it('creates, for each parent, an English and a Hebrew folder of signed shortcuts with the secrets filled in', async () => {
     const r = await sign({ BABYLOG_CODE: encodeSetupCode(mockUrl, 'test-key') }, 'ok');
     expect(r.status, r.stderr).toBe(0);
-    expect(r.stdout).toContain('18 signed shortcuts');
+    expect(r.stdout).toContain('50 signed shortcuts');
     const folders = readdirSync(r.out).sort();
     expect(folders).toEqual(['Ann <B>', 'Tom & Jerry']);
     for (const f of folders) {
-      expect(readdirSync(join(r.out, f)).sort()).toEqual(['Asleep.shortcut', 'Awake.shortcut', 'Full diaper.shortcut', 'Last feed.shortcut', 'Left feed.shortcut', 'Poop.shortcut', 'Right feed.shortcut', 'Vitamin D.shortcut', 'Wet diaper.shortcut']);
+      expect(readdirSync(join(r.out, f)).sort()).toEqual(['English', 'עברית']);
+      expect(readdirSync(join(r.out, f, 'English'))).toHaveLength(13);
+      expect(readdirSync(join(r.out, f, 'עברית')).sort()).toEqual(
+        ['הנקה ימין', 'הנקה שמאל', 'התינוק התעורר', 'התינוק נרדם', 'ויטמין די', 'חיתול מלא', 'חיתול פיפי', 'חיתול קקי', 'יומן תינוק', 'מתי הנקה אחרונה', 'תסמני הנקה ימין', 'תסמני הנקה שמאל'].map((n) => `${n}.shortcut`).sort(),
+      );
     }
-    const left = readFileSync(join(r.out, 'Tom & Jerry', 'Left feed.shortcut'), 'utf8');
+    const left = readFileSync(join(r.out, 'Tom & Jerry', 'English', 'Left feed.shortcut'), 'utf8');
     expect(left).not.toContain('@@');
     expect(left).toContain(mockUrl);
     expect(left).toContain('test-key');
     expect(left).toContain('Tom &amp; Jerry'); // XML-escaped
-    expect(readFileSync(join(r.out, 'Ann <B>', 'Left feed.shortcut'), 'utf8')).toContain('Ann &lt;B&gt;');
+    expect(readFileSync(join(r.out, 'Ann <B>', 'עברית', 'הנקה ימין.shortcut'), 'utf8')).toContain('Ann &lt;B&gt;');
+  });
+
+  it('a girl: the Hebrew sleep shortcuts use her words', async () => {
+    await fetch(mockUrl, { method: 'POST', body: JSON.stringify({ key: 'test-key', action: 'settings', set: { babySex: 'girl' } }) });
+    const r = await sign({ BABYLOG_CODE: encodeSetupCode(mockUrl, 'test-key') }, 'girl');
+    await fetch(mockUrl, { method: 'POST', body: JSON.stringify({ key: 'test-key', action: 'settings', set: { babySex: 'boy' } }) });
+    expect(r.status, r.stderr).toBe(0);
+    const he = readdirSync(join(r.out, 'Tom & Jerry', 'עברית'));
+    expect(he).toContain('התינוקת נרדמה.shortcut');
+    expect(he).toContain('התינוקת התעוררה.shortcut');
+    expect(he).not.toContain('התינוק נרדם.shortcut');
+    expect(readFileSync(join(r.out, 'Tom & Jerry', 'עברית', 'יומן תינוק.shortcut'), 'utf8')).toContain('נרדמה');
   });
 
   it('refuses the private /dev address unless a real address is supplied', async () => {
@@ -91,7 +107,7 @@ describe('Mac signing script', () => {
     expect(bad.stderr).toMatch(/must start with https/);
     const good = await sign({ BABYLOG_CODE: devCode, BABYLOG_EXEC_URL: mockUrl }, 'dev3');
     expect(good.status, good.stderr).toBe(0);
-    const text = readFileSync(join(good.out, 'Tom & Jerry', 'Left feed.shortcut'), 'utf8');
+    const text = readFileSync(join(good.out, 'Tom & Jerry', 'English', 'Left feed.shortcut'), 'utf8');
     expect(text).toContain(mockUrl);
     expect(text).not.toContain(`${mockUrl}dev`);
   });

@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 313 unit (Vitest) and 169 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 323 unit (Vitest) and 169 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -45,8 +45,10 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
 - Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A
   medicine done for today fades to half on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
-- Next topic: Siri commands in Hebrew and English for logging hands-free (owner, for the other parent while nursing). A plan
-  was given to the owner; nothing is built before they decide (see the session report and BACKLOG F11).
+- Siri commands in Hebrew and English (owner: options A + B; owner's Siri English, the other parent's Hebrew; a MacBook is
+  available): built (see BACKLOG F11 and INSTALL.he.md section 4). Waiting for the owner: the 5-minute check on the Hebrew phone
+  (locked phone, Hebrew name recognised, how long it takes), then running `sign.sh` on the Mac and AirDrop. Not verified on a
+  real iPhone yet: Show Result being spoken by Siri, the menu answered by voice in Hebrew, network from a locked phone.
 - Owner bug (toast tap went through to the screen under it) fixed with a tap shield; the "could not get back" part was not
   reproduced: ask for a screenshot if it happens again.
 - Recommendation given to the owner (for reference):
@@ -91,7 +93,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Pending / optional: install on the second parent's phone (send the setup code privately, never in a group chat; names are prefilled);
   share the sheet (Viewer) with the second parent's Google account only if they want to read it or use their AI assistant on it;
   optionally run `rotateKey` once more when everything works (the setup code was pasted into a chat during setup), then reinstall the code on both phones.
-- Not wanted for now: Siri shortcuts via the Mac signing script (`scripts/shortcuts` stays, unused). Fallback: one manual shortcut on the phone.
+- Siri shortcuts (wanted again, November 2026): run `sign.sh` on the MacBook once the build is live, AirDrop each parent the folder of their Siri language (owner English, the other parent Hebrew).
 
 ## Rules and lessons (each came from a real bug; details in ARCHITECTURE.md)
 - Never define a component inside a component; never use vh/dvh; Home must never be scrollable; each tab has its own scroll container.

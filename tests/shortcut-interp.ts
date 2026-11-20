@@ -15,7 +15,8 @@ export const KNOWN_ACTIONS = [
   'detect.dictionary',
   'getvalueforkey',
   'conditional',
-  'speaktext',
+  'choosefrommenu',
+  'showresult',
 ].map((a) => `is.workflow.actions.${a}`);
 
 type Obj = Record<string, any>;
@@ -24,6 +25,8 @@ export interface Env {
   random: () => number;
   /** Performs the HTTP request; may throw to simulate no connection. */
   http: (url: string, body: string, method: string) => Promise<string>;
+  /** What the parent answers to a "choose from menu" question (Siri asks it aloud); missing: the shortcut is cancelled. */
+  choose?: (prompt: string, items: string[]) => string | undefined;
 }
 
 export function parseShortcut(xml: string): Obj {
@@ -39,13 +42,15 @@ export function formatDate(epoch: number, pattern: string): string {
   return pattern.replace('yyyy', y).replace('MM', mo).replace('dd', d).replace('HH', h).replace('mm', mi).replace('ss', s).replace('SSS', ms);
 }
 
-export async function runShortcut(xml: string, env: Env): Promise<{ spoken: string[] }> {
+export async function runShortcut(xml: string, env: Env): Promise<{ spoken: string[]; asked: string[] }> {
   const wf = parseShortcut(xml);
   const actions = wf.WFWorkflowActions as Obj[];
   const outputs = new Map<string, unknown>();
   const spoken: string[] = [];
-  const frames: { group: string; taken: boolean; inElse: boolean }[] = [];
-  const active = () => frames.every((f) => (f.taken && !f.inElse) || (!f.taken && f.inElse));
+  const asked: string[] = [];
+  type Frame = { group: string; kind: 'if'; taken: boolean; inElse: boolean } | { group: string; kind: 'menu'; chosen: string | undefined; current: string | null };
+  const frames: Frame[] = [];
+  const active = () => frames.every((f) => (f.kind === 'if' ? (f.taken && !f.inElse) || (!f.taken && f.inElse) : f.current !== null && f.current === f.chosen));
 
   const lookup = (a: Obj): unknown => {
     if (a.Type !== 'ActionOutput') throw new Error(`unsupported variable type ${a.Type}`);
@@ -93,14 +98,37 @@ export async function runShortcut(xml: string, env: Env): Promise<{ spoken: stri
           const v = resolve(input.Variable);
           taken = v !== undefined && v !== null && v !== '';
         }
-        frames.push({ group: p.GroupingIdentifier, taken, inElse: false });
+        frames.push({ group: p.GroupingIdentifier, kind: 'if', taken, inElse: false });
       } else if (mode === 1) {
         const f = frames[frames.length - 1];
-        if (!f || f.group !== p.GroupingIdentifier) throw new Error('else without matching if');
+        if (!f || f.group !== p.GroupingIdentifier || f.kind !== 'if') throw new Error('else without matching if');
         f.inElse = true;
       } else {
         const f = frames.pop();
-        if (!f || f.group !== p.GroupingIdentifier) throw new Error('end without matching if');
+        if (!f || f.group !== p.GroupingIdentifier || f.kind !== 'if') throw new Error('end without matching if');
+      }
+      continue;
+    }
+    if (id.endsWith('.choosefrommenu')) {
+      const mode = p.WFControlFlowMode as number;
+      if (mode === 0) {
+        const items = p.WFMenuItems as string[];
+        if (!Array.isArray(items) || !items.every((x) => typeof x === 'string')) throw new Error('menu items must be plain titles');
+        if (new Set(items).size !== items.length) throw new Error('menu titles must be unique');
+        let chosen: string | undefined;
+        if (active()) {
+          asked.push(String(p.WFMenuPrompt));
+          chosen = env.choose?.(String(p.WFMenuPrompt), items);
+          if (chosen !== undefined && !items.includes(chosen)) throw new Error(`"${chosen}" is not on the menu`);
+        }
+        frames.push({ group: p.GroupingIdentifier, kind: 'menu', chosen, current: null });
+      } else if (mode === 1) {
+        const f = frames[frames.length - 1];
+        if (!f || f.group !== p.GroupingIdentifier || f.kind !== 'menu') throw new Error('menu item without its menu');
+        f.current = String(p.WFMenuItemTitle);
+      } else {
+        const f = frames.pop();
+        if (!f || f.group !== p.GroupingIdentifier || f.kind !== 'menu') throw new Error('menu end without its menu');
       }
       continue;
     }
@@ -137,11 +165,11 @@ export async function runShortcut(xml: string, env: Env): Promise<{ spoken: stri
       case 'getvalueforkey':
         outputs.set(p.UUID, (resolve(p.WFInput) as Obj)[p.WFDictionaryKey]);
         break;
-      case 'speaktext':
-        spoken.push(String(resolve(p.WFText)));
+      case 'showresult':
+        spoken.push(String(resolve(p.Text)));
         break;
     }
   }
-  if (frames.length) throw new Error('unclosed if');
-  return { spoken };
+  if (frames.length) throw new Error('unclosed if or menu');
+  return { spoken, asked };
 }

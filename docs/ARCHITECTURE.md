@@ -111,6 +111,13 @@ cannot read Actions logs: `scripts/read-ci.sh`.
 `scripts/shortcuts/builder.ts` generates self-contained shortcut templates with placeholders;
 `scripts/shortcuts/sign.sh` (run on a Mac) fills in the owner's address/key/name, converts and signs them.
 Tests execute the generated files with a small interpreter (`tests/shortcut-interp.ts`) against the real server logic.
+Two languages (owner: one parent's Siri speaks English, the other's Hebrew; Siri understands one language at a time and runs a
+shortcut by its name, and the Hebrew Siri has no free phrasing): every shortcut has a language, sends `lang` with its request,
+and the server answers in it (`voiceHe` / `voiceEn` in `src/shared/speech.ts`; Hebrew sleep words follow the baby's sex).
+Several phrasings of one request are separate shortcuts (Siri matches the name). "יומן תינוק" / "Baby log" asks first
+(Choose from Menu) and then sends the chosen request. The answer is given with Show Result: Siri says it in its own voice when
+started by voice, and it shows quietly when tapped. `sign.sh` makes, for each parent, an "English" and a "עברית" folder; the
+Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts made before (no `lang`) still get English.
 
 ## App structure and UI rules (keep these; each one came from a real bug)
 - **Screens** (`src/app/screens`): Home, History, Summary, Settings, plus the Install (first run) screen and the add/edit form (a bottom sheet).

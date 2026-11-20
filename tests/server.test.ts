@@ -766,3 +766,18 @@ describe("the baby's sex (owner: wording only)", () => {
   });
 });
 
+
+// Owner: Siri on the other parent's phone speaks Hebrew. A request with lang 'he' gets Hebrew sentences, in the baby's wording.
+describe('Siri sentences in Hebrew', () => {
+  const siri = (req: Record<string, unknown>) => ok(call({ user: 'Parent 2', source: 'siri', lang: 'he', ...req }));
+  it('logs, sleep and the last feed answer in Hebrew; without lang it stays English', () => {
+    expect(siri({ action: 'log', id: 'h1', type: 'feed', detail: 'right', start: '2026-11-14 11:50' }).speech).toBe('נרשמה הנקה ימין, 11:50. הבאה: שמאל');
+    expect(ok(log('feed', 'left', '2026-11-14 11:55')).speech).toMatch(/^Logged left/);
+    ok(call({ action: 'settings', set: { babySex: 'girl' } }));
+    expect(siri({ action: 'asleep', id: 'h2', start: '2026-11-14 11:58' }).speech).toBe('נרדמה ב-11:58');
+    expect(siri({ action: 'asleep', id: 'h3', start: '2026-11-14 11:59' }).speech).toBe('כבר מסומנת כישנה מ-11:58');
+    minutesLater(30);
+    expect(siri({ action: 'awake', id: 'h4', end: '2026-11-14 12:28' }).speech).toBe('התעוררה. ישנה 30 דקות');
+    expect(siri({ action: 'status' }).speech).toBe('ההנקה האחרונה לפני 35 דקות, צד שמאל. הבאה: ימין');
+  });
+});

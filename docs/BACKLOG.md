@@ -92,7 +92,10 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation **done**; 4 history, summary and add-after-the-fact **done**. F7 is complete; next changes come from use.
 
 ### Later or needs a decision
-- F11 Siri / Shortcuts quick logging (already built and paused by the owner): revisit with one manual shortcut, the Action Button or Back Tap.
+- F11 Siri / Shortcuts quick logging **(owner, November 2026: wanted, for logging hands-free while nursing)**: built in English and
+  Hebrew with alternative names and an asking shortcut ("יומן תינוק" / "Baby log"); answers in the phone's Siri language. Owner
+  steps: the 5-minute check on the Hebrew phone (locked phone, Hebrew name recognised), then `sign.sh` on the Mac and AirDrop.
+  Later: more phrasings as the parents find them (duplicate and rename on the phone, or add them to `builder.ts`).
 - F12 Wake windows / next nap estimate: only meaningful from about two months; often criticized as inaccurate elsewhere.
 - F14 Other families (possible later, **owner idea**; for now only the owner uses the app): friends would use the same app with their
   own sheet in their own Google account. The app is already generic (it talks to whatever server its setup code names; no data

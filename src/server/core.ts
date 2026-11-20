@@ -2,13 +2,7 @@ import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/
 import type { Change, Since } from './journal';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
-import {
-  speechAlreadyAsleep,
-  speechAwake,
-  speechForLogged,
-  speechStatus,
-  speechVitaminAgain,
-} from '../shared/speech';
+import { type Voice, voiceFor } from '../shared/speech';
 import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../shared/tz';
 import {
   type BabyEvent,
@@ -250,7 +244,7 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
 
     case 'status': {
       const recent = store.recent(RECENT_ROWS);
-      return { ok: true, speech: speechStatus(lastFeed(recent), now) };
+      return { ok: true, speech: voiceOf(o, store).status(lastFeed(recent), now) };
     }
 
     case 'settings': {
@@ -456,7 +450,7 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
   const existing = known(o, id, store);
-  if (existing) return { ok: true, duplicate: true, event: existing, speech: speechForLogged(existing, store.recent(RECENT_ROWS)) };
+  if (existing) return { ok: true, duplicate: true, event: existing, speech: voiceOf(o, store).logged(existing, store.recent(RECENT_ROWS)) };
 
   const type = o.type as BabyEvent['type'];
   // iOS shortcuts cannot send an empty field reliably, so "-" means "no detail".
@@ -474,9 +468,9 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
     const already = vitaminDOnDate(recent, e.start.slice(0, 10));
     if (already) {
       warning = 'vitamin_d_already_given';
-      speech = speechVitaminAgain(already);
-    } else speech = speechForLogged(e, recent);
-  } else speech = speechForLogged(e, [...recent, e]);
+      speech = voiceOf(o, store).vitaminAgain(already);
+    } else speech = voiceOf(o, store).logged(e, recent);
+  } else speech = voiceOf(o, store).logged(e, [...recent, e]);
 
   store.append(e);
   return { ok: true, event: e, speech, ...(warning ? { warning } : {}) };
@@ -486,14 +480,14 @@ function asleep(o: Obj, deps: Deps, now: number): ApiResponse {
   const { store } = deps;
   const id = reqString(o, 'id', 64);
   const existing = known(o, id, store);
-  if (existing) return { ok: true, duplicate: true, event: existing, speech: speechForLogged(existing, []) };
+  if (existing) return { ok: true, duplicate: true, event: existing, speech: voiceOf(o, store).logged(existing, []) };
   const recent = store.recent(RECENT_ROWS);
   const open = openSleep(recent);
-  if (open) return { ok: true, noop: true, event: open, speech: speechAlreadyAsleep(open) };
+  if (open) return { ok: true, noop: true, event: open, speech: voiceOf(o, store).alreadyAsleep(open) };
   const e = newEvent(o, 'sleep', '', optString(o, 'start', 16), '', now);
   validateEvent(e, now);
   store.append(e);
-  return { ok: true, event: e, speech: speechForLogged(e, [e]) };
+  return { ok: true, event: e, speech: voiceOf(o, store).logged(e, [e]) };
 }
 
 function awake(o: Obj, deps: Deps, now: number): ApiResponse {
@@ -502,7 +496,7 @@ function awake(o: Obj, deps: Deps, now: number): ApiResponse {
   // Shortcuts always send "start" (their current time); accept it as the wake-up time when no "end" is given.
   const end = optString(o, 'end', 16) || optString(o, 'start', 16);
   const existing = known(o, id, store);
-  if (existing) return { ok: true, duplicate: true, event: existing, speech: speechAwake(sleepMinutes(existing)) };
+  if (existing) return { ok: true, duplicate: true, event: existing, speech: voiceOf(o, store).awake(sleepMinutes(existing)) };
 
   const recent = store.recent(RECENT_ROWS);
   const open = openSleep(recent);
@@ -510,19 +504,19 @@ function awake(o: Obj, deps: Deps, now: number): ApiResponse {
     const closed = { ...open, end };
     validateEvent(closed, now);
     store.replace(closed);
-    return { ok: true, event: closed, speech: speechAwake(sleepMinutes(closed)) };
+    return { ok: true, event: closed, speech: voiceOf(o, store).awake(sleepMinutes(closed)) };
   }
   // Retry of a request that already closed the latest sleep: nothing to do.
   const latestClosed = live(recent)
     .filter((e) => e.type === 'sleep' && e.end)
     .sort((a, b) => parseLocal(b.end) - parseLocal(a.end))[0];
   if (latestClosed && latestClosed.end === end) {
-    return { ok: true, duplicate: true, event: latestClosed, speech: speechAwake(sleepMinutes(latestClosed)) };
+    return { ok: true, duplicate: true, event: latestClosed, speech: voiceOf(o, store).awake(sleepMinutes(latestClosed)) };
   }
   const e = newEvent(o, 'sleep', '', '', end, now);
   validateEvent(e, now);
   store.append(e);
-  return { ok: true, event: e, speech: speechAwake(null) };
+  return { ok: true, event: e, speech: voiceOf(o, store).awake(null) };
 }
 
 function sleepMinutes(e: BabyEvent): number | null {
@@ -534,6 +528,9 @@ function sleepMinutes(e: BabyEvent): number | null {
  * An event that is about to be changed. Usually it is recent (owner's sync log: "היה לפני" moves the entry just logged), and the
  * recent rows are one fast read; searching the whole sheet for the id took 0.3 to 0.8 s, so that comes only when they lack it.
  */
+/** The sentences for Siri in the language the request asks for (owner: Hebrew for one phone). */
+const voiceOf = (o: Obj, store: Store): Voice => voiceFor(o.lang, () => settingsOf(store).babySex);
+
 const lookUp = (store: Store, id: string): BabyEvent | undefined => store.recent(RECENT_ROWS).find((e) => e.id === id) ?? store.find(id);
 
 function update(o: Obj, deps: Deps, now: number): ApiResponse {

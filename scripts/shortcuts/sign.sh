@@ -70,10 +70,13 @@ P1="$(printf '%s\n' "$names" | sed -n 1p)"
 P2="$(printf '%s\n' "$names" | sed -n 2p)"
 [ -n "$P1" ] && [ -n "$P2" ] || die 'Could not read the parent names from the server. Open the app once and set them in Settings.'
 case "$P1$P2" in *\\*) die 'A parent name contains a backslash. Rename it in the app Settings and try again.' ;; esac
+# the baby's sex chosen in the app (Hebrew sleep words follow it); missing = boy, as in the app
+SEX=boy
+case "$reply" in *'"babySex":"girl"'*) SEX=girl ;; esac
 
 # 3. download the templates
 curl -fsS "$SITE/shortcuts/index.txt" -o "$TMP/index.txt" || die "Could not download the shortcut list from $SITE"
-while IFS="$(printf '\t')" read -r file _name; do
+while IFS="$(printf '\t')" read -r file _rest; do
   [ -n "$file" ] || continue
   curl -fsS "$SITE/shortcuts/templates/$file" -o "$TMP/$file" || die "Could not download $file"
 done < "$TMP/index.txt"
@@ -83,13 +86,16 @@ xml_escape() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
 sed_escape() { sed -e 's/[\\&|]/\\&/g'; }
 fill() { printf '%s' "$1" | xml_escape | sed_escape; }
 
+# every parent gets both languages: the folder that matches the language of Siri on their phone is the one that works by voice
 count=0
 for ME in "$P1" "$P2"; do
-  folder="$OUT/$(printf '%s' "$ME" | tr '/:' '--')"
-  mkdir -p "$folder"
   u="$(fill "$URL")"; k="$(fill "$KEY")"; m="$(fill "$ME")"
-  while IFS="$(printf '\t')" read -r file name; do
+  while IFS="$(printf '\t')" read -r file name lang sex; do
     [ -n "$file" ] || continue
+    [ -z "$sex" ] || [ "$sex" = "$SEX" ] || continue
+    case "$lang" in he) sub='עברית' ;; *) sub='English' ;; esac
+    folder="$OUT/$(printf '%s' "$ME" | tr '/:' '--')/$sub"
+    mkdir -p "$folder"
     sed -e "s|@@URL@@|$u|g" -e "s|@@KEY@@|$k|g" -e "s|@@ME@@|$m|g" "$TMP/$file" > "$TMP/work.plist"
     if grep -q '@@' "$TMP/work.plist"; then die "A placeholder was left in $file."; fi
     "$PLUTIL" -convert binary1 "$TMP/work.plist"
@@ -99,6 +105,7 @@ for ME in "$P1" "$P2"; do
 done
 
 printf '\nDone: %s signed shortcuts in %s\n' "$count" "$OUT"
-printf 'Send each parent their own folder to their own phone (AirDrop), open every file and tap "Add Shortcut".\n'
+printf 'Each parent has a folder with "English" and "עברית" inside. Send each parent the one that matches the language of Siri\n'
+printf 'on their phone (Settings > Siri > Language), by AirDrop; open every file and tap "Add Shortcut".\n'
 printf 'Afterwards delete the folder %s (it contains the secret key).\n' "$OUT"
 if command -v open >/dev/null 2>&1 && [ -z "${BABYLOG_NO_OPEN:-}" ]; then open "$OUT" || true; fi

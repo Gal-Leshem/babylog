@@ -382,6 +382,18 @@ No names, addresses or secrets in this file (the repository is public).
   and in the medicines window. Browser test (failed on the old code); screenshots day / night / 560.
 - Medicines button **(owner, after seeing it)**: on the several-medicines button a medicine done for today keeps its icon at
   half opacity instead of a ✓ (clearer among the icons); the window keeps the ✓. Browser test updated (failed on the ✓).
+- Siri in Hebrew and English **(owner: the other parent often has no free hands while nursing; option A, a shortcut per action,
+  plus option B, one that asks first)**: the server answers Siri in Hebrew when the request says `lang: 'he'` ("נרשמה הנקה ימין,
+  14:10. הבאה: שמאל", sleep words by the baby's sex, durations like "שעה ו-20 דקות"); requests without it stay English. The
+  shortcut list now has an English set (with "Log right feed" / "Poop diaper" as extra names) and a Hebrew set ("הנקה ימין",
+  "תסמני הנקה ימין", "חיתול פיפי", "התינוק נרדם" or "התינוקת נרדמה", "ויטמין די", "מתי הנקה אחרונה", ...) and in each language an
+  asking shortcut ("יומן תינוק" / "Baby log": Siri asks "מה לרשום?" and logs the answer). The answer is now given with Show Result
+  (Siri says it in its own voice and language; tapped, it shows quietly) instead of Speak Text (a reading voice that would not
+  read Hebrew). `sign.sh` makes an English and a Hebrew folder per parent and picks the sleep wording by the baby's sex. No voice
+  undo (owner). Tests: Hebrew sentences (durations, wording by sex, the last feed), the server with `lang`, the generated
+  shortcuts run by the interpreter (Hebrew answers and failures, the asking shortcut with and without an answer), the signing
+  script (folders, a girl's wording), and a Hebrew check in the live test. `INSTALL.he.md` section 4 rewritten (phrases, how to
+  add a phrasing on the phone).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).
