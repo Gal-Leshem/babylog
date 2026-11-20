@@ -67,7 +67,9 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   when the network returns. Nothing is sent while the app is hidden.
 - First attempt or retry: an operation that leaves the phone for the first time travels with `fresh: true` and is marked `sent`
   in the stored queue before the request goes. For a fresh operation the server skips the whole-sheet id lookup (0.3 to 0.5 s)
-  and only checks the recent rows it reads anyway; a retry, Siri and older apps get the full lookup. Within one request a row
+  and only checks the recent rows it reads anyway; a retry says when it was queued (`queuedAt`) and is looked up in the
+  recent rows, with a whole-sheet search only when they do not reach back before that time; Siri and older apps get the full
+  lookup on a sheet longer than the recent rows. Within one request a row
   found or read once is not searched again (`SheetStore.rows`). An edit or delete looks for its event in the recent rows first
   (`lookUp` in `core.ts`) and searches the whole sheet only for an older one.
 - Leaving the app: requests that carry operations use `keepalive`; when the app is hidden or closed with operations that no
@@ -119,6 +121,8 @@ Tests execute the generated files with a small interpreter (`tests/shortcut-inte
   active medicines (none: neither is shown and the grid drops a row; one: one tap logs it; several: a window to mark doses). Status
   uses only what was given, the gap and the daily count, never clock times. Mixed Hebrew/Latin parts are wrapped in `<bdi>`.
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
+  When every medicine with a daily amount is given today (`allDoneToday`; as-needed ones do not count) the button is quiet
+  (`.big.done`: transparent, dashed, muted, "✓" beside the name, a line saying when / how many); it works as before (owner).
 - **Sleep on Home** (owner): while asleep the tile says "נרדם ב-HH:MM"; a sleep open longer than the longest finished sleep of
   the last 7 days plus an hour (at least 6 hours; `forgottenWake` in `domain.ts`) turns the tile into a warning button
   "שכחתם התעוררות?" that opens the sleep on its wake-up side, ready to record it. The form warns once when a sleep overlaps

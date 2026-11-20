@@ -816,6 +816,8 @@ describe('first attempts, retries and leaving the app', () => {
     timers.at(-1)!.fn();
     await idle();
     expect(wire().map((o: any) => [o.id, o.fresh])).toEqual([['a', true], ['a', undefined]]);
+    // (owner's sync log) the retry says when it was queued, so the server can usually spare the whole-sheet search
+    expect(wire().map((o: any) => o.queuedAt)).toEqual([undefined, T('2026-11-14 12:00')]);
     expect(server.all()).toHaveLength(1);
   });
 

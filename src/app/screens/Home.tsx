@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { byTimeDesc, clock, elapsedHM, forgottenWake, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
-import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, doseWarnings, medicineToday, todayText } from '../../shared/medicines';
+import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { logMedicine, quickLog, toggleSleep } from '../actions';
@@ -123,31 +123,55 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
 
   // One medicine: its own icon and name, one tap logs it. Several: their icons (more than three: one friendly icon) above
   // "תרופות", and a tap opens the medicines window. None: no button at all.
+  // (owner) when everything due today is given, the button says so (dashed, quiet, a ✓ instead of the icon); it works as before
   const medsButton = (list: readonly Medicine[]) => {
+    const done = allDoneToday(list, events, now);
     if (list.length === 1) {
       const m = list[0]!;
       const id = m.id === VITAMIN_D_ID ? 'vitamin_d' : 'med';
       const give = () => (m.id === VITAMIN_D_ID ? quickLog('vitamin_d') : void logMedicine(m, true));
+      const t = done ? medicineToday(m, events, now) : null;
+      const perDay = dosesPerDay(m);
       return (
         <button
           type="button"
-          class={`big ${flash === id ? 'flash' : ''}`}
+          class={`big ${flash === id ? 'flash' : ''} ${done ? 'done' : ''}`}
           data-testid={`btn-${id}`}
+          data-done={done ? '1' : undefined}
           disabled={locked || held === id}
           // the parents' own limits say "not now": ask first (the only case with a second tap)
           onClick={() => (doseWarnings(m, events, now).length ? setConfirm(m) : press(id, give))}
         >
-          <span class="ico">{m.icon}</span>
-          <span class="lbl">{m.name}</span>
+          {/* done: the ✓ beside the name, so two lines fit even on a short screen */}
+          {!done && <span class="ico">{m.icon}</span>}
+          <span class="lbl">
+            {done && <span class="tick">✓ </span>}
+            {m.name}
+          </span>
+          {t && (
+            <span class="sub" data-testid="btn-meds-sub">
+              {perDay === 1 && t.last ? `ניתן היום ${timeOf(t.last.start)}` : `${t.count} מתוך ${perDay} היום`}
+            </span>
+          )}
         </button>
       );
     }
     return (
-      <button type="button" class="big" data-testid="btn-meds" onClick={onOpenMeds}>
-        <span class="ico" data-testid="btn-meds-icons">
-          {list.length > 3 ? GENERIC_ICON : list.map((m) => m.icon).join('')}
+      <button type="button" class={`big ${done ? 'done' : ''}`} data-testid="btn-meds" data-done={done ? '1' : undefined} onClick={onOpenMeds}>
+        {!done && (
+          <span class="ico" data-testid="btn-meds-icons">
+            {list.length > 3 ? GENERIC_ICON : list.map((m) => m.icon).join('')}
+          </span>
+        )}
+        <span class="lbl">
+          {done && <span class="tick">✓ </span>}
+          תרופות
         </span>
-        <span class="lbl">תרופות</span>
+        {done && (
+          <span class="sub" data-testid="btn-meds-sub">
+            הכל ניתן היום
+          </span>
+        )}
       </button>
     );
   };

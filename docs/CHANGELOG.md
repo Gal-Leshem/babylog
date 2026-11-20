@@ -360,6 +360,23 @@ No names, addresses or secrets in this file (the repository is public).
   "בדיקה"). Tests: Google bundle (a recent edit and delete search 0 times, an old one once and writes the right row), browser
   (after a frozen-timer return: no list; the safety net still comes after 5 minutes open), engine (the label); all failed on
   the old code.
+- The owner's second sync log (morning after "changes since your version"): openings with news 2.3 to 2.5 s with the server's
+  part at 0.0 (were 2.5 to 4.0 with 0.7 to 1.2 on the server); what remains is the phone's network waking and Google's routing.
+  One opening took 4.4 s: its first try found no network, and the next carried an entry sent earlier (as the app was left),
+  which the server looked up in the whole sheet (1.1 s) to be sure it was not written twice.
+- Re-sent entries **(owner approved)**: a retry now says when it was queued (`queuedAt`); the server looks in the recent rows
+  first and needs no whole-sheet search when the entry is there, when the recent rows are the whole sheet, or when they reach
+  back before the entry was queued (a day of margin for the phone's clock). Siri and older apps keep the full lookup on a long
+  sheet. Tests: server (a retry on a long sheet: found or ruled out without a search; queued long ago or no time given: one
+  search), the built bundle in the fake Google runtime, the engine (the retry carries the time); all failed on the old code.
+- Medicines button **(owner's choice: option 3 of three mockups)**: when every medicine with a daily amount (once a day, X times
+  a day, every X hours) is given today, the button turns quiet: transparent with a dashed border, muted words, "✓" beside the
+  name instead of the icon, and a line "ניתן היום HH:MM" (one medicine given once a day), "2 מתוך 2 היום" (several a day) or
+  "הכל ניתן היום" (several medicines). Medicines given as needed do not count. It works exactly as before (a second dose
+  still asks first; several medicines still open the window). `doneToday` / `allDoneToday` in `src/shared/medicines.ts`.
+  Tests: unit (once a day, X times, every X hours, as needed, several), browser (single and several, still asks / opens;
+  dashed and transparent), layout at 852 / 700 / 560 (the words stay inside, at least 56 px, Home does not scroll: the first
+  layout with the ✓ above the name did not fit at 560 and the test caught it).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

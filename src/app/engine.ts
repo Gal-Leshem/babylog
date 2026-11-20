@@ -530,8 +530,9 @@ export class Engine {
    * The operations as they travel. One that leaves for the first time says so (`fresh`: the server then skips its slow
    * duplicate lookup) and is marked as sent BEFORE the request goes, so whatever happens next it is a retry from now on.
    */
-  private wireOps(batch: Op[]): (ApiRequest & { fresh?: true })[] {
-    const out = batch.map((o) => (o.sent ? o.req : { ...o.req, fresh: true as const }));
+  private wireOps(batch: Op[]): (ApiRequest & { fresh?: true; queuedAt?: number })[] {
+    // a retry says when it was queued: the server then usually finds or rules it out in the recent rows, without a search
+    const out = batch.map((o) => (o.sent ? { ...o.req, queuedAt: o.at } : { ...o.req, fresh: true as const }));
     if (batch.some((o) => !o.sent)) {
       for (const o of batch) o.sent = true;
       this.persist();

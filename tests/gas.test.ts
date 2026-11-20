@@ -324,7 +324,7 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(tap.props).toBe(3);
     });
 
-    it('a first-attempt tap does not search the whole sheet; an edit searches once (not twice)', () => {
+    it('a first-attempt tap, a retry and an edit of a recent entry do not search the whole sheet', () => {
       const { post, key, count } = start();
       const first = post({ key, action: 'sync', ...range });
       const op = { action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' };
@@ -332,13 +332,24 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(tap.find).toBe(0);
       const retry = count(() => post({ key, action: 'sync', ...range, ops: [op] }));
       expect(retry.out.results[0].duplicate).toBe(true);
-      expect(retry.find).toBe(1);
+      expect(retry.find, 'a short sheet: the recent rows are all of it').toBe(0);
       const edit = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'f1', patch: { note: 'x' } }] }));
       expect(edit.out.results[0].event.note).toBe('x');
       // (owner's sync log: each "היה לפני" move searched the whole sheet) a recent entry is found in the recent rows
       expect(edit.find, 'a recent entry is not searched for').toBe(0);
       const del = count(() => post({ key, action: 'sync', ...range, ops: [{ action: 'delete', id: 'f1' }] }));
       expect([del.out.results[0].event.deleted, del.find]).toEqual([true, 0]);
+    });
+
+    it('on a long sheet a retry that says when it was queued is not searched for; one that does not (an older app) is', () => {
+      const { post, key, count } = start();
+      for (let i = 0; i < 510; i++) post({ key, action: 'log', id: `n${i}`, type: 'diaper', detail: 'wet', start: `${day} 01:00`, user: 'P', source: 'app' });
+      const op = { action: 'log', id: 'r1', type: 'feed', detail: 'left', start: `${day} 02:00`, user: 'P', source: 'app' };
+      // the sheet's rows were all written "now" in this test: queued a day and a half later, the recent rows reach back before it
+      const later = count(() => post({ key, action: 'sync', ...range, ops: [{ ...op, queuedAt: Date.now() + 36 * 3_600_000 }] }));
+      expect([later.out.results[0].ok, later.find]).toEqual([true, 0]);
+      const old = count(() => post({ key, action: 'sync', ...range, ops: [{ ...op, id: 'r2' }] }));
+      expect([old.out.results[0].ok, old.find]).toEqual([true, 1]);
     });
 
     it('an edit of an entry older than the recent rows still finds it (one search) and writes the right row', () => {

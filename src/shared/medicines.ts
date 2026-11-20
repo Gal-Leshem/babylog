@@ -285,6 +285,23 @@ export function dosesPerDay(m: Pick<Medicine, 'schedule' | 'timesPerDay' | 'ever
   return null;
 }
 
+/**
+ * (owner) Today's doses of this medicine are all given: it has a daily amount (once a day, X times a day, every X hours) and
+ * reached it, or its course is over. A medicine given as needed is never "done".
+ */
+export function doneToday(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): boolean {
+  const perDay = dosesPerDay(m);
+  if (perDay === null) return false;
+  const t = medicineToday(m, events, nowEpoch);
+  return t.count >= perDay || Boolean(t.course?.done);
+}
+
+/** (owner) Every medicine with a daily amount is done for today (and there is at least one): the Home button can say so. */
+export function allDoneToday(meds: readonly Medicine[], events: readonly BabyEvent[], nowEpoch: number): boolean {
+  const daily = meds.filter((m) => dosesPerDay(m) !== null);
+  return daily.length > 0 && daily.every((m) => doneToday(m, events, nowEpoch));
+}
+
 /** Today in a few words: once a day "ניתן היום" / "עדיין לא"; several a day "1 מתוך 2"; as needed "2 היום" / "עדיין לא". */
 export function todayText(m: Medicine, count: number): string {
   const perDay = dosesPerDay(m);

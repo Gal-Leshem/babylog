@@ -38,13 +38,14 @@ export type ApiRequest =
   /**
    * One round trip (API 0.4.0): applies `ops` in order, then answers `unchanged` when nothing else changed since `rev`
    * (the revision the phone holds), otherwise the list for the range. Without `rev` the list is always returned.
-   * An operation marked `fresh` is leaving the phone for the first time, so the server skips the slow "seen this id?" lookup.
+   * An operation marked `fresh` is leaving the phone for the first time, so the server skips the slow "seen this id?" lookup;
+   * a retry says when it was queued (`queuedAt`), which usually spares that lookup too.
    */
   /**
    * `delta` (API 0.5.0): the phone can take `changes` instead of the list: when the server's journal of recent changes reaches
    * back to `rev`, the answer carries only the events changed since then (in their new state, deleted ones too, marked).
    */
-  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true })[]; debug?: true; delta?: true }
+  | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true; queuedAt?: number })[]; debug?: true; delta?: true }
   | { action: 'status' }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };

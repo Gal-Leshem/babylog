@@ -20,6 +20,7 @@ import {
 } from '../shared/types';
 
 const MIN = 60_000;
+const DAY = 24 * 60 * MIN;
 const RECENT_ROWS = 500;
 const MAX_FUTURE_MIN = 10;
 
@@ -434,12 +435,20 @@ function newEvent(o: Obj, type: BabyEvent['type'], detail: string, start: string
 }
 
 /**
- * Was this request id recorded before? Looking an id up in the whole sheet is slow (measured: 0.3 to 0.5 s), and a phone knows
- * when an operation leaves it for the very first time: it says `fresh: true`, and then only the recent rows are checked (they
- * are needed anyway). Anything else (a retry, Siri, an older app) gets the full lookup.
+ * Was this request id recorded before? Looking an id up in the whole sheet is slow (measured: 0.3 to 1.1 s), so the recent rows
+ * (read anyway) are looked at first. A phone knows when an operation leaves it for the very first time (`fresh: true`): then
+ * the recent rows are enough. A retry says when it was queued (`queuedAt`, epoch ms): it cannot have been written before that,
+ * so when the recent rows reach back further (a day of margin for the phone's clock) or are the whole sheet, they are enough
+ * too (owner's sync log: an opening waited 1.1 s for this search). Anything else (Siri, an older app) gets the full lookup.
  */
 function known(o: Obj, id: string, store: Store): BabyEvent | undefined {
-  if (o.fresh === true) return store.recent(RECENT_ROWS).find((e) => e.id === id);
+  const tail = store.recent(RECENT_ROWS);
+  const hit = tail.find((e) => e.id === id);
+  if (hit || o.fresh === true) return hit;
+  if (store.count() <= RECENT_ROWS) return undefined; // the recent rows are the whole sheet
+  const queuedAt = typeof o.queuedAt === 'number' ? o.queuedAt : NaN;
+  const oldest = tail[0] ? parseLocal(tail[0].created) : NaN;
+  if (!Number.isNaN(queuedAt) && !Number.isNaN(oldest) && oldest < queuedAt - DAY) return undefined;
   return store.find(id);
 }
 

@@ -545,13 +545,13 @@ describe('sync: one round trip for a phone (API 0.4.0)', () => {
       };
       return () => c;
     };
-    it('a first attempt is not looked up in the whole sheet; a retry is', () => {
+    it('a first attempt is not looked up in the whole sheet; a retry found among the recent rows is not either', () => {
       const count = finds();
       sync({ ops: [{ ...feedOp('a'), fresh: true }, { action: 'asleep', id: 's', user: 'Parent 1', source: 'app', start: '2026-11-14 12:00', fresh: true }, { action: 'awake', id: 'w', user: 'Parent 1', source: 'app', end: '2026-11-14 12:00', fresh: true }] });
       expect(count()).toBe(0);
       expect(store.all().map((e) => e.id)).toEqual(['a', 's']);
       const again = sync({ ops: [feedOp('a')] });
-      expect(count()).toBe(1);
+      expect(count()).toBe(0);
       expect((again.results![0] as ApiOk).duplicate).toBe(true);
     });
     it('even a wrongly "fresh" repeat is caught when the row is among the recent ones', () => {
@@ -560,10 +560,31 @@ describe('sync: one round trip for a phone (API 0.4.0)', () => {
       expect(again.results!.map((x) => (x as ApiOk).duplicate)).toEqual([true, true]);
       expect(store.all()).toHaveLength(1);
     });
-    it('single requests (Siri, older apps) keep the full lookup', () => {
+    // a sheet longer than the recent rows: 600 rows written a month ago
+    const longSheet = () => {
+      store = new MemoryStore(Array.from({ length: 600 }, (_, i) => ev({ id: `old${i}`, type: 'diaper', detail: 'wet', start: '2026-10-14 08:00', created: '2026-10-14 08:00' })));
+      deps.store = store;
+    };
+    it('single requests (Siri, older apps) keep the full lookup on a long sheet', () => {
+      longSheet();
       const count = finds();
       log('feed', 'left', '2026-11-14 11:00');
       expect(count()).toBe(1);
+    });
+    // Owner's sync log: an opening waited 1.1 s for the server to look a re-sent entry up in the whole sheet.
+    it('a retry says when it was queued: when the recent rows reach back before that, no search; otherwise a search', () => {
+      longSheet();
+      const count = finds();
+      const queuedAt = now - 60_000;
+      const r = sync({ ops: [{ ...feedOp('n1'), queuedAt }] }); // sent before, never arrived
+      expect([(r.results![0] as ApiOk).duplicate, count()]).toEqual([undefined, 0]);
+      expect(sync({ ops: [{ ...feedOp('n1'), queuedAt }] }).results![0]).toMatchObject({ duplicate: true }); // it did arrive
+      expect(count()).toBe(0);
+      // queued long ago (before the oldest recent row): the whole sheet is searched, and an old row is found
+      expect(sync({ ops: [{ ...feedOp('old3'), queuedAt: T('2026-10-01 08:00') }] }).results![0]).toMatchObject({ duplicate: true });
+      expect(count()).toBe(1);
+      sync({ ops: [feedOp('n2')] }); // an older app: no time given
+      expect(count()).toBe(2);
     });
   });
 });

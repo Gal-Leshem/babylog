@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 308 unit (Vitest) and 164 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 313 unit (Vitest) and 169 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -43,6 +43,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - The owner chose fix 1; it is built (API 0.5.0, see `ARCHITECTURE.md` "Changes since your version"). Next: the owner opens the
   app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
   0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
+- Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. Open
+  with the owner: on the several-medicines button, a ✓ instead of the icon of each medicine already given today, and/or the
+  name of the one medicine left (mockups sent; recommendation: ✓ per medicine plus a line "נשאר: <name>", keeping "תרופות").
 - Owner bug (toast tap went through to the screen under it) fixed with a tap shield; the "could not get back" part was not
   reproduced: ask for a screenshot if it happens again.
 - Recommendation given to the owner (for reference):

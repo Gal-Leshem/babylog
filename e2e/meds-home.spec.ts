@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { formatLocal, parseLocal } from '../src/shared/tz';
 import { allServerRows, api, install, resetServer } from './helpers';
 
 // F7 stage 2: the Home button and tile follow the active medicines; several open a window where doses are marked.
@@ -11,6 +12,11 @@ const setMeds = (request: APIRequestContext, meds: Record<string, unknown>[]) =>
 const doses = async (request: APIRequestContext) =>
   (await allServerRows(request)).filter((e) => !e.deleted && (e.type === 'vitamin_d' || e.type === 'medicine')).map((e) => (e.type === 'vitamin_d' ? 'vitamin_d' : e.detail));
 const row = (page: Page, id: string) => page.locator(`[data-testid="meds-row"][data-id="${id}"]`);
+/** A time today, a minute before now (as the server sees it). */
+const doseTime = async (request: APIRequestContext) => {
+  const now = (await api(request, { action: 'ping' })).serverNow as string;
+  return formatLocal(parseLocal(now) - 60_000);
+};
 
 test('no active medicine: no medicine button and no medicine tile; the other buttons share the space', async ({ page, request }) => {
   await setMeds(request, [{ ...VIT, status: 'archived' }]);
@@ -70,6 +76,65 @@ test('several medicines: their icons on "תרופות"; the window marks several
   await expect(page.getByTestId('tile-vitamin')).toContainText('הכל ניתן');
   await expect(page.getByTestId('tile-vitamin')).not.toHaveClass(/warn/);
   await expect.poll(async () => (await doses(request)).sort()).toEqual(['m1', 'vitamin_d']);
+});
+
+// Owner: when everything due today is given, the button says so from inside (dashed and quiet, a ✓ instead of the icon);
+// it still works as before (a second dose asks first).
+test('vitamin D given today: the button turns quiet with a ✓ and the time; a second tap still asks first', async ({ page }) => {
+  await install(page);
+  const btn = page.getByTestId('btn-vitamin_d');
+  await expect(btn).not.toHaveAttribute('data-done', '1');
+  await expect(btn.locator('.ico')).toHaveText('☀️');
+  const before = await btn.evaluate((b) => getComputedStyle(b).borderStyle);
+  await btn.click();
+  await expect(btn).toHaveAttribute('data-done', '1');
+  await expect(btn.locator('.ico')).toHaveCount(0);
+  await expect(btn.locator('.lbl')).toHaveText('✓ ויטמין D');
+  await expect(page.getByTestId('btn-meds-sub')).toHaveText(/^ניתן היום \d\d:\d\d$/);
+  await expect(btn).not.toHaveClass(/\bflash\b/, { timeout: 3000 }); // the tap's own flash is over
+  await expect.poll(() => btn.evaluate((b) => getComputedStyle(b).backgroundColor)).toBe('rgba(0, 0, 0, 0)'); // (after the colour transition)
+  const look = await btn.evaluate((b) => ({ border: getComputedStyle(b).borderStyle, bg: getComputedStyle(b).backgroundColor }));
+  expect([before, look.border, look.bg]).toEqual(['solid', 'dashed', 'rgba(0, 0, 0, 0)']);
+  await expect(btn).toBeEnabled({ timeout: 3000 });
+  await btn.click();
+  await expect(page.getByTestId('confirm-dose')).toBeVisible(); // works as before: a second dose today asks first
+});
+
+for (const height of [852, 700, 560]) {
+  test(`the quiet "given today" button keeps its words inside and stays big at height ${height}`, async ({ page }) => {
+    await page.setViewportSize({ width: 393, height });
+    await install(page);
+    await page.getByTestId('btn-vitamin_d').click();
+    await expect(page.getByTestId('btn-vitamin_d')).toHaveAttribute('data-done', '1');
+    const fit = await page.getByTestId('btn-vitamin_d').evaluate((b) => {
+      const r = b.getBoundingClientRect();
+      const parts = [...b.querySelectorAll('.lbl, .sub')].map((x) => x.getBoundingClientRect());
+      return { h: r.height, inside: parts.every((p) => p.top >= r.top + 2 && p.bottom <= r.bottom - 2), scroll: document.querySelector('.main')!.scrollHeight <= document.querySelector('.main')!.clientHeight };
+    });
+    expect(fit.h).toBeGreaterThanOrEqual(56);
+    expect(fit.inside, 'the name and the time stay inside the button').toBe(true);
+    expect(fit.scroll, 'Home does not scroll').toBe(true);
+  });
+}
+
+test('several medicines: the button turns quiet only when every medicine with a daily amount is given (as needed ones do not count)', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'בפנטן', icon: '🍓', schedule: 'times', timesPerDay: 2 }, { id: 'm2', name: 'אקמול', icon: '🧸', schedule: 'prn' }]);
+  await install(page);
+  const btn = page.getByTestId('btn-meds');
+  await btn.click();
+  await row(page, 'vitamin_d').click();
+  await row(page, 'm1').click();
+  await page.getByTestId('meds-done').click();
+  await expect(btn).not.toHaveAttribute('data-done', '1'); // בפנטן: one of two
+  await expect(btn.locator('.ico')).toHaveText('☀️🍓🧸');
+  await api(request, { action: 'log', id: 'b2', type: 'medicine', detail: 'm1', start: (await doseTime(request)), user: 'Parent Two', source: 'app' });
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(btn).toHaveAttribute('data-done', '1');
+  await expect(btn.locator('.ico')).toHaveCount(0);
+  await expect(btn.locator('.lbl')).toHaveText('✓ תרופות');
+  await expect(page.getByTestId('btn-meds-sub')).toHaveText('הכל ניתן היום');
+  await btn.click();
+  await expect(page.getByTestId('meds-window')).toBeVisible(); // still opens the window
 });
 
 test('the window shows the next allowed time and closes when tapping outside', async ({ page, request }) => {

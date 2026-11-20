@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, courseProgress, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, allDoneToday, courseProgress, doneToday, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -155,5 +155,31 @@ describe('today in words (tile and window)', () => {
   it('as needed: just how many today', () => {
     expect(todayText(med({ schedule: 'prn' }), 0)).toBe('עדיין לא');
     expect(todayText(med({ schedule: 'prn', maxPerDay: 4 }), 2)).toBe('2 היום');
+  });
+});
+
+// Owner: the Home button says when everything due today is given.
+describe('done for today', () => {
+  const dose = (detail: string, start: string) => (detail === 'vitamin_d' ? ev({ type: 'vitamin_d', start }) : ev({ type: 'medicine', detail, start }));
+  const twice = med({ id: 'm1', schedule: 'times', timesPerDay: 2 });
+  const prn = med({ id: 'm2', schedule: 'prn' });
+  const every8 = med({ id: 'm3', schedule: 'interval', everyHours: 8 });
+
+  it('once a day: given today; yesterday does not count', () => {
+    expect(doneToday(DEFAULT_VITAMIN_D, [dose('vitamin_d', '2026-11-13 09:00')], NOW)).toBe(false);
+    expect(doneToday(DEFAULT_VITAMIN_D, [dose('vitamin_d', '2026-11-14 09:00')], NOW)).toBe(true);
+  });
+  it('X times a day and every X hours: only when the daily amount is reached; as needed: never', () => {
+    expect(doneToday(twice, [dose('m1', '2026-11-14 08:00')], NOW)).toBe(false);
+    expect(doneToday(twice, [dose('m1', '2026-11-14 08:00'), dose('m1', '2026-11-14 11:00')], NOW)).toBe(true);
+    expect(doneToday(every8, [dose('m3', '2026-11-14 01:00'), dose('m3', '2026-11-14 09:00')], NOW)).toBe(false);
+    expect(doneToday(prn, [dose('m2', '2026-11-14 08:00')], NOW)).toBe(false);
+  });
+  it('all of them: every medicine with a daily amount, as needed ones aside; none with a daily amount: never', () => {
+    const given = [dose('vitamin_d', '2026-11-14 07:00'), dose('m1', '2026-11-14 08:00')];
+    expect(allDoneToday([DEFAULT_VITAMIN_D, twice, prn], given, NOW)).toBe(false);
+    expect(allDoneToday([DEFAULT_VITAMIN_D, twice, prn], [...given, dose('m1', '2026-11-14 11:00')], NOW)).toBe(true);
+    expect(allDoneToday([prn], [dose('m2', '2026-11-14 08:00')], NOW)).toBe(false);
+    expect(allDoneToday([], [], NOW)).toBe(false);
   });
 });
