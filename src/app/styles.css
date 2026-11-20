@@ -411,8 +411,8 @@ input, textarea, select {
 .medbtn .mi { font-size: 28px; line-height: 1; width: 36px; text-align: center; flex: none; }
 /* (owner) done for today: a ✓ in place of the icon, in the quiet colour (not an emoji: no tint needed) */
 .medbtn .mi.done { color: var(--muted); font-weight: 800; }
-/* (owner) on the several-medicines button a medicine done for today fades to half */
-.big .ico .given { opacity: 0.5; }
+/* (owner) on the several-medicines button a medicine done for today fades (30%, grey) so it is clearly different */
+.big .ico .given { opacity: 0.3; filter: grayscale(1); }
 .medbtn .mtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .medbtn .mn { font-weight: 700; font-size: 17px; }
 .medbtn .mn small { color: var(--muted); font-weight: 500; }

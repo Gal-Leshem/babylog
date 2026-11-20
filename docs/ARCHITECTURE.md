@@ -130,7 +130,7 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
   When every medicine with a daily amount is given today (`allDoneToday`; as-needed ones do not count) the button is quiet
   (`.big.done`: transparent, dashed, muted, "✓" beside the name, a line saying when / how many); it works as before (owner).
-  Before that, each medicine done for today fades to half on the button and shows a "✓" in place of its icon in the window
+  Before that, each medicine done for today fades (30%, grey) on the button and shows a "✓" in place of its icon in the window
   (`doneToday`).
 - **Sleep on Home** (owner): while asleep the tile says "נרדם ב-HH:MM"; a sleep open longer than the longest finished sleep of
   the last 7 days plus an hour (at least 6 hours; `forgottenWake` in `domain.ts`) turns the tile into a warning button

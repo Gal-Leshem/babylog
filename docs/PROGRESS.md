@@ -44,7 +44,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
   0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
 - Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A
-  medicine done for today fades to half on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
+  medicine done for today fades (30%, grey) on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
 - Siri commands in Hebrew and English (owner: options A + B; owner's Siri English, the other parent's Hebrew; a MacBook is
   available): built (see BACKLOG F11 and INSTALL.he.md section 4). Waiting for the owner: the 5-minute check on the Hebrew phone
   (locked phone, Hebrew name recognised, how long it takes), then running `sign.sh` on the Mac and AirDrop. Not verified on a

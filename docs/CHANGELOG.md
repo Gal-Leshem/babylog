@@ -382,6 +382,7 @@ No names, addresses or secrets in this file (the repository is public).
   and in the medicines window. Browser test (failed on the old code); screenshots day / night / 560.
 - Medicines button **(owner, after seeing it)**: on the several-medicines button a medicine done for today keeps its icon at
   half opacity instead of a ✓ (clearer among the icons); the window keeps the ✓. Browser test updated (failed on the ✓).
+  Then **(owner: more clearly different)**: 30% and grey.
 - Siri in Hebrew and English **(owner: the other parent often has no free hands while nursing; option A, a shortcut per action,
   plus option B, one that asks first)**: the server answers Siri in Hebrew when the request says `lang: 'he'` ("נרשמה הנקה ימין,
   14:10. הבאה: שמאל", sleep words by the baby's sex, durations like "שעה ו-20 דקות"); requests without it stay English. The
