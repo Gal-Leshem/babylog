@@ -110,8 +110,6 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   server job failed: pages wait only for the tests; production waits for tests AND the live test).
 - Never push to `dev` while a `main` run is still going (or the other way round) unless you must: the server jobs now queue
   (`concurrency: test-server`), but only one can wait; a third push cancels the waiting one.
-- About two dozen browser tests seed "today 00:xx" times, which are in the future during the first hour after midnight (Israel
-  time): they fail then, locally and in CI. Run the suite and push outside 00:00-01:10 (or make those tests use yesterday).
 - Run one Playwright run at a time: inside a run the workers have their own mock servers (ports 8787-8790), but two runs would
   share them and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.

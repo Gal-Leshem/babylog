@@ -398,6 +398,12 @@ No names, addresses or secrets in this file (the repository is public).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).
+- Tests: the browser tests now pass at any hour. The tests that seed or type "today 00:xx" (addlate, history, home, medicines)
+  now start with `pinPageDay` (`e2e/helpers.ts`): the page's clock starts at 12:00 yesterday and runs on, and the events are
+  seeded on that day, so 00:xx is always in the past and every check stays as it was (no "אתמול" wording). The mock server keeps
+  the real time and accepts them. Six of them failed just after midnight; the others only showed events that were still to
+  come, or saved times within the 10 minutes ahead the server allows. Checked by running the suite with the time shifted to 00:01, 00:20 and 00:58 (tests
+  process, mock server and page). The note about the midnight window in `PROGRESS.md` is gone.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { formatLocal, parseLocal } from '../src/shared/tz';
-import { allServerRows, api, install, resetServer } from './helpers';
+import { allServerRows, api, install, pinPageDay, resetServer } from './helpers';
 
 // F7 stage 2: the Home button and tile follow the active medicines; several open a window where doses are marked.
 test.beforeEach(async ({ request }) => {
@@ -300,7 +300,7 @@ test('edit: a vitamin D entry can become another medicine and back; an archived 
 });
 
 test('daily summary: a row per medicine; once a day says given or not, others count; an archived one shows only on days it was given', async ({ page, request }) => {
-  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }).slice(0, 10);
+  const today = await pinPageDay(page); // (a day whose 00:01 is past: see pinPageDay)
   await setMeds(request, [
     VIT,
     { id: 'm1', name: 'אקמול', icon: '🍓', schedule: 'prn' },

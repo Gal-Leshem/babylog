@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, allServerRows, api, install, resetServer, seed, todayLocal } from './helpers';
+import { addDaysLocal, allServerRows, api, install, pinPageDay, pinnedDay, resetServer, seed } from './helpers';
 
-test.beforeEach(async ({ request }) => {
+// The page's today is yesterday, from 12:00 (see pinPageDay): the times seeded below (00:01 to 00:55) are then always in the past.
+const today = pinnedDay().day;
+
+test.beforeEach(async ({ page, request }) => {
   await resetServer(request);
+  await pinPageDay(page, today);
 });
-
-const today = todayLocal();
 
 async function seedToday(request: Parameters<typeof seed>[0]) {
   await seed(request, [
@@ -138,7 +140,7 @@ test('an open sleep is shown as still sleeping', async ({ page, request }) => {
 // Owner screenshot: a sleep's time range ("17:30–18:23") wrapped onto two lines in the 92px time column and stretched the row.
 // The time column fits a range on one line, centred, like the icons; a sleep row is no taller than a feed row.
 test('history: a sleep time range stays on one line, centred, and its row is as tall as the others', async ({ page, request }) => {
-  const d = todayLocal();
+  const d = today;
   await seed(request, [
     { type: 'sleep', start: `${d} 00:10`, end: `${d} 00:53` },
     { type: 'feed', detail: 'right', start: `${d} 00:55` },
