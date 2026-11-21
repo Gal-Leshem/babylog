@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "e49d092",
+  "sha": "87a2f30",
   "ref": "main",
-  "at": "2026-11-20T18:42:02.284Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44794417638",
+  "at": "2026-11-21T08:39:36.917Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44885521696",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,18 +21,18 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-LUlQNnjI.css   18.62 kB │ gzip:  4.49 kB",
-      "dist/assets/index-gLOzDyTh.js   129.66 kB │ gzip: 42.94 kB",
+      "dist/assets/index-Cpei7BxR.js   129.87 kB │ gzip: 42.99 kB",
       "",
-      "✓ built in 100ms",
+      "✓ built in 95ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (146.67 KiB)",
+      "precache  10 entries (146.87 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
-      "shortcut templates written (28)",
-      "took 4s"
+      "shortcut templates written (32)",
+      "took 3s"
     ],
     "enable-pages": [
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
@@ -69,20 +69,19 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 0s"
+      "took 1s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published e49d092 to gh-pages",
-      "took 2s"
+      "published 87a2f30 to gh-pages",
+      "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 50be8af, waiting for e49d092",
-      "attempt 2: serves 50be8af, waiting for e49d092",
-      "attempt 3: serves 50be8af, waiting for e49d092",
-      "site is live and serves e49d092",
-      "took 30s"
+      "attempt 1: serves e49d092, waiting for 87a2f30",
+      "attempt 2: serves e49d092, waiting for 87a2f30",
+      "site is live and serves 87a2f30",
+      "took 20s"
     ]
   }
 }
