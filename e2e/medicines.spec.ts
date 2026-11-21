@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, api, install, pickDate, resetServer, seed, todayLocal } from './helpers';
+import { addDaysLocal, api, install, pickDate, pinPageDay, resetServer, seed, todayLocal } from './helpers';
 
 // F7: medicines are defined in Settings. Vitamin D is there by default and can be archived (not deleted).
 test.beforeEach(async ({ request }) => {
@@ -104,18 +104,19 @@ test('medicines: vitamin D gets 400 IU until a date, can be archived and restore
 });
 
 test('medicines: when a course is over the row says so and offers to archive or extend', async ({ page, request }) => {
+  const today = await pinPageDay(page); // (a day whose 00:01 is past: see pinPageDay)
   await api(request, {
     action: 'settings',
     set: {
       medicines: [
-        { id: 'm1', name: 'סירופ', schedule: 'daily', course: 'until', courseUntil: addDaysLocal(todayLocal(), -1) },
+        { id: 'm1', name: 'סירופ', schedule: 'daily', course: 'until', courseUntil: addDaysLocal(today, -1) },
         { id: 'm2', name: 'טיפות', schedule: 'daily', course: 'doses', courseCount: 2 },
       ],
     },
   });
   await seed(request, [
-    { type: 'medicine', detail: 'm2', start: `${addDaysLocal(todayLocal(), -1)} 08:00` },
-    { type: 'medicine', detail: 'm2', start: `${todayLocal()} 00:01` },
+    { type: 'medicine', detail: 'm2', start: `${addDaysLocal(today, -1)} 08:00` },
+    { type: 'medicine', detail: 'm2', start: `${today} 00:01` },
   ]);
   await install(page);
   await openMeds(page);

@@ -45,9 +45,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
-5. About two dozen browser tests use "today 00:xx" and fail in the first hour after midnight (Israel time): run and push outside
-   00:00-01:10, or fix them (a task was suggested to the owner).
-6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
+5. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
@@ -93,8 +91,6 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   server job failed: pages wait only for the tests; production waits for tests AND the live test).
 - Never push to `dev` while a `main` run is still going (or the other way round) unless you must: the server jobs now queue
   (`concurrency: test-server`), but only one can wait; a third push cancels the waiting one.
-- About two dozen browser tests seed "today 00:xx" times, which are in the future during the first hour after midnight (Israel
-  time): they fail then, locally and in CI. Run the suite and push outside 00:00-01:10 (or make those tests use yesterday).
 - Run one Playwright run at a time: inside a run the workers have their own mock servers (ports 8787-8790), but two runs would
   share them and reset each other.
 - Test new behavior at several phone heights (852, 700, 560) and against `MOCK_DELAY=250`.
@@ -132,7 +128,6 @@ Hard rules:
 - The look stays as it is (own icons and a visual polish were declined); do not propose them again unless I ask.
 - When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code; show me screenshots of what you changed (day, night, and at 560).
 - For a new feature: research first, propose (mockups as screenshots of the real app when it is visual), and wait for my decisions before building.
-- Do not run or push between 00:00 and 01:10 Israel time unless the midnight tests were fixed (see PROGRESS.md).
 
 Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings > מתקדם shows the new version).
 ```

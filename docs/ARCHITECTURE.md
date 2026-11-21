@@ -247,6 +247,9 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   `MOCK` in `e2e/helpers.ts`; the config starts them with `MOCK_SERVERS`), and every test resets its own server in
   `beforeEach`, so tests never see each other. `E2E_WORKERS=1` runs them one by one. Wait for a condition, not a fixed time,
   unless the test checks that something does NOT happen during a time.
+  A test that seeds or types early-morning times ("00:05") calls `pinPageDay(page)` first: the page's day becomes yesterday
+  from 12:00 (the clock runs, timers stay real), so those times are never in the future, while the mock server (real time)
+  still accepts them. The real today would fail just after midnight, when its 00:30 is still to come.
 - `scripts/live-test.ts` runs against the real deployed TEST server (real Google, real sheet) in CI. Every server answer carries
   `build` (the commit); the live test first waits until three answers in a row come from this commit's build, because right after a
   deploy Google can still answer from the previous version.

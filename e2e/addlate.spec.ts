@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, allServerRows, api, install, pickDate, resetServer, seed, todayLocal } from './helpers';
+import { addDaysLocal, allServerRows, api, install, pickDate, pinPageDay, pinnedDay, resetServer, seed, todayLocal } from './helpers';
 import { parseLocal } from '../src/shared/tz';
 
 test.beforeEach(async ({ request }) => {
@@ -132,6 +132,7 @@ test('cancel and tapping outside close the form without saving', async ({ page, 
 });
 
 test('the quick-time buttons light up when chosen, and stop when the time is set by hand', async ({ page }) => {
+  const d = await pinPageDay(page); // (just after midnight "5 minutes ago" is already yesterday, and 01:23 still to come)
   await install(page);
   await page.getByTestId('add-late').click();
   const on = (id: string) => page.getByTestId(id).evaluate((el) => el.classList.contains('on'));
@@ -150,7 +151,7 @@ test('the quick-time buttons light up when chosen, and stop when the time is set
   expect(await on('back-30')).toBe(false);
   await page.getByTestId('back-5').click();
   expect(await on('back-5')).toBe(true);
-  await pickDate(page, 'start-date', addDaysLocal(todayLocal(), -1)); // choosing another day clears it
+  await pickDate(page, 'start-date', addDaysLocal(d, -1)); // choosing another day clears it
   expect(await on('back-5')).toBe(false);
 });
 
@@ -242,15 +243,15 @@ test('the diaper buttons use the everyday words', async ({ page }) => {
 // Owner: when a sleep was edited, only falling asleep could be set with the quick buttons, and a sleep opened from its
 // "התעורר" row still showed falling asleep first. Now the two moments are edited separately, and the tapped one opens first.
 test.describe('editing a sleep: falling asleep and waking up separately', () => {
-  const seedSleep = async (request: import('@playwright/test').APIRequestContext) => {
-    const d = todayLocal();
+  const seedSleep = async (page: import('@playwright/test').Page, request: import('@playwright/test').APIRequestContext) => {
+    const d = await pinPageDay(page);
     await seed(request, [{ id: 'sl', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` }]);
     return d;
   };
   const sleepRow = async (request: import('@playwright/test').APIRequestContext) => (await allServerRows(request)).find((e) => e.id === 'sl')!;
 
   test('the "התעורר" row opens on waking up; its own quick buttons change only the wake-up', async ({ page, request }) => {
-    const d = await seedSleep(request);
+    const d = await seedSleep(page, request);
     await install(page);
     await page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).click();
     await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
@@ -266,7 +267,7 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
   });
 
   test('the "נרדם" row opens on falling asleep, and changes only that', async ({ page, request }) => {
-    const d = await seedSleep(request);
+    const d = await seedSleep(page, request);
     await install(page);
     await page.getByTestId('recent-row').filter({ hasText: 'נרדם' }).click();
     await expect(page.getByTestId('moment-start')).toHaveAttribute('aria-selected', 'true');
@@ -278,7 +279,7 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
   });
 
   test('switching moments keeps what was changed in the other one', async ({ page, request }) => {
-    const d = await seedSleep(request);
+    const d = await seedSleep(page, request);
     await install(page);
     await page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).click();
     await page.getByTestId('end-time').fill('00:45');
@@ -290,7 +291,7 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
   });
 
   test('a wake-up before falling asleep is refused, and the form shows the wake-up side', async ({ page, request }) => {
-    await seedSleep(request);
+    await seedSleep(page, request);
     await install(page);
     await page.getByTestId('recent-row').filter({ hasText: 'נרדם' }).click();
     await page.getByTestId('start-time').fill('00:50');
@@ -301,7 +302,7 @@ test.describe('editing a sleep: falling asleep and waking up separately', () => 
   });
 
   test('History opens a finished sleep on waking up, an open one on falling asleep', async ({ page, request }) => {
-    const d = todayLocal();
+    const d = await pinPageDay(page);
     await seed(request, [
       { id: 'done', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` },
       { id: 'open', type: 'sleep', start: `${d} 00:50` },
@@ -323,7 +324,7 @@ test.describe('taking back an edit', () => {
   const row = async (request: import('@playwright/test').APIRequestContext, id: string) => (await allServerRows(request)).find((e) => e.id === id)!;
 
   test('"בטל" in the toast after saving puts back what was there before the edit', async ({ page, request }) => {
-    const d = todayLocal();
+    const d = await pinPageDay(page);
     await seed(request, [{ id: 'f1', type: 'feed', detail: 'left', start: `${d} 00:10`, note: 'שקט' }]);
     await install(page);
     await page.getByTestId('recent-row').click();
@@ -339,7 +340,7 @@ test.describe('taking back an edit', () => {
   });
 
   test('later, the form shows the version before the last edit and puts it back in one tap (one step back)', async ({ page, request }) => {
-    const d = todayLocal();
+    const d = await pinPageDay(page);
     await seed(request, [{ id: 's1', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40` }]);
     // the other parent changed falling asleep by mistake, on her phone
     await api(request, { action: 'update', id: 's1', patch: { start: `${d} 00:25` } });
@@ -356,7 +357,7 @@ test.describe('taking back an edit', () => {
   });
 
   test('an entry that was never edited shows no such line', async ({ page, request }) => {
-    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:10` }]);
+    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${await pinPageDay(page)} 00:10` }]);
     await install(page);
     await page.getByTestId('recent-row').click();
     await expect(page.getByTestId('event-form')).toBeVisible();
@@ -407,7 +408,7 @@ test('editing a sleep does not count it as overlapping itself', async ({ page, r
 for (const height of [852, 700, 560]) {
   test(`edit form: "ביטול" is always visible and tappable, and changes nothing (height ${height})`, async ({ page, request }) => {
     await page.setViewportSize({ width: 393, height });
-    const d = todayLocal();
+    const d = await pinPageDay(page);
     await seed(request, [{ id: 's1', type: 'sleep', start: `${d} 00:05`, end: `${d} 00:40`, note: 'ok' }]);
     await install(page);
     await page.getByTestId('btn-wet').click(); // a toast is on screen
@@ -435,8 +436,9 @@ for (const height of [852, 700, 560]) {
 // Owner: after saving an edit the toast stayed too long (6 s), after adding something too short (3 s): both 4.5 s now.
 for (const kind of ['add', 'edit'] as const) {
   test(`the toast after ${kind === 'add' ? 'adding' : 'saving an edit'} stays 4.5 seconds`, async ({ page, request }) => {
-    await page.clock.install();
-    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${todayLocal()} 00:10` }]);
+    const { day, noon } = pinnedDay(); // (see pinPageDay)
+    await page.clock.install({ time: noon });
+    await seed(request, [{ id: 'w1', type: 'diaper', detail: 'wet', start: `${day} 00:10` }]);
     await install(page);
     if (kind === 'add') {
       await page.getByTestId('add-late').click();
