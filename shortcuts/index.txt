@@ -1,0 +1,32 @@
+en-01.plist	Left feed	en	
+en-02.plist	Log left feed	en	
+en-03.plist	Right feed	en	
+en-04.plist	Log right feed	en	
+en-05.plist	Wet diaper	en	
+en-06.plist	Poop	en	
+en-07.plist	Poop diaper	en	
+en-08.plist	Full diaper	en	
+en-09.plist	Asleep	en	
+en-10.plist	Awake	en	
+en-11.plist	Vitamin D	en	
+en-12.plist	Last feed	en	
+en-13.plist	Next side	en	
+en-14.plist	Which side next	en	
+en-15.plist	Baby log	en	
+he-16.plist	הנקה ימין	he	
+he-17.plist	תסמני הנקה ימין	he	
+he-18.plist	הנקה שמאל	he	
+he-19.plist	תסמני הנקה שמאל	he	
+he-20.plist	חיתול פיפי	he	
+he-21.plist	חיתול קקי	he	
+he-22.plist	חיתול מלא	he	
+he-23.plist	התינוק נרדם	he	boy
+he-24.plist	התינוק התעורר	he	boy
+he-25.plist	יומן תינוק	he	boy
+he-26.plist	התינוקת נרדמה	he	girl
+he-27.plist	התינוקת התעוררה	he	girl
+he-28.plist	יומן תינוק	he	girl
+he-29.plist	ויטמין די	he	
+he-30.plist	מתי הנקה אחרונה	he	
+he-31.plist	מה הצד להנקה הבאה	he	
+he-32.plist	צד הבא	he	
