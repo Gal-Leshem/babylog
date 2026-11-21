@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "003d673",
+  "sha": "30d1789",
   "ref": "main",
-  "at": "2026-11-21T19:29:01.332Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44940746752",
+  "at": "2026-11-21T22:22:22.880Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/44955975759",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,9 +21,9 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-CWdxNxhn.css   19.26 kB │ gzip:  4.58 kB",
-      "dist/assets/index-Bn3SeesG.js   131.41 kB │ gzip: 43.44 kB",
+      "dist/assets/index-B0cXOWsz.js   131.41 kB │ gzip: 43.44 kB",
       "",
-      "✓ built in 84ms",
+      "✓ built in 80ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -32,13 +32,13 @@
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
       "shortcut templates written (32)",
-      "took 3s"
+      "took 2s"
     ],
     "enable-pages": [
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 1s"
+      "took 0s"
     ],
     "install": [
       "+ npm ci",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 6s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -69,19 +69,19 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 1s"
+      "took 0s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 003d673 to gh-pages",
-      "took 1s"
+      "published 30d1789 to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 87a2f30, waiting for 003d673",
-      "attempt 2: serves 87a2f30, waiting for 003d673",
-      "site is live and serves 003d673",
-      "took 20s"
+      "attempt 1: serves 003d673, waiting for 30d1789",
+      "attempt 2: serves 003d673, waiting for 30d1789",
+      "site is live and serves 30d1789",
+      "took 21s"
     ]
   }
 }
