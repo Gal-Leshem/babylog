@@ -141,6 +141,10 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   the last 7 days plus an hour (at least 6 hours; `forgottenWake` in `domain.ts`) turns the tile into a warning button
   "שכחתם התעוררות?" that opens the sleep on its wake-up side, ready to record it. The form warns once when a sleep overlaps
   another one (`overlappingSleep`; an open sleep lasts until now); a second tap on "לשמור בכל זאת" saves, any change asks again.
+- **History** (owner): day by day (`DayNav`) or the last 24 hours with a line where the day changes (`historyView` in the
+  per-phone prefs); the kind filter applies to both.
+- **Medicines window:** under a medicine just marked, the same "היה לפני" minutes and "בטל" as the toast (`earlierFor` on the
+  `Mark`), in its own row because the row itself is a button.
 - **Recent list** columns: icon 40px, label, time 48px, name 76px (cut with "…"), so the time never moves with a name.
 - **Recent list** (`recentRows` in `Home.tsx`): sleeps appear as two moments, "נרדם" and "התעורר"; same-minute rows keep entry order
   (newest entered first). History shows one row per event.

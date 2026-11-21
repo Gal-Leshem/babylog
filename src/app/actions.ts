@@ -38,7 +38,7 @@ export const EARLIER_MIN = [5, 10, 15, 30] as const;
  * minutes (always counted from the logged time, so 10 and then 15 means 15 minutes before it). `text(t)` is the toast text
  * for a time. `unmove` takes the moves back, newest first; the toast's undo calls it before taking back the entry itself.
  */
-function earlierFor(id: string, field: 'start' | 'end', at: string, text: (t: string) => string) {
+export function earlierFor(id: string, field: 'start' | 'end', at: string, text: (t: string) => string) {
   const moves: { opId: string; before: string }[] = [];
   let current = at;
   return {
@@ -133,6 +133,12 @@ export interface Mark {
   opId: string;
   id: string;
   medicineId: string;
+  /** (owner) "it was given earlier": moves this dose to that many minutes before it was marked (null: could not) */
+  pick?: (mins: number) => string | null;
+  /** takes the moves back (before the dose itself is taken back) */
+  unmove?: () => void;
+  /** the minutes picked last, if any */
+  chosen?: number;
 }
 
 /**
@@ -150,17 +156,16 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
     fail(res.error, res.detail);
     return null;
   }
-  if (toast) {
-    const offline = engine.getState().status === 'offline';
-    const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
-    showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
-  }
-  return { opId: res.opId, id, medicineId: m.id };
+  const offline = engine.getState().status === 'offline';
+  const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
+  if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
+  return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove };
 }
 
 /** Takes back doses marked by mistake (newest first). */
 export function undoMarks(marks: readonly Mark[]): void {
   for (const mk of [...marks].reverse()) {
+    mk.unmove?.();
     const r = engine.undo(mk.opId, { action: 'delete', id: mk.id });
     if (!r.ok) fail(r.error, r.detail);
   }

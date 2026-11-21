@@ -260,6 +260,11 @@ button.tile { font: inherit; color: inherit; width: 100%; cursor: pointer; }
 .toast .tact { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--toast-fg) 14%, var(--toast-bg)); font-weight: 600; }
 .toast .tact button { background: var(--toast-fg); color: var(--toast-bg); border-color: var(--toast-fg); white-space: nowrap; }
 /* "it happened earlier": one quiet line of small round buttons under the message */
+/* (owner) the same "היה לפני" row under a medicine just marked in the medicines window */
+.medback { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 4px 2px; color: var(--muted); }
+.medback button { min-width: 40px; height: 34px; padding: 0 8px; border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; background: transparent; color: var(--fg); border: 1px solid color-mix(in srgb, currentColor 45%, transparent); }
+.medback button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.medback .undo { margin-inline-start: auto; }
 .toast .tback { display: flex; align-items: center; gap: 6px; font-size: 13px; opacity: 0.9; }
 .toast .tback button { min-width: 40px; height: 34px; padding: 0 8px; border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; border-color: color-mix(in srgb, currentColor 45%, transparent); }
 .toast .tback button.on { background: var(--toast-fg); color: var(--toast-bg); border-color: var(--toast-fg); }
@@ -444,3 +449,7 @@ input, textarea, select {
 .fbattach input { width: 22px; height: 22px; flex: none; }
 .actions .fbsend { min-height: 56px; min-width: 120px; font-size: 18px; }
 .fblist .fbbody { font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
+
+/* (owner) history over the last 24 hours: the day's name where the day changes */
+.list .hday { font-size: 13px; font-weight: 700; color: var(--muted); padding: 10px 2px 4px; border-bottom: 1px solid var(--line); list-style: none; }
+.hsince { text-align: center; margin: 6px 0 2px; }

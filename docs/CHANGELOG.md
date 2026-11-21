@@ -426,6 +426,13 @@ No names, addresses or secrets in this file (the repository is public).
   side"), and new shortcuts "מה הצד להנקה הבאה", "צד הבא", "Next side", "Which side next" (58 signed per run now: 15 English and
   14 Hebrew per parent). Tests: sentences, server (asking writes nothing), the shortcuts run by the interpreter, the signing
   counts, and a Hebrew check in the live test.
+- History **(owner feedback #1)**: besides day by day, "24 שעות אחרונות": everything from this time yesterday until now, with a
+  line "היום" / "אתמול" where the day changes; the kind filter works in both; the choice is remembered per phone
+  (`historyView`; day by day stays the default). Browser test (failed on the old screen); screenshots day / night / 560.
+- Medicines window **(owner: like the toast after a tap; choice "inside the row")**: under a medicine just marked in the window,
+  "היה לפני 5 · 10 · 15 · 30 דק׳" (counted from the moment it was marked; another choice replaces the first) and "בטל" (takes back
+  that dose, moves included); the window stays open for the other medicines, and "ביטול הסימונים" also takes back the moves.
+  Browser tests (both failed on the old window).
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

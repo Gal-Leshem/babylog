@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
-import { type Mark, logMedicine, undoMarks } from '../actions';
+import { EARLIER_MIN, type Mark, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
 import { engine, useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
@@ -50,6 +50,15 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
     void engine.resume(); // the other parent may have just given something (one small request)
   }, []);
   const meds = settings.medicines.filter((m) => m.status === 'active');
+  // (owner) the dose just marked can be moved earlier or taken back from its own row, like the toast after a tap
+  const moveEarlier = (mk: Mark, mins: number) => {
+    if (mk.pick?.(mins) === null) return;
+    setMarks(marks.map((x) => (x === mk ? { ...x, chosen: mins } : x)));
+  };
+  const takeBack = (mk: Mark) => {
+    undoMarks([mk]);
+    setMarks(marks.filter((x) => x !== mk));
+  };
 
   return (
     <div class="sheet-backdrop" data-testid="meds-window" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -57,7 +66,9 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
         <h2>תרופות</h2>
         <ul class="medpick">
           {meds.map((m) => {
-            const marked = marks.filter((k) => k.medicineId === m.id).length;
+            const mine = marks.filter((k) => k.medicineId === m.id);
+            const marked = mine.length;
+            const latest = mine[mine.length - 1];
             const t = medicineToday(m, events, now);
             const warn = doseWarnings(m, events, now);
             return (
@@ -97,6 +108,27 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
                     </span>
                   </span>
                 </button>
+                {latest && (
+                  <div class="tback medback" data-testid="meds-earlier">
+                    <span>היה לפני</span>
+                    {EARLIER_MIN.map((mins) => (
+                      <button
+                        type="button"
+                        key={mins}
+                        class={latest.chosen === mins ? 'on' : ''}
+                        aria-pressed={latest.chosen === mins}
+                        data-testid={`meds-back-${mins}`}
+                        onClick={() => moveEarlier(latest, mins)}
+                      >
+                        {mins}
+                      </button>
+                    ))}
+                    <span>דק׳</span>
+                    <button type="button" class="undo" data-testid="meds-undo" onClick={() => takeBack(latest)}>
+                      בטל
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}

@@ -13,13 +13,17 @@ export type NightTint = 'amber' | 'red';
 /** Which part of the summary tab is shown (remembered per device). */
 export type SummaryView = 'day' | 'insights';
 
+/** History: one day at a time, or the last 24 hours across midnight (owner; remembered per device). */
+export type HistoryView = 'day' | 'last24';
+
 export interface Prefs {
   nightMode: NightMode;
   nightTint: NightTint;
   summaryView: SummaryView;
+  historyView: HistoryView;
 }
 
-export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day' };
+export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day', historyView: 'day' };
 
 /** An address the app may talk to: https, or plain http only for local development. */
 export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^http:\/\/(127\.0\.0\.1|localhost)/.test(u);

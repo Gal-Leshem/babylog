@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, allServerRows, api, install, resetServer, seed, todayLocal } from './helpers';
+import { addDaysLocal, allServerRows, api, install, nowLocal, resetServer, seed, todayLocal } from './helpers';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -161,4 +161,34 @@ test('history: a sleep time range stays on one line, centred, and its row is as 
   expect(sleep.textH).toBeLessThan(30); // one line
   expect(Math.abs(sleep.rowH - feed.rowH)).toBeLessThan(1);
   for (const x of m) expect(x.off).toBeLessThan(2); // centred
+});
+
+// Owner feedback #1: in History, the last 24 hours across midnight besides day by day.
+test('history: "24 שעות אחרונות" shows exactly the last 24 hours with the day where it changes, and is remembered', async ({ page, request }) => {
+  const at = (minsAgo: number) => nowLocal(-minsAgo);
+  await seed(request, [
+    { id: 'h1', type: 'feed', detail: 'left', start: at(60) },
+    { id: 'h20', type: 'diaper', detail: 'wet', start: at(20 * 60) },
+    { id: 'h30', type: 'diaper', detail: 'poop', start: at(30 * 60) }, // more than a day ago: not in it
+  ]);
+  await install(page);
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('hview-day')).toHaveAttribute('aria-selected', 'true'); // day by day stays the default
+  await page.getByTestId('hview-last24').click();
+  await expect(page.getByTestId('daynav')).toHaveCount(0);
+  await expect(page.getByTestId('history-since')).toContainText('עד עכשיו');
+  await expect(page.getByTestId('history-row')).toHaveCount(2);
+  await expect(page.getByTestId('history-row').first()).toContainText(at(60).slice(11));
+  await expect(page.getByTestId('history-row').nth(1)).toContainText(at(20 * 60).slice(11));
+  const name = (d: string) => (d === todayLocal() ? 'היום' : 'אתמול');
+  const days = [...new Set([at(60), at(20 * 60)].map((t) => name(t.slice(0, 10))))];
+  await expect(page.getByTestId('history-day')).toHaveText(days);
+  await page.getByTestId('filter-diaper').click(); // the kind filter still works
+  await expect(page.getByTestId('history-row')).toHaveCount(1);
+  await page.reload();
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('hview-last24')).toHaveAttribute('aria-selected', 'true'); // remembered on this phone
+  await page.getByTestId('hview-day').click();
+  await expect(page.getByTestId('daynav')).toBeVisible();
+  await expect(page.getByTestId('history-day')).toHaveCount(0);
 });

@@ -147,6 +147,46 @@ test('several medicines: the button turns quiet only when every medicine with a 
   await expect(page.getByTestId('meds-window')).toBeVisible(); // still opens the window
 });
 
+// Owner: after marking a medicine in the window, the same "it was earlier" and undo as the toast after a tap, in its own row.
+test('window: a marked medicine can be moved earlier or taken back from its row; the window stays open for the others', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'בפנטן', icon: '🍓', schedule: 'daily' }]);
+  await install(page);
+  await page.getByTestId('btn-meds').click();
+  await expect(row(page, 'vitamin_d').locator('..').getByTestId('meds-earlier')).toHaveCount(0);
+  await row(page, 'vitamin_d').click();
+  const line = row(page, 'vitamin_d').locator('..').getByTestId('meds-earlier');
+  await expect(line).toBeVisible();
+  await expect(line.locator('button')).toHaveText(['5', '10', '15', '30', 'בטל']);
+  await expect(row(page, 'm1').locator('..').getByTestId('meds-earlier')).toHaveCount(0); // only the one marked
+  const given = async () => (await allServerRows(request)).find((e) => e.type === 'vitamin_d' && !e.deleted);
+  await expect.poll(async () => (await given())?.start ?? '').not.toBe('');
+  const marked = (await given())!.start;
+  await line.getByTestId('meds-back-15').click();
+  await expect(line.getByTestId('meds-back-15')).toHaveClass(/\bon\b/);
+  await expect.poll(async () => (await given())!.start).toBe(formatLocal(parseLocal(marked) - 15 * 60_000));
+  await line.getByTestId('meds-back-5').click(); // another choice counts from the time it was marked
+  await expect.poll(async () => (await given())!.start).toBe(formatLocal(parseLocal(marked) - 5 * 60_000));
+  await row(page, 'm1').click(); // the window is still open for the other medicine
+  await expect.poll(async () => (await doses(request)).sort()).toEqual(['m1', 'vitamin_d']);
+  await line.getByTestId('meds-undo').click(); // take back vitamin D only
+  await expect(row(page, 'vitamin_d').locator('..').getByTestId('meds-earlier')).toHaveCount(0);
+  await expect.poll(() => doses(request)).toEqual(['m1']);
+  await page.getByTestId('meds-cancel').click(); // and the rest
+  await expect.poll(() => doses(request)).toEqual([]);
+  await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+});
+
+test('window: taking back everything also takes back a move made before it', async ({ page, request }) => {
+  await setMeds(request, [VIT, { id: 'm1', name: 'בפנטן', icon: '🍓', schedule: 'daily' }]);
+  await install(page);
+  await page.getByTestId('btn-meds').click();
+  await row(page, 'm1').click();
+  await row(page, 'm1').locator('..').getByTestId('meds-back-30').click();
+  await page.getByTestId('meds-cancel').click();
+  await expect.poll(() => doses(request)).toEqual([]);
+  await expect(page.getByTestId('banner-rejected')).toHaveCount(0);
+});
+
 test('the window shows the next allowed time and closes when tapping outside', async ({ page, request }) => {
   await setMeds(request, [VIT, { id: 'm1', name: 'אנטיביוטיקה', icon: '🧸', schedule: 'interval', everyHours: 8, course: 'doses', courseCount: 14 }]);
   await install(page);
