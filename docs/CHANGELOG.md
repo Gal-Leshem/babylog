@@ -433,6 +433,8 @@ No names, addresses or secrets in this file (the repository is public).
   "היה לפני 5 · 10 · 15 · 30 דק׳" (counted from the moment it was marked; another choice replaces the first) and "בטל" (takes back
   that dose, moves included); the window stays open for the other medicines, and "ביטול הסימונים" also takes back the moves.
   Browser tests (both failed on the old window).
+- Question **(owner)**: another app added two tabs to the sheet. Harmless for BabyLog (tabs are found by name; noted in
+  `ARCHITECTURE.md`); the owner was advised to check which app has access to the account, since it can read the log.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

@@ -226,6 +226,9 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   prints a working code; `ScriptApp.getService().getUrl()` returns the editor-only `/dev` address and must not be used for codes.
 - Entry points (`doPost`, `doGet`, `setup`, `rotateKey`, `printInstallCode`) are emitted as plain top-level functions by the build, because the
   Apps Script editor lists only statically declared functions.
+- The server finds its tabs by name (Events, Settings, Medicines, קרא אותי, משוב); other tabs in the sheet (e.g. added by
+  another app the owner connected) are ignored. `setup()` removes only an empty first tab that is not Events (the blank tab
+  Google makes in a new file), so a tab worth keeping should not be first and empty when `setup()` is run.
 - `REV` (script property) is the data revision. `API_KEY` is the shared secret. Both live only in the script properties.
 - Calls to Google services are the slow part of a request (measured: properties 20 to 400 ms a call, the settings tabs 0.5 to 2 s),
   so `gas.ts` reads ALL properties with one call per request (`P()`); taking the lock drops that snapshot, so the revision and the
