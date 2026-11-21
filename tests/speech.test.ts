@@ -87,6 +87,13 @@ describe('Hebrew sentences', () => {
     expect(voiceHe(undefined).status(f, T('2026-11-14 14:00'))).toBe('ההנקה האחרונה לפני שעה ו-30 דקות, צד שמאל. הבאה: ימין');
     expect(voiceHe(undefined).status(undefined, T('2026-11-14 14:00'))).toBe('עוד לא נרשמו הנקות');
   });
+  it('which side next (owner): the side only, in both languages', () => {
+    expect(voiceHe(undefined).nextSide('right')).toBe('ההנקה הבאה: צד ימין');
+    expect(voiceHe(undefined).nextSide('left')).toBe('ההנקה הבאה: צד שמאל');
+    expect(voiceHe(undefined).nextSide(null)).toBe('עוד לא נרשמו הנקות');
+    expect(voiceEn.nextSide('left')).toBe('Next: left side');
+    expect(voiceEn.nextSide(null)).toBe('No feeds logged yet');
+  });
   it('a request picks its language; without one it stays English (shortcuts made before)', () => {
     expect(voiceFor('he', () => 'girl')).not.toBe(voiceEn);
     expect(voiceFor(undefined, () => 'girl')).toBe(voiceEn);

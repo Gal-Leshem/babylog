@@ -46,7 +46,9 @@ export type ApiRequest =
    * back to `rev`, the answer carries only the events changed since then (in their new state, deleted ones too, marked).
    */
   | { action: 'sync'; from: string; to: string; rev?: string; ops?: (ApiRequest & { fresh?: true; queuedAt?: number })[]; debug?: true; delta?: true }
-  | { action: 'status' }
+  | { action: 'status'; lang?: 'en' | 'he' }
+  /** (owner) Siri: which side the next feed is on (a sentence, in `lang`). */
+  | { action: 'next'; lang?: 'en' | 'he' }
   /**
    * (owner) Feedback: a bug, an idea or anything else, kept in the sheet's "משוב" tab with a number the server assigns (never
    * reused, also not after clearing). `id` makes a retried send harmless. Sent directly by the app, not through `sync`.

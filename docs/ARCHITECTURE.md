@@ -8,7 +8,7 @@
 
 ## One set of rules, three places
 `src/server/core.ts` is the whole API: `log`, `asleep`, `awake`, `update`, `delete`, `restore`, `list`,
-`status`, `settings`, `ping`, `poll`, and `sync` (what the app uses: see "Sync engine"). It works on a `Store` interface:
+`status`, `next` (Siri: which side next), `settings`, `ping`, `poll`, and `sync` (what the app uses: see "Sync engine"). It works on a `Store` interface:
 - `SheetStore` (`gas.ts`) in production,
 - `MemoryStore` in tests, in the mock server, and **inside the app**.
 

@@ -62,8 +62,8 @@ describe('generated shortcut files', () => {
 
   it('the Siri phrases (owner): English, and Hebrew with the sleep words for a boy or a girl; unique for each phone', () => {
     const forPhone = (lang: string, sex: string) => SHORTCUTS.filter((s) => s.lang === lang && (!s.sex || s.sex === sex)).map((s) => s.name);
-    expect(forPhone('en', 'boy')).toEqual(['Left feed', 'Log left feed', 'Right feed', 'Log right feed', 'Wet diaper', 'Poop', 'Poop diaper', 'Full diaper', 'Asleep', 'Awake', 'Vitamin D', 'Last feed', 'Baby log']);
-    expect(forPhone('he', 'boy')).toEqual(['הנקה ימין', 'תסמני הנקה ימין', 'הנקה שמאל', 'תסמני הנקה שמאל', 'חיתול פיפי', 'חיתול קקי', 'חיתול מלא', 'התינוק נרדם', 'התינוק התעורר', 'יומן תינוק', 'ויטמין די', 'מתי הנקה אחרונה']);
+    expect(forPhone('en', 'boy')).toEqual(['Left feed', 'Log left feed', 'Right feed', 'Log right feed', 'Wet diaper', 'Poop', 'Poop diaper', 'Full diaper', 'Asleep', 'Awake', 'Vitamin D', 'Last feed', 'Next side', 'Which side next', 'Baby log']);
+    expect(forPhone('he', 'boy')).toEqual(['הנקה ימין', 'תסמני הנקה ימין', 'הנקה שמאל', 'תסמני הנקה שמאל', 'חיתול פיפי', 'חיתול קקי', 'חיתול מלא', 'התינוק נרדם', 'התינוק התעורר', 'יומן תינוק', 'ויטמין די', 'מתי הנקה אחרונה', 'מה הצד להנקה הבאה', 'צד הבא']);
     expect(forPhone('he', 'girl')).toContain('התינוקת נרדמה');
     for (const lang of ['en', 'he']) for (const sex of ['boy', 'girl']) expect(new Set(forPhone(lang, sex)).size).toBe(forPhone(lang, sex).length);
   });
@@ -151,6 +151,16 @@ describe('running the shortcuts against the real server logic', () => {
     expect((await run('תסמני הנקה שמאל')).spoken[0]).toMatch(/^נרשמה הנקה שמאל/);
     expect((await run('הנקה ימין', { key: 'wrong-key-wrong-key-1234' })).spoken).toEqual([FAILURE.he]);
     expect((await run('Left feed')).sent[0].lang).toBe('en');
+  });
+
+  it('which side next (owner): answers with the side, writes nothing', async () => {
+    expect((await run('מה הצד להנקה הבאה')).spoken).toEqual(['עוד לא נרשמו הנקות']);
+    await run('הנקה ימין');
+    const r = await run('צד הבא');
+    expect(r.sent[0]).toMatchObject({ action: 'next', lang: 'he' });
+    expect(r.spoken).toEqual(['ההנקה הבאה: צד שמאל']);
+    expect((await run('Which side next')).spoken).toEqual(['Next: left side']);
+    expect(store.all()).toHaveLength(1);
   });
 
   it('the sleep words follow the baby', async () => {

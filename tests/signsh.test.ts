@@ -95,14 +95,14 @@ describe('Mac signing script', () => {
   it('creates, for each parent, an English and a Hebrew folder of signed shortcuts with the secrets filled in', async () => {
     const r = await sign({ BABYLOG_CODE: encodeSetupCode(mockUrl, 'test-key') }, 'ok');
     expect(r.status, r.stderr).toBe(0);
-    expect(r.stdout).toContain('50 signed shortcuts');
+    expect(r.stdout).toContain('58 signed shortcuts');
     const folders = readdirSync(r.out).sort();
     expect(folders).toEqual(['Ann <B>', 'Tom & Jerry']);
     for (const f of folders) {
       expect(readdirSync(join(r.out, f)).sort()).toEqual(['English', 'עברית']);
-      expect(readdirSync(join(r.out, f, 'English'))).toHaveLength(13);
+      expect(readdirSync(join(r.out, f, 'English'))).toHaveLength(15);
       expect(readdirSync(join(r.out, f, 'עברית')).sort()).toEqual(
-        ['הנקה ימין', 'הנקה שמאל', 'התינוק התעורר', 'התינוק נרדם', 'ויטמין די', 'חיתול מלא', 'חיתול פיפי', 'חיתול קקי', 'יומן תינוק', 'מתי הנקה אחרונה', 'תסמני הנקה ימין', 'תסמני הנקה שמאל'].map((n) => `${n}.shortcut`).sort(),
+        ['הנקה ימין', 'הנקה שמאל', 'התינוק התעורר', 'התינוק נרדם', 'ויטמין די', 'חיתול מלא', 'חיתול פיפי', 'חיתול קקי', 'יומן תינוק', 'מה הצד להנקה הבאה', 'מתי הנקה אחרונה', 'צד הבא', 'תסמני הנקה ימין', 'תסמני הנקה שמאל'].map((n) => `${n}.shortcut`).sort(),
       );
     }
     const left = readFileSync(join(r.out, 'Tom & Jerry', 'English', 'Left feed.shortcut'), 'utf8');

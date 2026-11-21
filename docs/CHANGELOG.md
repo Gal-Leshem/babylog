@@ -422,6 +422,10 @@ No names, addresses or secrets in this file (the repository is public).
   broken.
   A text that starts with = + - or @ is stored with an apostrophe in front so the sheet keeps it as text (test in the fake
   Google runtime, failed without it).
+- Siri **(owner)**: "which side next?": a new server action `next` answers only the side ("ההנקה הבאה: צד ימין" / "Next: right
+  side"), and new shortcuts "מה הצד להנקה הבאה", "צד הבא", "Next side", "Which side next" (58 signed per run now: 15 English and
+  14 Hebrew per parent). Tests: sentences, server (asking writes nothing), the shortcuts run by the interpreter, the signing
+  counts, and a Hebrew check in the live test.
 - Tests: two overlap tests used "today 00:30" to "01:05", which is still in the future just after midnight (they failed when run
   then); they use yesterday now. About two dozen other browser tests still use "today 00:xx" and fail in the first hour after
   midnight (Israel time): run and push outside that hour (noted in `PROGRESS.md`).

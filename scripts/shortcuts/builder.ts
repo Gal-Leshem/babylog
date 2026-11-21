@@ -99,6 +99,7 @@ const R = {
   awake: { action: 'awake', type: '-', detail: '-' },
   vitamin: { action: 'log', type: 'vitamin_d', detail: '-' },
   status: { action: 'status', type: '-', detail: '-' },
+  next: { action: 'next', type: '-', detail: '-' },
 } satisfies Record<string, Req>;
 
 /** Hebrew sleep shortcuts and the Hebrew question, in the baby's wording (owner: words follow the sex chosen in Settings). */
@@ -146,6 +147,8 @@ export const SHORTCUTS: ShortcutSpec[] = [
   { name: 'Awake', lang: 'en', request: R.awake, ...SLEEP },
   { name: 'Vitamin D', lang: 'en', request: R.vitamin, ...VIT },
   { name: 'Last feed', lang: 'en', request: R.status, ...ASK },
+  { name: 'Next side', lang: 'en', request: R.next, ...ASK },
+  { name: 'Which side next', lang: 'en', request: R.next, ...ASK },
   {
     name: 'Baby log',
     lang: 'en',
@@ -175,6 +178,8 @@ export const SHORTCUTS: ShortcutSpec[] = [
   ...heSleep('girl'),
   { name: 'ויטמין די', lang: 'he', request: R.vitamin, ...VIT },
   { name: 'מתי הנקה אחרונה', lang: 'he', request: R.status, ...ASK },
+  { name: 'מה הצד להנקה הבאה', lang: 'he', request: R.next, ...ASK },
+  { name: 'צד הבא', lang: 'he', request: R.next, ...ASK },
 ];
 
 /** What Siri says when the server could not be reached or refused (the server's own sentence otherwise). */

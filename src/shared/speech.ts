@@ -82,6 +82,8 @@ export interface Voice {
   alreadyAsleep(open: BabyEvent): string;
   awake(sleepMinutes: number | null): string;
   status(last: BabyEvent | undefined, nowEpoch: number): string;
+  /** (owner) "Which side next?": the side only. */
+  nextSide(next: 'left' | 'right' | null): string;
 }
 
 export const voiceEn: Voice = {
@@ -90,6 +92,7 @@ export const voiceEn: Voice = {
   alreadyAsleep: speechAlreadyAsleep,
   awake: speechAwake,
   status: speechStatus,
+  nextSide: (next) => (next ? `Next: ${next} side` : 'No feeds logged yet'),
 };
 
 /** Hebrew sentences; words about the baby follow the sex chosen in Settings (missing = boy), as in the app. */
@@ -125,6 +128,7 @@ export function voiceHe(sex: 'boy' | 'girl' | undefined): Voice {
       const next = oppositeSide(last.detail);
       return `ההנקה האחרונה לפני ${durationHe((nowEpoch - parseLocal(last.start)) / MIN)}, צד ${SIDE_HE[last.detail] ?? ''}.${next ? ` הבאה: ${SIDE_HE[next]}` : ''}`;
     },
+    nextSide: (next) => (next ? `ההנקה הבאה: צד ${SIDE_HE[next]}` : 'עוד לא נרשמו הנקות'),
   };
 }
 

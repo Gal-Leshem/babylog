@@ -1,4 +1,4 @@
-import { byTimeAsc, lastFeed, live, openSleep, vitaminDOnDate } from '../shared/domain';
+import { byTimeAsc, lastFeed, live, nextSide, openSleep, vitaminDOnDate } from '../shared/domain';
 import type { Change, Since } from './journal';
 import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
@@ -253,6 +253,10 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       const recent = store.recent(RECENT_ROWS);
       return { ok: true, speech: voiceOf(o, store).status(lastFeed(recent), now) };
     }
+
+    // (owner) "Which side next?" for Siri: the side after the last feed, nothing else
+    case 'next':
+      return { ok: true, speech: voiceOf(o, store).nextSide(nextSide(store.recent(RECENT_ROWS))) };
 
     case 'settings': {
       if (o.set === undefined) return { ok: true, settings: settingsOf(store), sheetUrl: store.sheetUrl() };

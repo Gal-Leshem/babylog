@@ -155,6 +155,7 @@ check('awake closes the sleep', /^Awake\. /.test(wake.json?.speech ?? ''), JSON.
 
 check('status sentence', /ago, left side/.test((await call({ action: 'status' })).json?.speech ?? ''));
 // (owner) Siri on the other parent's phone speaks Hebrew: the same question with lang 'he'
+check('which side next, in Hebrew (owner)', /^ההנקה הבאה: צד (ימין|שמאל)$/.test((await call({ action: 'next', lang: 'he' })).json?.speech ?? ''), '(Hebrew sentence expected)');
 check('status sentence in Hebrew', /^ההנקה האחרונה לפני .+, צד שמאל/.test((await call({ action: 'status', lang: 'he' })).json?.speech ?? ''), '(Hebrew sentence expected)');
 
 // medicines (API 0.3.0): a "Medicines" sheet tab, saved one by one; a dose is an event of type medicine

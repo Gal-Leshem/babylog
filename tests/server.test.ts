@@ -779,5 +779,8 @@ describe('Siri sentences in Hebrew', () => {
     minutesLater(30);
     expect(siri({ action: 'awake', id: 'h4', end: '2026-11-14 12:28' }).speech).toBe('התעוררה. ישנה 30 דקות');
     expect(siri({ action: 'status' }).speech).toBe('ההנקה האחרונה לפני 35 דקות, צד שמאל. הבאה: ימין');
+    expect(siri({ action: 'next' }).speech).toBe('ההנקה הבאה: צד ימין'); // (owner) which side next
+    expect(ok(call({ action: 'next' })).speech).toBe('Next: right side');
+    expect(store.all().filter((e) => e.type === 'feed')).toHaveLength(2); // asking writes nothing
   });
 });
