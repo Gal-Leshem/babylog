@@ -11,7 +11,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 
 ## Status snapshot
 - Live: site on GitHub Pages (`version.json` shows the served commit), production + test Apps Script servers deployed by the pipeline.
-- Tests: about 329 unit (Vitest) and 178 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
+- Tests: about 333 unit (Vitest) and 181 browser (Playwright, 4 workers in parallel, each with its own mock server); CI runs the
   browser suite twice (normal and against a slow mock server). The CI live test (real Google test server, real sheet) first waits
   until the server answers from this commit's build, then reports `LIVE TEST PASSED`. A push to `dev` is green in about 4 minutes,
   `main` (with production) in about 4 more.
@@ -22,51 +22,32 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   day/night change (reload), sleep editing by moment, quick "לפני X" buttons, "היה לפני" in the toast, undo of an edit (`prev`
   column), sleep tile / forgotten wake-up / overlap warning, the baby's sex with matching wording, "הנקה הבאה" tag, toast timings,
   the wake-up offer as its own row in the toast, and a sync log.
-- Fourth session: the owner's sync log read (findings and the recommendation below); "changes since your version" built (API
-  0.5.0); the toast closes one second after a used button (with that button lit), the wake-up offer turns into the wake-up
-  toast, toast 3 s (5 s while asleep).
+- Fourth session (details in `CHANGELOG.md`): two sync logs read; "changes since your version" (API 0.5.0: a phone a little
+  behind gets only the changes, no sheet opened); re-sent entries and "היה לפני" moves no longer search the whole sheet; no second
+  full list after a return; toast: one second of feedback after a used button, 3 s (5 s asleep), a tap shield when it goes;
+  medicines: quiet dashed button when everything due today is given, a faded icon per medicine given, a ✓ in the window, and
+  "היה לפני" / "בטל" under a marked medicine in the window; History "24 שעות אחרונות"; feedback in the app (🐞); Siri in Hebrew
+  and English (two shortcut sets, an asking shortcut, "which side next"), with two fixes to `sign.sh` found on the owner's Mac.
 
-## Where we are: slow catching up after opening (fix 1 built; the owner checks the log on the phone)
-- The owner sees that the app is sometimes slow to catch up when it is opened, and ONLY when the other parent entered something.
-- The sync log (Settings > מתקדם > "יומן סנכרון" > "העתקה"; last 60 exchanges per phone, so copy soon after a slow opening:
-  checks every 5 s fill it in a few minutes) was read in the fourth session. Findings (three openings with news, two days):
-  - Opening with news: 2.5 to 4.0 s to data on screen. Opening with nothing new: 1.7 to 2.2 s. A check while open: 1.0 to 1.5 s
-    (that is Google plus the phone's network: our code takes about 0 ms). The first request after the phone was idle is 0.5 to
-    1.5 s slower even when nothing changed (phone network waking, new connections): no server change can remove that.
-  - The extra cost of news: the server 0.7 to 1.2 s (only 0.1 s of it is reading rows; the rest is untimed sheet calls in the
-    list path: `getSheetByName`, `getLastRow` twice, `getUrl`; the spreadsheet really loads on the first of them, `open` itself
-    shows 0) plus a 40 KB answer (the whole 14 days, ~175 events) that travels 0.5 to 1.5 s longer than a tiny one.
-  - Not seen: waiting for an earlier frozen request, timeouts, the rare 41 s stall (CI saw it once in Google opening the sheet).
-  - Side findings: a "היה לפני" move is an `update` that searches the whole sheet (find 0.4 to 2.6 s; 6.7 s for three ops);
-    right after a return that fetched the list a second full list came 3 s later (probably the 5-minute full refresh falling
-    due); taps that waited behind a running sync are labelled "בדיקה" in the log instead of "רישום".
-- The owner chose fix 1; it is built (API 0.5.0, see `ARCHITECTURE.md` "Changes since your version"). Next: the owner opens the
-  app after the other parent logged and copies the sync log: such an opening should say "שינויים בלבד" with a server part near
-  0 and a total close to an opening with nothing new. Items 2 (small extras) were approved and built.
-- Second log read: openings with news 2.3 to 2.5 s, server part 0.0; re-sent entries no longer search the whole sheet. A
-  medicine done for today fades (30%, grey) on the button and shows a ✓ in the window; the title stays "תרופות" (owner).
-- Feedback in the app (owner): Settings > מתקדם > "🐞 משוב" next to the sync log; items in the sheet's "משוב" tab with a
-  number that is never reused. The owner pastes the list into a session when he wants (manual for now); do not ask for it.
-- Siri commands in Hebrew and English (owner: options A + B; owner's Siri English, the other parent's Hebrew; a MacBook is
-  available): built (see BACKLOG F11 and INSTALL.he.md section 4). Waiting for the owner: the 5-minute check on the Hebrew phone
-  (locked phone, Hebrew name recognised, how long it takes), then running `sign.sh` on the Mac and AirDrop. Not verified on a
-  real iPhone yet: Show Result being spoken by Siri, the menu answered by voice in Hebrew, network from a locked phone.
-- Owner bug (toast tap went through to the screen under it) fixed with a tap shield; the "could not get back" part was not
-  reproduced: ask for a screenshot if it happens again.
-- Recommendation given to the owner (for reference):
-  1. **Changes since your version** (main fix, built): the server keeps the last few dozen changed events in script properties (the
-     fast store already read on every request; limits 9 KB per value, 500 KB in all); a phone a little behind gets only those
-     (a few hundred bytes, no sheet at all); too far behind, unknown revision or anything odd: the full list as today. Expected:
-     an opening with news costs about what an opening without news costs (about 1.5 to 2.2 s instead of 2.5 to 4.0). Size M
-     (server + engine + tests + live test), risk medium (guarded by the fallback to the full list).
-  2. Small extras: look in the tail rows before searching the sheet for an `update` (the "היה לפני" moves); do not fetch the list
-     twice right after an opening; label queued taps correctly in the log.
-  3. Not recommended now: CacheService (still sends the 40 KB and only saves the 0.1 s read), keeping the server warm (the
-     log shows no Google cold start pattern that the phone's own wake-up does not explain), a second request when the first is
-     slow (nothing stalled in the log; keep for later), a read copy outside Google or leaving Apps Script (would remove the
-     remaining 1 to 1.5 s floor, but a third party holds the data; only if the owner finds the floor itself too slow).
-- Other open items with the owner: confirm the status bar follows a day/night change without closing the app (the page reloads
-  by itself); which insight cards get used (reshape F8 later).
+## Where we are (open items with the owner)
+1. **Siri**: the owner created the 58 signed shortcuts on the Mac (a local Claude session on the Mac ran `sign.sh`; Remote
+   Control is blocked by the owner's organisation). Not yet tried on the phones. Next: the owner AirDrops English (his phone)
+   and עברית (the other parent's), tries them open and locked, and reports: what worked, seconds until Siri answers, whether Face
+   ID was needed, whether Hebrew names were recognised the first time. Not verified on a real iPhone yet: Show Result spoken by
+   Siri, the asking shortcut answered by voice in Hebrew, network from a locked phone. More phrasings later: duplicate and rename
+   on the phone, or add them to `scripts/shortcuts/builder.ts` (then run `sign.sh` again). Lessons from the Mac: Google answers a
+   POST with a redirect that takes only GET (no `curl -X POST`); `shortcuts sign` needs the `.shortcut` extension.
+2. **Slow catching up after opening**: done. Second log: openings with news 2.3 to 2.5 s, server part 0.0. What remains (1.5 to
+   2.5 s) is the phone's network waking plus Google's routing. Options kept for later only if the owner asks: a second request
+   when the first is slow; a read copy outside Google or leaving Apps Script (a third party would hold the data).
+   The sync log: Settings > מתקדם > "יומן סנכרון" > "העתקה" (last 60 exchanges; copy soon after a slow opening).
+3. **Feedback** in the app (Settings > מתקדם > "🐞 משוב"; the sheet's "משוב" tab; numbers never reused). Manual: the owner pastes
+   the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
+4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
+   ask for a screenshot if it happens again.
+5. About two dozen browser tests use "today 00:xx" and fail in the first hour after midnight (Israel time): run and push outside
+   00:00-01:10, or fix them (a task was suggested to the owner).
+6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
@@ -95,7 +76,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 - Pending / optional: install on the second parent's phone (send the setup code privately, never in a group chat; names are prefilled);
   share the sheet (Viewer) with the second parent's Google account only if they want to read it or use their AI assistant on it;
   optionally run `rotateKey` once more when everything works (the setup code was pasted into a chat during setup), then reinstall the code on both phones.
-- Siri shortcuts (wanted again, November 2026): run `sign.sh` on the MacBook once the build is live, AirDrop each parent the folder of their Siri language (owner English, the other parent Hebrew).
+- Siri shortcuts: signed on the MacBook (done); AirDrop each parent the folder of their Siri language (owner English, the other parent Hebrew), then delete the folder from the Mac.
 
 ## Rules and lessons (each came from a real bug; details in ARCHITECTURE.md)
 - Never define a component inside a component; never use vh/dvh; Home must never be scrollable; each tab has its own scroll container.
@@ -133,14 +114,11 @@ You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, 
 
 First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
 
-Then tell me briefly in Hebrew whether everything is green (or what is not), and pick up the open topic.
+Then tell me briefly in Hebrew whether everything is green (or what is not), and what is open, in a few lines.
 
 Feedback: do not ask for it. I may paste the feedback list from the app (Settings > מתקדם > משוב > העתקה); show it to me and let me decide what to act on. Recognise items already seen by their #number.
 
-The open topic: the app is sometimes slow to catch up when it is opened, and only when the other parent entered something. I will paste the sync log from the phone (Settings > מתקדם > יומן סנכרון > העתקה). Before that, tell me:
-1. Roughly how many log lines, and of which kind (how many openings after the other parent entered something, how many ordinary ones, over how many days and from which phone), you need for the log to be worth analysing, and what exactly to do on the phones to produce them.
-2. What you will look at in the log to tell the causes apart (sheet work vs Google start-up and network vs a request that waited for an earlier one).
-Then do fresh research for further solutions that may fit (on Apps Script, on the phone side, or a change of where the data lives), besides the two already proposed in PROGRESS.md ("changes since your version" kept in script properties, and CacheService) and the other candidates listed there. Present the options with what each would fix, its cost and its risk, and your recommendation. When I send the log, analyse it and recommend. Build nothing until I decide.
+Open topics are listed in PROGRESS.md "Where we are". Usually I come with feedback from daily use (bugs, ideas, the feedback list, a sync log, Siri results); handle what I bring, and for anything new propose first.
 
 Standing approvals: push to dev and main, deploy to GitHub Pages, deploy the Apps Script servers through GitHub Actions with the stored credential.
 Not approved: force-push or rewriting history; changing repository settings, secrets or collaborators.
@@ -153,7 +131,8 @@ Hard rules:
 - The app gives no medical advice: medicine numbers are only what the parents enter.
 - The look stays as it is (own icons and a visual polish were declined); do not propose them again unless I ask.
 - When I send a screenshot or a screen recording, study it (extract frames from video) before changing layout code; show me screenshots of what you changed (day, night, and at 560).
-- For a new feature: research first, propose, and wait for my decisions before building.
+- For a new feature: research first, propose (mockups as screenshots of the real app when it is visual), and wait for my decisions before building.
+- Do not run or push between 00:00 and 01:10 Israel time unless the midnight tests were fixed (see PROGRESS.md).
 
 Report to me in Hebrew: what changed, how it was verified, and what I need to do on the phones (usually: close the app fully and reopen; Settings > מתקדם shows the new version).
 ```

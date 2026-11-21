@@ -96,8 +96,8 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
 
 ### Later or needs a decision
 - F11 Siri / Shortcuts quick logging **(owner, November 2026: wanted, for logging hands-free while nursing)**: built in English and
-  Hebrew with alternative names and an asking shortcut ("יומן תינוק" / "Baby log"); answers in the phone's Siri language. Owner
-  steps: the 5-minute check on the Hebrew phone (locked phone, Hebrew name recognised), then `sign.sh` on the Mac and AirDrop.
+  Hebrew with alternative names, an asking shortcut ("יומן תינוק" / "Baby log") and "which side next"; answers in the phone's Siri
+  language. Signed on the owner's Mac (58 shortcuts); waiting for the owner's test on the phones.
   Later: more phrasings as the parents find them (duplicate and rename on the phone, or add them to `builder.ts`).
 - F12 Wake windows / next nap estimate: only meaningful from about two months; often criticized as inaccurate elsewhere.
 - F14 Other families (possible later, **owner idea**; for now only the owner uses the app): friends would use the same app with their
