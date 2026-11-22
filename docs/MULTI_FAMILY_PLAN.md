@@ -28,15 +28,19 @@ updated by the pipeline with the owner's account, exactly as the test and produc
 - Up to about ten families this is simpler and safer than a shared server; past that, section 4 (one shared server) or direction C.
 - Data location (owner's decision): every family starts with its sheet in the owner's Drive; "move the sheet to my Drive"
   (ownership transfer) is prepared but hidden, to be offered later.
-- Feedback (owner's decision): every server writes feedback to one separate feedback sheet in the owner's Drive (not the owner's log
-  sheet); families send and see "נשלח, תודה"; the owner lists, copies and deletes in the app. No e-mail for now.
+- Feedback (owner's decision: families only send, the owner reads and deletes, no e-mail): each family's items stay in its own
+  sheet's "משוב" tab, and the owner's phone reads and deletes them by asking each family's server with an admin key (a second
+  property, `ADMIN_KEY`, that allows only the feedback list and its deletion, never the log). Reason: every script keeps the
+  narrowest Google permission it has today (`spreadsheets.currentonly`: only its own sheet). A shared feedback sheet would need the
+  permission to open any sheet of the owner's account, so a family's script could then reach the owner's log. With a family's key
+  the server accepts "send" only. The owner's phone keeps the list of family servers (address + admin key) on the phone itself.
 
 Stages for this shape:
 | Stage | What | Size |
 |-------|------|------|
 | 1 | Pipeline: a list of family slugs (random, never names) in the repository; the deploy creates and updates one sheet + script per family after production, in its own job; ids saved like today's on `ci-status`; unit tests for the deploy logic. Nothing changes for the owner | S-M |
 | 2 | First friendly family: the owner runs `setup` in its script, sends the code; app texts made family-neutral; a short Hebrew family guide; a privacy page; the sheet link hidden for families; the ownership-transfer button prepared behind a switch | S |
-| 3 | Feedback to the separate feedback sheet with the family's slug; the owner's list / copy / delete across families; families only send | S |
+| 3 | Feedback: families only send; the owner's phone lists, copies and deletes the items of every family through each server's admin key | S |
 | 4 | Pilot with two or three families; measure the shared limits and the owner's own timings (sync log) before and after | ongoing |
 
 ## 1. What "like the owner" means
