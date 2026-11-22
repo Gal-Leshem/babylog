@@ -45,7 +45,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
-5. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
+5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`; waiting for the owner's decisions (its section 8).
+   Nothing built; do not start before the owner chooses a direction.
+6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
@@ -108,7 +110,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 ```
 You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use on two iPhones. The repository is attached.
 
-First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
+First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), docs/MULTI_FAMILY_PLAN.md (opening the app to other families: the plan and its open decisions), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
 
 Then tell me briefly in Hebrew whether everything is green (or what is not), and what is open, in a few lines.
 

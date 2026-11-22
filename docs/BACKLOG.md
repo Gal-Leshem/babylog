@@ -100,14 +100,10 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   language. Signed on the owner's Mac (58 shortcuts); waiting for the owner's test on the phones.
   Later: more phrasings as the parents find them (duplicate and rename on the phone, or add them to `builder.ts`).
 - F12 Wake windows / next nap estimate: only meaningful from about two months; often criticized as inaccurate elsewhere.
-- F14 Other families (possible later, **owner idea**; for now only the owner uses the app): friends would use the same app with their
-  own sheet in their own Google account. The app is already generic (it talks to whatever server its setup code names; no data
-  lives with us), so the work is in the server side: today the owner's Apps Script and sheet are created and deployed by this
-  repository's pipeline with the owner's credential. Options: (a) a "make a copy" template sheet with the script inside plus a short
-  guide (each family deploys it once and gets their own setup code; simplest, no shared infrastructure); (b) a one-click installer
-  page using Google sign-in that creates the sheet and script in the friend's account (much more work, Google app verification).
-  To check first: the privacy word list and docs assume one family; the setup guide (`INSTALL.he.md`) would need a family-neutral
-  version; each family's key and data stay theirs.
+- F14 Other families **(owner, November 2026: friends asked; a first step toward a product)**: full plan in
+  `docs/MULTI_FAMILY_PLAN.md` (inventory of single-family assumptions, three directions, recommended direction B: one shared
+  server with a sheet per family, data in the family's Drive or with the owner; stages; decisions for the owner). Waiting for the
+  owner's decisions (section 8 of the plan) before anything is built.
 - F13 Push notifications ("the other parent logged a feed", vitamin D reminder): iPhone home-screen apps can receive web push, but
   someone must send it; that needs a small extra server with signing keys. Not planned unless the owner accepts that.
 

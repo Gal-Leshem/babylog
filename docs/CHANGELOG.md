@@ -447,6 +447,11 @@ No names, addresses or secrets in this file (the repository is public).
   00:58 (tests process, mock server and page), and for real just after midnight. The midnight-window notes in `PROGRESS.md`
   are gone.
 
+- Plan only **(owner: friends want to use the app)**: `docs/MULTI_FAMILY_PLAN.md`, how to open BabyLog to other families (each
+  couple with an invitation code and their own sheet, in their own Drive or with the owner): what in the app assumes one family,
+  three directions (own copy / one shared Apps Script / a real backend with Google sign-in), the recommended one in detail, Google's
+  limits, stages, decisions for the owner. Nothing built yet.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
