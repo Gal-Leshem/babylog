@@ -164,6 +164,50 @@ jobs:
           rm -f "$RUNNER_TEMP/clasp/.clasprc.json"
           bash scripts/report.sh prod
 
+  # The families' servers (families.json): only on main, only after the owner's production server was deployed, in a job of
+  # their own, so a family's deploy can never delay or break the owner's. Each family has its own sheet, script, address and key.
+  families:
+    needs: prod
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: family-servers
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - run: bash scripts/run-logged.sh install npm ci
+      - name: Google credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/clasp"
+          printf '%s' "$CLASPRC_JSON" > "$RUNNER_TEMP/clasp/.clasprc.json"
+          chmod 600 "$RUNNER_TEMP/clasp/.clasprc.json"
+          echo "CLASP_AUTH_DIR=$RUNNER_TEMP/clasp" >> "$GITHUB_ENV"
+      - run: bash scripts/status-branch.sh init
+      - name: Deploy the family servers
+        run: bash scripts/run-logged.sh deploy-families npx tsx scripts/deploy-families.ts
+      - name: Report
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PRIVACY_DENYLIST: ${{ secrets.PRIVACY_DENYLIST }}
+        run: |
+          rm -f "$RUNNER_TEMP/clasp/.clasprc.json"
+          bash scripts/report.sh families
+
   pages:
     needs: test
     if: github.ref == 'refs/heads/main'

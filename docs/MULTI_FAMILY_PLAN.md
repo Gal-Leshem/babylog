@@ -35,7 +35,7 @@ updated by the pipeline with the owner's account, exactly as the test and produc
   permission to open any sheet of the owner's account, so a family's script could then reach the owner's log. With a family's key
   the server accepts "send" only. The owner's phone keeps the list of family servers (address + admin key) on the phone itself.
 
-Stages for this shape:
+Stages for this shape (stage 1 built: `families.json`, `scripts/families.ts`, `scripts/deploy-families.ts`, the `families` job):
 | Stage | What | Size |
 |-------|------|------|
 | 1 | Pipeline: a list of family slugs (random, never names) in the repository; the deploy creates and updates one sheet + script per family after production, in its own job; ids saved like today's on `ci-status`; unit tests for the deploy logic. Nothing changes for the owner | S-M |

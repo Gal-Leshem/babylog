@@ -2,17 +2,21 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { familyEnv } from './families';
 import { describeDeployments } from './google-api';
 
 /**
  * Deploys the Apps Script server (creates the sheet + script on first run).
- *   usage: tsx scripts/deploy-server.ts test|prod
+ *   usage: tsx scripts/deploy-server.ts test|prod|family <id>
  * Needs CLASP_AUTH_DIR (folder with .clasprc.json). The test build also needs FIXED_KEY.
+ * A family's server is a production build of its own (own sheet, script, address and key); see families.ts.
  * Ids are never printed; the script id is stored on the ci-status branch (envs/<env>.json).
  */
-const env = process.argv[2];
-if (env !== 'test' && env !== 'prod') throw new Error('usage: deploy-server.ts test|prod');
-const title = env === 'test' ? 'BabyLog TEST' : 'BabyLog';
+const [kind, familyId] = process.argv.slice(2);
+if (kind !== 'test' && kind !== 'prod' && !(kind === 'family' && familyId)) throw new Error('usage: deploy-server.ts test|prod|family <id>');
+const fam = kind === 'family' ? familyEnv(familyId!) : null;
+const env = fam ? fam.env : kind;
+const title = fam ? fam.title : env === 'test' ? 'BabyLog TEST' : 'BabyLog';
 const authDir = process.env.CLASP_AUTH_DIR;
 if (!authDir) throw new Error('CLASP_AUTH_DIR is not set');
 const envFile = `.ci-status/envs/${env}.json`;

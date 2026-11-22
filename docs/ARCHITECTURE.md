@@ -111,6 +111,12 @@ ends with "took Ns" in its report. The server job runs one at a time across bran
 `main` share the one test server, and two live tests at once fail each other. The Playwright browser download is cached per
 Playwright version. Reports (sanitized) go to the `ci-status` branch because the build sandbox
 cannot read Actions logs: `scripts/read-ci.sh`.
+Family servers (other families, `MULTI_FAMILY_PLAN.md` section 0): on `main`, the job `families` runs only after `prod`, in its own
+concurrency group, and deploys one server per id in `families.json` (`scripts/deploy-families.ts`, each through `deploy-server.ts
+family <id>`: a production build in its own sheet and script, titled `BabyLog <id>`, ids saved on `ci-status` as
+`envs/family-<id>.json`). It then pings each server without a key and reports "answers from this build" or "waiting for the
+owner's setup" (a new script answers only after the owner ran `setup` once). A family's failure never touches the owner's server.
+Ids are random (`npx tsx scripts/families.ts new`), never names.
 
 ## Shortcuts
 `scripts/shortcuts/builder.ts` generates self-contained shortcut templates with placeholders;

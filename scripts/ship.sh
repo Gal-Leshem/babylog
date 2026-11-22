@@ -4,7 +4,9 @@
 # 1. waits until BOTH `dev` reports for that commit (test and server) exist and say "success"; otherwise stops before main;
 # 2. pushes the same commit to `main`;
 # 3. waits for the `main` test, server and prod reports (all "success"), then for the live site to serve the commit;
-# 4. prints the live-test and production lines from the reports.
+# 4. prints the live-test and production lines from the reports;
+# 5. waits for the families' servers (job "families", after production) and prints one line per family. A failure there is
+#    reported but does not touch the owner's server, which is already deployed.
 # The site address is derived from the git remote (no address is written here).
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -52,4 +54,10 @@ for _ in $(seq 1 30); do V=$(curl -sS "$site?x=$RANDOM"); echo "$V" | grep -q "$
 echo "site: $V"
 git show "$(rep server main):reports/server.json" | grep -E "LIVE TEST|answers from this build"
 git show "$(rep prod main):reports/prod.json" | grep -E "prod server deployed"
+if wait_for main families; then
+  git show "$(rep families main):reports/families.json" | grep -E "FAMILY |family servers" | sed 's/^ *"//; s/",\?$//'
+else
+  echo "FAMILY SERVERS FAILED (the owner's server is deployed)"
+  exit 1
+fi
 echo "done $H"

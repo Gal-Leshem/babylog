@@ -1,0 +1,4 @@
+{
+  "about": "One server (a Google Sheet with its own Apps Script) per family besides the owner's. Random ids only, never names: the repository is public. Add one with `npx tsx scripts/families.ts new`. See docs/MULTI_FAMILY_PLAN.md, section 0.",
+  "families": []
+}

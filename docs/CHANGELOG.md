@@ -459,6 +459,12 @@ No names, addresses or secrets in this file (the repository is public).
   (started 23:59, its doses became yesterday's). Its page's day is pinned now (`pinPageDay`); the old version fails when its page is
   made to cross midnight, the new one passes.
 
+- Other families, stage 1 **(owner approved)**: the pipeline can create and update a server per family (a production build in its
+  own sheet and script) from `families.json` (random ids only), in a new job `families` that runs on `main` only after the owner's
+  production server and in its own concurrency group; it pings each family server and reports whether it answers from this
+  build or waits for the owner's one-time `setup`. `ship.sh` waits for it after production and prints one line per family. The
+  list is empty: nothing changes for the owner. Tests: the list rules, the server check, and the pipeline order (a test that
+  failed when the families job was made to run beside production).
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

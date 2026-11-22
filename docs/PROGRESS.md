@@ -46,7 +46,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
 5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`, current proposal in its section 0 (one server per family,
-   the owner's server untouched). Nothing built; waiting for the owner's go for stage 1.
+   the owner's server untouched). Stage 1 built (pipeline job `families`, list empty). Next, stage 2: the first family
+   (`npx tsx scripts/families.ts new`, push, the owner runs `setup` in the new script once and sends the code privately).
 6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)
@@ -59,7 +60,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 5. Work on `dev`; commit with the attribution trailers the session asks for; `git push origin HEAD:refs/heads/dev`; then run
    `bash scripts/ship.sh <sha7>` in the background: it waits for BOTH `dev` reports to be "success", only then pushes the same commit
    to `main`, waits for the `main` test, server and prod reports and for the live site to serve the commit, and prints the
-   "LIVE TEST PASSED" and "prod server deployed" lines. It stops at the first failure without going further.
+   "LIVE TEST PASSED" and "prod server deployed" lines, then waits for the family servers (job `families`) and prints one line
+   per family. It stops at the first failure without going further.
 
 ## Environment and secrets (what lives where)
 - GitHub repository secrets (readable only by Actions): `CLASPRC_JSON` (Google credential for clasp, personal account), `PRIVACY_DENYLIST` (forbidden words).
