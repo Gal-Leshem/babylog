@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "f7cfb53",
+  "sha": "1c1931a",
   "ref": "main",
-  "at": "2026-11-22T22:31:02.910Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45077702399",
+  "at": "2026-11-22T22:42:50.020Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45078808692",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,9 +21,9 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-CWdxNxhn.css   19.26 kB │ gzip:  4.58 kB",
-      "dist/assets/index-B10vJ2kl.js   131.41 kB │ gzip: 43.44 kB",
+      "dist/assets/index-BbuZGyf7.js   131.41 kB │ gzip: 43.44 kB",
       "",
-      "✓ built in 96ms",
+      "✓ built in 103ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 1s"
+      "took 2s"
     ],
     "install": [
       "+ npm ci",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 8s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 8s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,15 +73,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published f7cfb53 to gh-pages",
-      "took 1s"
+      "published 1c1931a to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 17cf5b4, waiting for f7cfb53",
-      "attempt 2: serves 17cf5b4, waiting for f7cfb53",
-      "site is live and serves f7cfb53",
-      "took 20s"
+      "attempt 1: serves f7cfb53, waiting for 1c1931a",
+      "attempt 2: serves f7cfb53, waiting for 1c1931a",
+      "site is live and serves 1c1931a",
+      "took 21s"
     ]
   }
 }
