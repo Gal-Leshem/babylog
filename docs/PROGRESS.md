@@ -45,8 +45,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
-5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`; waiting for the owner's decisions (its section 8).
-   Nothing built; do not start before the owner chooses a direction.
+5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`, current proposal in its section 0 (one server per family,
+   the owner's server untouched). Nothing built; waiting for the owner's go for stage 1.
 6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)

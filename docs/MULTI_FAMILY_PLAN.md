@@ -6,6 +6,39 @@ a first step toward making it a product"). Replaces the short note F14 in `BACKL
 normal routine (regression test proven to fail without the change, unit + browser tests, dev, green CI, main, live check).
 Privacy rule as everywhere: no names, addresses, ids or keys of any family in this repository.
 
+## 0. Current proposal: one server per family (supersedes the shared server of section 4 for now)
+After reading the risks the owner set the priorities: **the owner's own family must not be affected at all (performance above all)**,
+**security: nothing may leak between families**, and at most two or three more families for now. That changes the best shape of B:
+instead of one shared script that tells families apart by key, **every family gets its own copy of today's server**: its own sheet
+with its own bound Apps Script, its own web app address, its own key, its own script properties and its own lock, all created and
+updated by the pipeline with the owner's account, exactly as the test and production servers are today.
+- The owner's server and sheet stay exactly as they are: same code path (`getActive()`, no family lookup, no `openById`), same
+  address, same key, same Siri files. A family's request never reaches the owner's script, so it cannot slow it or take its lock.
+- Isolation by construction: different address, key, sheet and script. No code decides "which family is this", so no bug in such
+  code can open another family's data.
+- Almost no server change: the same bundle is deployed N times. Joining uses today's `BL1.` code and today's install screen (names,
+  baby, "who am I").
+- Shared by all, because they are one Google account: the daily limits (50,000 property operations, 30 executions at the same time).
+  Owner plus three families is roughly 6,000 operations a day, far below; the limit is per day and only means errors until the next
+  day, so the pilot measures it.
+- Deploy order: test server and live test (as today) → the owner's production (as today) → the families' servers in a separate job
+  after it, so a family's deploy can never delay or break the owner's.
+- Cost per family for the owner: once, open the new script and run `setup` (Google asks the account owner to approve each new script
+  once; about three minutes), then send the printed code to the family privately.
+- Up to about ten families this is simpler and safer than a shared server; past that, section 4 (one shared server) or direction C.
+- Data location (owner's decision): every family starts with its sheet in the owner's Drive; "move the sheet to my Drive"
+  (ownership transfer) is prepared but hidden, to be offered later.
+- Feedback (owner's decision): every server writes feedback to one separate feedback sheet in the owner's Drive (not the owner's log
+  sheet); families send and see "נשלח, תודה"; the owner lists, copies and deletes in the app. No e-mail for now.
+
+Stages for this shape:
+| Stage | What | Size |
+|-------|------|------|
+| 1 | Pipeline: a list of family slugs (random, never names) in the repository; the deploy creates and updates one sheet + script per family after production, in its own job; ids saved like today's on `ci-status`; unit tests for the deploy logic. Nothing changes for the owner | S-M |
+| 2 | First friendly family: the owner runs `setup` in its script, sends the code; app texts made family-neutral; a short Hebrew family guide; a privacy page; the sheet link hidden for families; the ownership-transfer button prepared behind a switch | S |
+| 3 | Feedback to the separate feedback sheet with the family's slug; the owner's list / copy / delete across families; families only send | S |
+| 4 | Pilot with two or three families; measure the shared limits and the owner's own timings (sync log) before and after | ongoing |
+
 ## 1. What "like the owner" means
 A family should get, with no technical steps: the app on both phones, one-tap logging, two-phone sync, their own Google Sheet they can
 open and connect to an AI assistant, the medicines and insights screens, feedback from inside the app, and (later) Siri.
@@ -227,7 +260,10 @@ Taken (owner, November 2026):
 4. **Only the owner invites.**
 6. **Siri for families later** (Siri itself is not yet tried on the phones).
 
-Still open:
+Taken later the same day: 3. option "everyone starts with BabyLog", the move-to-my-Drive button prepared for later; 5. the proposed
+inbox, no e-mail for now; and, after reading the risks, one server per family (section 0).
+
+Earlier wording of the open points:
 3. Data location, refined proposal: every family starts "with BabyLog" (no e-mail, no transfer to accept: the shortest start), and
    Settings offers "העברת הגיליון לדרייב שלי" at any time (ownership transfer; the service keeps editor access). The alternatives:
    the family chooses in the wizard; the owner chooses per invitation; one mode only.
