@@ -12,11 +12,6 @@ const setMeds = (request: APIRequestContext, meds: Record<string, unknown>[]) =>
 const doses = async (request: APIRequestContext) =>
   (await allServerRows(request)).filter((e) => !e.deleted && (e.type === 'vitamin_d' || e.type === 'medicine')).map((e) => (e.type === 'vitamin_d' ? 'vitamin_d' : e.detail));
 const row = (page: Page, id: string) => page.locator(`[data-testid="meds-row"][data-id="${id}"]`);
-/** A time today, a minute before now (as the server sees it). */
-const doseTime = async (request: APIRequestContext) => {
-  const now = (await api(request, { action: 'ping' })).serverNow as string;
-  return formatLocal(parseLocal(now) - 60_000);
-};
 
 test('no active medicine: no medicine button and no medicine tile; the other buttons share the space', async ({ page, request }) => {
   await setMeds(request, [{ ...VIT, status: 'archived' }]);
@@ -118,6 +113,8 @@ for (const height of [852, 700, 560]) {
 }
 
 test('several medicines: the button turns quiet only when every medicine with a daily amount is given (as needed ones do not count)', async ({ page, request }) => {
+  // the page's day is pinned: a run that crossed midnight saw today's doses become yesterday's (failed in CI at 00:00)
+  const day = await pinPageDay(page);
   await setMeds(request, [VIT, { id: 'm1', name: 'בפנטן', icon: '🍓', schedule: 'times', timesPerDay: 2 }, { id: 'm2', name: 'אקמול', icon: '🧸', schedule: 'prn' }]);
   await install(page);
   const btn = page.getByTestId('btn-meds');
@@ -137,7 +134,7 @@ test('several medicines: the button turns quiet only when every medicine with a 
   await expect(row(page, 'm1').locator('.mi')).toHaveText('🍓');
   await expect(row(page, 'm2').locator('.mi')).toHaveText('🧸'); // as needed: never "done"
   await page.getByTestId('meds-done').click();
-  await api(request, { action: 'log', id: 'b2', type: 'medicine', detail: 'm1', start: (await doseTime(request)), user: 'Parent Two', source: 'app' });
+  await api(request, { action: 'log', id: 'b2', type: 'medicine', detail: 'm1', start: `${day} 11:59`, user: 'Parent Two', source: 'app' });
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(btn).toHaveAttribute('data-done', '1');
   await expect(btn.locator('.ico')).toHaveCount(0);

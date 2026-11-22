@@ -452,6 +452,13 @@ No names, addresses or secrets in this file (the repository is public).
   three directions (own copy / one shared Apps Script / a real backend with Google sign-in), the recommended one in detail, Google's
   limits, stages, decisions for the owner. Nothing built yet.
 
+- Plan **(owner, after reading the risks)**: one server per family (section 0 of `MULTI_FAMILY_PLAN.md`): the owner's server stays
+  exactly as it is, isolation by construction; families start with their sheet in the owner's Drive; feedback to one separate
+  feedback sheet, no e-mail.
+- Tests: the medicines test "the button turns quiet only when every medicine ... is given" failed in CI when it ran across midnight
+  (started 23:59, its doses became yesterday's). Its page's day is pinned now (`pinPageDay`); the old version fails when its page is
+  made to cross midnight, the new one passes.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
