@@ -221,15 +221,22 @@ today's server times: enough for hundreds of families. The real numbers come fro
   would be a different project.
 
 ## 8. Decisions for the owner
-1. Direction: B now (recommended), with C later only if it grows; or A for the first friends.
-2. Which Google account runs the service: the owner's current account (no migration at all; others' files in the owner's Drive) or
-   a new account just for the service (cleaner; needs a new credential stored as a repository secret by the owner, and family 1 moves
-   once with `moved` plus new Siri files).
-3. Data location: offer both modes, which one is the default, or only one ("your Drive" only is simpler to explain).
-4. Who may invite: only the owner, or also families (an "invite friends" button with a limit).
-5. Feedback: should families see the owner's replies and statuses in the app, or is a private inbox enough.
-6. Siri for families now (owner signs per family) or later.
-7. Free for friends with no limit; anything about payment is for later.
+Taken (owner, November 2026):
+1. Direction **B** for now. Families owning their data later: yes, through "move the sheet to my Drive" (below) and direction C.
+2. The service runs on the owner's **current Google account** (family 1 unchanged; no migration).
+4. **Only the owner invites.**
+6. **Siri for families later** (Siri itself is not yet tried on the phones).
+
+Still open:
+3. Data location, refined proposal: every family starts "with BabyLog" (no e-mail, no transfer to accept: the shortest start), and
+   Settings offers "העברת הגיליון לדרייב שלי" at any time (ownership transfer; the service keeps editor access). The alternatives:
+   the family chooses in the wizard; the owner chooses per invitation; one mode only.
+5. Feedback, proposed: one inbox in the admin sheet for every family (family 1 included); a family sends and sees "נשלח, תודה",
+   nothing more (no status, no list); the owner reads, copies and deletes in the admin section on the owner's phone (numbers are never
+   reused); optionally an e-mail to the owner for each new item (`MailApp`, a few lines). Simpler alternatives: e-mail only (no
+   inbox, no list in the app; loses the copy-for-a-session list) or a WhatsApp message (no server; the owner's number would have to
+   live outside the repository).
+7. Free for friends; payment is for later.
 
 ## 9. Open risks
 - Ownership transfer between free Google accounts from a script, and how clear Google's e-mail is to a non-technical parent.
