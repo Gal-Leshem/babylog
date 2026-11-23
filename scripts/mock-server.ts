@@ -3,8 +3,10 @@ import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
 
 /** Local stand-in for the Apps Script server: same core, memory storage. Used by e2e tests and dev. */
-export function startMockServer(port = 8787, key = 'test-key') {
+export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin-key') {
   let store = new MemoryStore();
+  /** Behave like a family's server (`__control?family=1`): no sheet link, feedback send-only, the admin key reads it. */
+  let family = false;
   const deps: Deps = {
     get store() {
       return store;
@@ -12,6 +14,10 @@ export function startMockServer(port = 8787, key = 'test-key') {
     now: () => Date.now(),
     checkKey: (k) => k === key,
     withLock: (fn) => fn(),
+    get familyServer() {
+      return family;
+    },
+    checkAdmin: (k) => family && k === adminKey,
   };
   const calls: unknown[] = [];
   /** What each request was, for tests: the action; a `sync` also says how many operations it carried and whether the list came back. */
@@ -32,6 +38,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
       if (q.has('offline')) offline = q.get('offline') === '1';
       if (q.has('delay')) delayMs = Number(q.get('delay'));
       if (q.has('old')) old = q.get('old') === '1';
+      if (q.has('family')) family = q.get('family') === '1';
       if (q.has('forget')) kinds.length = 0;
       if (q.has('reset')) {
         // a real server's revision never starts over: keep it climbing, or a phone could hold the "same" number from before
@@ -41,6 +48,7 @@ export function startMockServer(port = 8787, key = 'test-key') {
         kinds.length = 0;
         offline = false;
         old = false;
+        family = false;
         delayMs = baseDelay;
       }
       return void res.writeHead(200).end('ok');

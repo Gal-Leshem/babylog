@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { startMockServer } from '../scripts/mock-server';
+import { encodeAdminCode } from '../src/app/config';
 import { api, control, install, installExisting, resetServer } from './helpers';
 
 // Owner: a quick place in the app to note a bug, an idea or anything else. Settings > מתקדם > "🐞 משוב", next to the sync log.
@@ -152,3 +154,68 @@ for (const height of [852, 700, 560]) {
     expect(m.boxRight).toBeLessThanOrEqual(m.width);
   });
 }
+
+// Owner (family servers): on a family's phone the feedback goes to the app's maker; the family only sends.
+test("a family's phone only sends: no list, no clearing, no other families; a thank-you after sending", async ({ page, request }) => {
+  await control(request, 'family=1');
+  await install(page);
+  await open(page);
+  await expect(page.getByTestId('fb-intro')).toHaveText('באג, רעיון או כל דבר אחר. נשלח ליוצר האפליקציה עם השעה, השם והגרסה.');
+  await write(page, 'idea', 'כפתור לבקבוק');
+  await expect(page.getByTestId('fb-msg')).toHaveText('נשלח, תודה');
+  await expect(page.getByTestId('fb-item')).toHaveCount(0);
+  await expect(page.getByTestId('fb-clear')).toHaveCount(0);
+  await expect(page.getByTestId('fam-section')).toHaveCount(0);
+  expect((await api(request, { action: 'feedback', id: 'probe', kind: 'bug', text: 'x', user: 'P' })).ok).toBe(true); // stored on the server
+});
+
+// Owner: the other families' feedback, read on the owner's phone with each family's admin code (feedback only).
+test("the owner adds a family with its admin code, reads its feedback, clears what was seen; the list stays on the phone", async ({ page }) => {
+  const fam = startMockServer(0, 'fam-key-123', 'fam-admin-123');
+  await fam.listen();
+  const url = `http://127.0.0.1:${fam.port()}/`;
+  try {
+    await fetch(`${url}__control?family=1`);
+    const post = (body: Record<string, unknown>) => fetch(url, { method: 'POST', body: JSON.stringify({ key: 'fam-key-123', ...body }) }).then((r) => r.json());
+    await post({ action: 'feedback', id: 'q1', kind: 'bug', text: 'הכפתור לא נלחץ', user: 'Mom' });
+    await post({ action: 'feedback', id: 'q2', kind: 'idea', text: 'בקבוק', user: 'Dad' });
+
+    await install(page);
+    await open(page);
+    await expect(page.getByTestId('fam-section')).toBeVisible();
+    await expect(page.getByTestId('fam-source')).toHaveCount(0);
+    await page.getByTestId('fam-add-open').click();
+    await page.getByTestId('fam-label').fill('חברים מהעבודה');
+    await page.getByTestId('fam-code').fill(encodeAdminCode(url, 'wrong-admin-key'));
+    await page.getByTestId('fam-add').click();
+    await expect(page.getByTestId('fam-error')).toHaveText('קוד המנהל לא תקין');
+    await page.getByTestId('fam-remove').click();
+    await page.getByTestId('fam-remove').click();
+    await expect(page.getByTestId('fam-source')).toHaveCount(0);
+
+    await page.getByTestId('fam-add-open').click();
+    await page.getByTestId('fam-label').fill('חברים מהעבודה');
+    await page.getByTestId('fam-code').fill(encodeAdminCode(url, 'fam-admin-123'));
+    await page.getByTestId('fam-add').click();
+    const items = page.getByTestId('fam-item');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toContainText('#2 · 💡 רעיון');
+    await expect(page.getByTestId('fam-source').locator('> .lh')).toHaveText('חברים מהעבודה');
+
+    // sent after the owner looked: clearing takes only what was shown
+    await post({ action: 'feedback', id: 'q3', kind: 'other', text: 'תודה', user: 'Mom' });
+    await page.getByTestId('fam-clear').click();
+    await expect(page.getByTestId('fam-clear')).toHaveText('לחצו שוב לניקוי');
+    await page.getByTestId('fam-clear').click();
+    await expect(items).toHaveCount(1);
+    await expect(items.nth(0)).toContainText('#3');
+
+    // the list of families stays on this phone
+    await page.reload();
+    await open(page);
+    await expect(page.getByTestId('fam-source')).toHaveCount(1);
+    await expect(items).toHaveCount(1);
+  } finally {
+    await fam.close();
+  }
+});

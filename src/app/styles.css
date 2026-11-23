@@ -335,6 +335,11 @@ input, textarea, select {
 /* ---- install ---- */
 .install { padding: 24px 16px; max-width: 480px; margin: 0 auto; overflow: auto; height: 100%; }
 .install button.primary { margin-top: 14px; padding: 12px 20px; border-radius: 12px; border: 1px solid var(--accent); width: 100%; }
+.install .linklike { display: block; margin: 18px auto 0; min-height: 44px; background: none; border: none; color: var(--muted); text-decoration: underline; font: inherit; font-size: 14px; }
+/* (family servers) privacy and terms; the other families' feedback on the owner's phone */
+.privacy p { margin: 4px 0 0; line-height: 1.5; font-size: 14px; }
+.famsrc { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+.famadd textarea, .famadd input { width: 100%; }
 
 /* ---- Hebrew date field: a Hebrew label with the system date input laid invisibly on top ---- */
 .datefield { position: relative; min-width: 0; }

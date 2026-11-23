@@ -74,7 +74,7 @@ export class MemoryStore implements Store {
     this.feedback.push(stored);
     return { ...stored };
   }
-  feedbackClear(): void {
-    this.feedback = [];
+  feedbackClear(ids?: readonly string[]): void {
+    this.feedback = ids ? this.feedback.filter((f) => !ids.includes(f.id)) : [];
   }
 }

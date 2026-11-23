@@ -77,11 +77,12 @@ describe('privacy check script', () => {
   });
 
   it('fails without revealing the word', () => {
-    // "privacy" certainly appears in this repository (this very test file).
-    const r = run({ PRIVACY_DENYLIST: 'privacy' });
+    // "revealing" certainly appears in this repository (this very test file), in few places: the list shows the first 50 only
+    // ("privacy" itself grew past that once the app got a privacy page).
+    const r = run({ PRIVACY_DENYLIST: 'revealing' });
     expect(r.code).toBe(1);
     expect(r.out).toContain('FAILED');
     expect(r.out).toMatch(/tests\/privacy\.test\.ts:\d+/);
-    expect(r.out.toLowerCase().split('privacy check').join('').includes('"privacy"')).toBe(false);
+    expect(r.out.toLowerCase().includes('revealing')).toBe(false);
   });
 });

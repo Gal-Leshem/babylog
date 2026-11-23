@@ -45,8 +45,8 @@ export interface Store {
   feedbackAll(): FeedbackItem[];
   /** Stores one item under the next number of a sequence that is never reset (call under the lock). */
   feedbackAdd(item: Omit<FeedbackItem, 'no'>): FeedbackItem;
-  /** Removes every item; the numbering goes on where it was (call under the lock). */
-  feedbackClear(): void;
+  /** Removes the items with these ids, or every item when `ids` is missing; the numbering goes on where it was (call under the lock). */
+  feedbackClear(ids?: readonly string[]): void;
 }
 
 export interface Deps {
@@ -54,6 +54,24 @@ export interface Deps {
   now(): number;
   checkKey(key: string): boolean;
   withLock<T>(fn: () => T): T;
+  /**
+   * A family's server (not the owner's): its sheet link is never given out (the sheet lives in the owner's Drive), and its own
+   * key may send feedback but not read or clear it.
+   */
+  familyServer?: boolean;
+  /** A family's server: the owner's admin key, which may only read and clear the feedback (never the log). */
+  checkAdmin?(key: string): boolean;
+}
+
+/** What the owner's admin key may do on a family's server. */
+const ADMIN_ACTIONS = new Set(['ping', 'feedbackList', 'feedbackClear']);
+const FEEDBACK_READ = new Set(['feedbackList', 'feedbackClear']);
+
+/** A family's server never hands out its sheet link (also not inside the answers to a sync's operations). */
+function withoutSheetUrl(r: ApiResponse): ApiResponse {
+  if (!r.ok) return r;
+  const { sheetUrl: _drop, ...rest } = r;
+  return rest.results ? { ...rest, results: rest.results.map(withoutSheetUrl) } : rest;
 }
 
 class ApiException extends Error {
@@ -218,8 +236,16 @@ const stamp = (now: number) => formatLocal(now);
 export function handle(raw: unknown, deps: Deps): ApiResponse {
   try {
     if (!isObj(raw)) return { ok: false, error: 'bad_request' };
-    if (!deps.checkKey(str(raw.key))) return { ok: false, error: 'unauthorized' };
-    return dispatch(raw, deps);
+    const key = str(raw.key);
+    const action = str(raw.action);
+    if (deps.checkKey(key)) {
+      if (deps.familyServer && FEEDBACK_READ.has(action)) return { ok: false, error: 'send_only' };
+      const r = dispatch(raw, deps);
+      return deps.familyServer ? withoutSheetUrl(r) : r;
+    }
+    // the owner's admin key on a family's server: the feedback and nothing else
+    if (deps.familyServer && deps.checkAdmin?.(key) && ADMIN_ACTIONS.has(action)) return dispatch(raw, deps);
+    return { ok: false, error: 'unauthorized' };
   } catch (e) {
     if (e instanceof ApiException) return { ok: false, error: e.code, ...(e.detail ? { detail: e.detail } : {}) };
     return { ok: false, error: 'server_error', detail: e instanceof Error ? e.message : String(e) };
@@ -273,8 +299,10 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       return { ok: true, feedback: store.feedbackAll() };
     case 'feedbackClear':
       return deps.withLock(() => {
-        store.feedbackClear();
-        return { ok: true, feedback: [] };
+        const ids = o.ids;
+        if (ids !== undefined && (!Array.isArray(ids) || ids.length > 500 || ids.some((x) => typeof x !== 'string'))) fail('bad_request', 'ids must be a list of ids');
+        store.feedbackClear(ids as string[] | undefined);
+        return { ok: true, feedback: store.feedbackAll() };
       });
 
     case 'log':

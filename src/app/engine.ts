@@ -7,6 +7,7 @@ import { addDays, dayStart, localDate } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type Settings } from '../shared/types';
 import { type Endpoint, type FetchLike, NetworkError, callApi, sendAway } from './api';
 import type { Config } from './config';
+import { FAMILIES_KEY } from './families';
 import type { KV } from './storage';
 
 export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'auth' | 'error';
@@ -322,6 +323,7 @@ export class Engine {
     this.storage.remove(STATE_KEY);
     this.log = [];
     this.storage.remove(LOG_KEY);
+    this.storage.remove(FAMILIES_KEY); // the owner's list of family servers goes with the connection
     this.lastError = null;
     this.status = 'idle';
     this.emit();

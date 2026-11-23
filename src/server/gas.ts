@@ -3,7 +3,7 @@ import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
-import { encodeInstallCode, makeCheckKey } from './auth';
+import { encodeAdminCode, encodeInstallCode, makeCheckKey } from './auth';
 import { type Deps, type Store, handle } from './core';
 import { type Change, type Since, parseJournal, record, since } from './journal';
 import { README_ROWS } from './readme';
@@ -17,6 +17,9 @@ declare const __FIXED_KEY__: string;
 declare const __EXEC_URL__: string;
 /** The commit this bundle was built from (replaced at build time). */
 declare const __BUILD__: string;
+/** 'family' for a family's server (see families.ts), 'owner' for the owner's and the test server (replaced at build time). */
+declare const __ROLE__: string;
+const FAMILY = __ROLE__ === 'family';
 
 const EVENTS = 'Events';
 const SETTINGS = 'Settings';
@@ -236,6 +239,7 @@ class SheetStore implements Store {
     this.writeMedicines(s.medicines);
   }
   sheetUrl(): string {
+    if (FAMILY) return ''; // the sheet lives in the owner's Drive: a family's phone gets no link (core also drops it)
     return this.ss.getUrl();
   }
   revision(): string {
@@ -289,12 +293,19 @@ class SheetStore implements Store {
     return { ...item, no };
   }
   /** Empties the tab below its titles (the numbering in FEEDBACK_SEQ goes on). Rows are cleared, not deleted: a sheet refuses to lose all its unfrozen rows. */
-  feedbackClear(): void {
+  feedbackClear(ids?: readonly string[]): void {
     const sh = this.feedbackSheet(false);
     const last = sh ? sh.getLastRow() : 0;
     if (!sh || last < 2) return;
     timed('write', () => {
-      sh.getRange(2, 1, last - 1, FB_HEADER.length).clearContent();
+      if (!ids) sh.getRange(2, 1, last - 1, FB_HEADER.length).clearContent();
+      else {
+        // only the items the owner has seen: one sent meanwhile stays (an emptied row is skipped by feedbackAll)
+        const col = sh.getRange(2, 8, last - 1, 1).getValues();
+        col.forEach((r, i) => {
+          if (ids.includes(String(r[0] ?? ''))) sh.getRange(i + 2, 1, 1, FB_HEADER.length).clearContent();
+        });
+      }
       SpreadsheetApp.flush();
     });
   }
@@ -329,6 +340,7 @@ function deps(): Deps {
     store: new SheetStore(),
     now: () => Date.now(),
     checkKey,
+    ...(FAMILY ? { familyServer: true, checkAdmin: makeCheckKey(P().ADMIN_KEY ?? null, '') } : {}),
     withLock: (fn) => {
       const lock = LockService.getScriptLock();
       timed('lock', () => lock.waitLock(10_000));
@@ -398,6 +410,13 @@ export function printInstallCode(): void {
   }
   console.log('Paste this setup code into the app (Settings screen on first launch):');
   console.log(encodeInstallCode(url, key, b64url));
+  const admin = props().getProperty('ADMIN_KEY');
+  if (FAMILY && admin) {
+    console.log('');
+    console.log('FOR THE OWNER ONLY (do not send it to the family): the admin code, for reading this family\'s feedback.');
+    console.log('In the app: Settings > מתקדם > משוב > משפחות נוספות > הוספה. It opens the feedback only, never the log.');
+    console.log(encodeAdminCode(url, admin, b64url));
+  }
 }
 
 function writeReadme(ss: GoogleAppsScript.Spreadsheet.Spreadsheet): void {
@@ -429,6 +448,7 @@ export function setup(): void {
   store.setSettings(store.readSettings()); // from the sheet itself: this is how a hand edit of the settings tabs is taken in
   writeReadme(ss);
   if (!props().getProperty('API_KEY')) props().setProperty('API_KEY', newKey());
+  if (FAMILY && !props().getProperty('ADMIN_KEY')) props().setProperty('ADMIN_KEY', newKey());
   printInstallCode();
 }
 

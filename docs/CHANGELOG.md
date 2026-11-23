@@ -465,6 +465,18 @@ No names, addresses or secrets in this file (the repository is public).
   build or waits for the owner's one-time `setup`. `ship.sh` waits for it after production and prints one line per family. The
   list is empty: nothing changes for the owner. Tests: the list rules, the server check, and the pipeline order (a test that
   failed when the families job was made to run beside production).
+- Other families, stages 2 and 3 **(owner approved)**: a family's server is the same bundle built with `--family` (the deploy does
+  it for every family): it never hands out the sheet link (the sheet is in the owner's Drive; also not inside a sync's answers),
+  its own key may send feedback but not read or clear it (`send_only`), and `setup()` makes a second key, `ADMIN_KEY`, printed as an
+  admin code (`BLA.`) for the owner only, which reads and clears that family's feedback and nothing else. In the app: a family's
+  feedback screen only sends ("נשלח, תודה"; no list); the owner's has "משפחות נוספות": add a family with its admin code and a private
+  label (kept on the owner's phone only, `bl.families.v1`, removed with "ניתוק"), read each family's items, "ניקוי" clears only the
+  items shown (`feedbackClear` with `ids`; one sent meanwhile stays), "העתקה של כולם" copies them under their labels. A
+  "פרטיות ותנאים" page (Settings > מתקדם, and on the install screen); install texts no longer speak of the server's Setup.
+  `INSTALL.he.md` has the owner's steps for a new family and a ready message for the family. The owner's own server is unchanged
+  (built as before; the admin key means nothing there). Tests: core rules and the built family bundle in the fake Google runtime,
+  the admin code, the family and owner feedback screens, the privacy page; each new rule failed when its fix was taken out. The
+  privacy-guard test now looks for a rarer word (the list it checks shows the first 50 places, and "privacy" passed that).
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

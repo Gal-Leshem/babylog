@@ -6,6 +6,9 @@ import { build } from 'esbuild';
  * `--test` bakes in FIXED_KEY (derived by CI) so live tests can authenticate; production never does.
  */
 const testBuild = process.argv.includes('--test');
+/** `--family`: a family's server (families.ts): no sheet link for the phones, feedback send-only, an admin key for the owner. */
+const familyBuild = process.argv.includes('--family');
+if (testBuild && familyBuild) throw new Error('a build is either --test or --family');
 const fixedKey = testBuild ? (process.env.FIXED_KEY ?? '') : '';
 const execUrl = process.env.EXEC_URL ?? '';
 /** Which commit this bundle is: every answer carries it, so the live test can wait until Google serves the new deployment. */
@@ -25,7 +28,7 @@ await build({
   target: 'es2019',
   platform: 'neutral',
   charset: 'utf8',
-  define: { __FIXED_KEY__: JSON.stringify(fixedKey), __EXEC_URL__: JSON.stringify(execUrl), __BUILD__: JSON.stringify(buildId) },
+  define: { __FIXED_KEY__: JSON.stringify(fixedKey), __EXEC_URL__: JSON.stringify(execUrl), __BUILD__: JSON.stringify(buildId), __ROLE__: JSON.stringify(familyBuild ? 'family' : 'owner') },
   legalComments: 'none',
   logLevel: 'warning',
 });
@@ -44,6 +47,6 @@ function printInstallCode() { return __babylog.printInstallCode(); }
 copyFileSync('apps-script/appsscript.json', 'apps-script/dist/appsscript.json');
 
 const out = readFileSync('apps-script/dist/Code.js', 'utf8');
-if (/__FIXED_KEY__|__EXEC_URL__|__BUILD__/.test(out)) throw new Error('unreplaced placeholder in the bundle');
+if (/__FIXED_KEY__|__EXEC_URL__|__BUILD__|__ROLE__/.test(out)) throw new Error('unreplaced placeholder in the bundle');
 if (!testBuild && fixedKey !== '') throw new Error('production build must not contain a fixed key');
-console.log(`server bundle ready (${testBuild ? 'test' : 'production'}, ${Math.round(out.length / 1024)} KB)`);
+console.log(`server bundle ready (${testBuild ? 'test' : familyBuild ? 'family' : 'production'}, ${Math.round(out.length / 1024)} KB)`);

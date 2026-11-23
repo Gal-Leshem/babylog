@@ -83,7 +83,7 @@ rmSync('.clasp.json', { force: true });
 // 2. Build and push. The web app address (/exec) is embedded in the bundle so that printInstallCode()
 // prints a working address; the first run has to create the deployment before the address exists.
 const build = (execUrl: string) =>
-  execFileSync('npx', ['tsx', 'scripts/build-server.ts', ...(env === 'test' ? ['--test'] : [])], { stdio: 'inherit', env: { ...process.env, EXEC_URL: execUrl } });
+  execFileSync('npx', ['tsx', 'scripts/build-server.ts', ...(env === 'test' ? ['--test'] : fam ? ['--family'] : [])], { stdio: 'inherit', env: { ...process.env, EXEC_URL: execUrl } });
 const execUrlOf = (id: string) => `https://script.google.com/macros/s/${id}/exec`;
 const push = () => console.log(clasp('push', '-f').trim().split('\n').slice(-3).join('\n'));
 const redeploy = (id: string): Deployment => json<Deployment>(clasp('--json', 'create-deployment', '--deploymentId', id, '--description', `babylog ${sha}`));

@@ -473,3 +473,59 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key: old, action: 'ping' })).toMatchObject({ ok: false, error: 'unauthorized' });
   });
 });
+
+// Owner (family servers): the same bundle built with --family is a family's server.
+describe('the bundle built for a family (--family)', () => {
+  let famCode = '';
+  beforeAll(() => {
+    execFileSync('npx', ['tsx', 'scripts/build-server.ts', '--family'], { stdio: 'pipe' });
+    famCode = readFileSync('apps-script/dist/Code.js', 'utf8');
+    execFileSync('npx', ['tsx', 'scripts/build-server.ts'], { stdio: 'pipe' }); // leave the owner's build in place
+  });
+  const bootFam = () => {
+    const rt = createGasRuntime();
+    const g = rt.load(famCode);
+    const post = (body: unknown) => JSON.parse(g.doPost!({ postData: { contents: JSON.stringify(body) } }).getContent());
+    return { rt, g, post };
+  };
+
+  it("setup makes a separate admin key and prints the admin code for the owner after the family's code", () => {
+    const { rt, g } = bootFam();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const admin = rt.props.get('ADMIN_KEY')!;
+    expect(admin).toHaveLength(64);
+    expect(admin).not.toBe(key);
+    const decode = (l: string) => JSON.parse(Buffer.from(l.slice(4), 'base64url').toString('utf8'));
+    const famLine = rt.logs.findIndex((l) => l.startsWith('BL1.'));
+    const adminLine = rt.logs.findIndex((l) => l.startsWith('BLA.'));
+    expect(decode(rt.logs[famLine]!)).toEqual({ u: 'https://script.google.com/macros/s/FAKE/exec', k: key });
+    expect(decode(rt.logs[adminLine]!)).toEqual({ u: 'https://script.google.com/macros/s/FAKE/exec', k: admin });
+    expect(adminLine).toBeGreaterThan(famLine);
+    g.setup!(); // repeatable: the keys stay
+    expect([rt.props.get('API_KEY'), rt.props.get('ADMIN_KEY')]).toEqual([key, admin]);
+  });
+
+  it("works for the family, gives no sheet link, and keeps the feedback for the owner's admin key", () => {
+    const { rt, g, post } = bootFam();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const admin = rt.props.get('ADMIN_KEY')!;
+    expect(post({ key, action: 'log', id: 'x1', type: 'diaper', detail: 'wet', start: '2000-01-01 00:00', user: 'P', source: 'app' }).ok).toBe(true);
+    const s = post({ key, action: 'settings' });
+    expect(s.ok).toBe(true);
+    expect(s.sheetUrl).toBeUndefined();
+    expect(post({ key, action: 'feedback', id: 'f1', kind: 'idea', text: 'רעיון', user: 'P' }).item.no).toBe(1);
+    expect(post({ key, action: 'feedbackList' }).error).toBe('send_only');
+    expect(post({ key: admin, action: 'feedbackList' }).feedback.map((f: { id: string }) => f.id)).toEqual(['f1']);
+    expect(post({ key: admin, action: 'list', from: '2000-01-01', to: '2000-01-01' }).error).toBe('unauthorized');
+    expect(post({ key: admin, action: 'feedbackClear', ids: ['f1'] }).feedback).toEqual([]);
+  });
+
+  it("the owner's build has no admin key: setup makes none and prints no admin code", () => {
+    const { rt, g } = boot();
+    g.setup!();
+    expect(rt.props.has('ADMIN_KEY')).toBe(false);
+    expect(rt.logs.some((l) => l.startsWith('BLA.'))).toBe(false);
+  });
+});

@@ -48,3 +48,25 @@ describe('server addresses', () => {
     expect(isServerUrl('javascript:alert(1)')).toBe(false);
   });
 });
+
+describe('admin code (family servers)', () => {
+  it('round-trips, and is never taken for a setup code (or the other way round)', async () => {
+    const { decodeAdminCode, encodeAdminCode } = await import('../src/app/config');
+    const url = 'https://script.google.com/macros/s/ABC/exec';
+    const code = encodeAdminCode(url, 'a'.repeat(64));
+    expect(code.startsWith('BLA.')).toBe(true);
+    expect(decodeAdminCode(code)).toEqual({ url, key: 'a'.repeat(64) });
+    expect(decodeSetupCode(code)).toBeNull();
+    expect(decodeAdminCode(encodeSetupCode(url, 'a'.repeat(64)))).toBeNull();
+  });
+  it("the owner's list of family servers survives bad stored data and is removed when empty", async () => {
+    const { loadFamilies, saveFamilies, FAMILIES_KEY } = await import('../src/app/families');
+    const { memoryStorage } = await import('../src/app/storage');
+    const kv = memoryStorage();
+    expect(loadFamilies(kv)).toEqual([]);
+    kv.set(FAMILIES_KEY, [{ label: 'א', url: 'https://x/exec', key: 'k'.repeat(10) }, { nope: 1 }, null]);
+    expect(loadFamilies(kv)).toEqual([{ label: 'א', url: 'https://x/exec', key: 'k'.repeat(10) }]);
+    saveFamilies([], kv);
+    expect(kv.data.has(FAMILIES_KEY)).toBe(false);
+  });
+});

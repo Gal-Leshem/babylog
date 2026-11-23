@@ -33,7 +33,7 @@ describe('the families list (families.json)', () => {
 });
 
 describe('checking a family server after its deploy', () => {
-  it('reads the build from our answer, recognises Google\'s approval page, and calls anything else a problem', () => {
+  it("reads the build from our answer, recognises Google's approval page, and calls anything else a problem", () => {
     expect(classify(200, '{"ok":false,"error":"unauthorized","ms":3,"build":"abc1234"}')).toEqual({ kind: 'build', build: 'abc1234' });
     expect(classify(200, '<!DOCTYPE html><html><title>Sign in</title><a href="https://accounts.google.com/ServiceLogin">')).toEqual({ kind: 'signin' });
     expect(classify(500, '<html>Internal error</html>').kind).toBe('other');
@@ -41,7 +41,7 @@ describe('checking a family server after its deploy', () => {
   });
 });
 
-describe('the pipeline keeps the owner\'s server first and apart', () => {
+describe("the pipeline keeps the owner's server first and apart", () => {
   const yml = readFileSync('.github/workflows/pipeline.yml', 'utf8');
   const job = (name: string): string => {
     const m = yml.match(new RegExp(`\\n  ${name}:\\n([\\s\\S]*?)(?=\\n  [a-z#]|$)`));

@@ -98,9 +98,16 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.
 
+- Family servers (`--family` build, `familyServer` in `Deps`): no sheet link in any answer; the family's key gets `send_only` for
+  `feedbackList` / `feedbackClear`; the admin key (`ADMIN_KEY`, `checkAdmin`) may only `ping`, `feedbackList` and `feedbackClear`
+  (with `ids`: only those items). The owner's phone keeps the family servers it reads (`bl.families.v1`: private label, address,
+  admin key) and shows them under "משפחות נוספות" in the feedback screen; the feedback screen learns "send only" from the
+  answer to its list.
+
 ## Security
 Every request carries a secret key (a script property). The web app is anonymous-accessible (Siri cannot sign
-in), so the key is the protection. The key and server address travel only inside the "setup code" and into the
+in), so the key is the protection. Each family's server has its own address, key, sheet and script, and keeps the narrowest
+Google permission (`spreadsheets.currentonly`: only its own sheet), so nothing can reach from one family to another. The key and server address travel only inside the "setup code" and into the
 shortcut files created locally on the owner's Mac. The test server accepts a key derived in CI.
 
 ## Pipeline (`.github/workflows/pipeline.yml`)

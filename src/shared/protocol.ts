@@ -55,7 +55,8 @@ export type ApiRequest =
    */
   | { action: 'feedback'; id: string; kind: FeedbackKind; text: string; user: string; version?: string; log?: string }
   | { action: 'feedbackList' }
-  | { action: 'feedbackClear' }
+  /** `ids`: only these items (the ones the owner has seen); without it, all of them. */
+  | { action: 'feedbackClear'; ids?: string[] }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
 
@@ -87,6 +88,8 @@ export type ErrorCode =
   | 'invalid_event'
   | 'not_found'
   | 'sleep_already_open'
+  /** A family's server: its own key may send feedback but not read or clear it (only the owner, with the admin key, does). */
+  | 'send_only'
   | 'server_error';
 
 export interface ApiError {

@@ -23,3 +23,8 @@ export function makeCheckKey(stored: string | null, fixed: string): (k: string) 
 export function encodeInstallCode(url: string, key: string, b64: (s: string) => string): string {
   return `BL1.${b64(JSON.stringify({ u: url, k: key }))}`;
 }
+
+/** (family servers) The owner's code for reading a family's feedback: "BLA." + the same shape as a setup code. */
+export function encodeAdminCode(url: string, key: string, b64: (s: string) => string): string {
+  return `BLA.${b64(JSON.stringify({ u: url, k: key }))}`;
+}

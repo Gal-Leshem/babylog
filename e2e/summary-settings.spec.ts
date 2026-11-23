@@ -194,3 +194,18 @@ test('settings: "יומן סנכרון" opens the log of the last syncs; back re
   await page.getByTestId('log-back').click();
   await expect(page.getByTestId('sect-advanced')).toBeVisible();
 });
+
+// Owner (family servers): a privacy and terms page, from the install screen and from Settings; the install screen speaks to any family.
+test('privacy and terms: on the install screen before connecting, and in Settings with a way back', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('install')).toContainText('הדביקו כאן את קוד ההתקנה שקיבלתם');
+  await expect(page.getByTestId('privacy-text')).toHaveCount(0);
+  await page.getByTestId('install-privacy').click();
+  await expect(page.getByTestId('privacy-text')).toContainText('בלי ייעוץ רפואי');
+  await install(page);
+  await page.getByTestId('tab-settings').click();
+  await page.getByTestId('open-privacy').click();
+  await expect(page.getByTestId('privacy')).toContainText('מי יכול לראות');
+  await page.getByTestId('privacy-back').click();
+  await expect(page.getByTestId('sect-advanced')).toBeVisible();
+});

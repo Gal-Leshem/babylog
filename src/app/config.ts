@@ -32,9 +32,17 @@ export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^ht
 export const isEditorTestUrl = (u: string): boolean => /\/dev\/?$/.test(u);
 
 /** Setup code: "BL1." + base64url(JSON {u: web app url, k: key}). */
-export function decodeSetupCode(code: string): { url: string; key: string } | null {
+export const decodeSetupCode = (code: string): { url: string; key: string } | null => decodeCode(code, 'BL1.');
+
+/**
+ * (family servers) The owner's admin code for one family's server: "BLA." + the same shape. It opens that family's feedback
+ * only (read and clear), never its log. Printed by setup() in the family's script, kept only on the owner's phone.
+ */
+export const decodeAdminCode = (code: string): { url: string; key: string } | null => decodeCode(code, 'BLA.');
+
+function decodeCode(code: string, prefix: string): { url: string; key: string } | null {
   const trimmed = code.trim().replace(/\s+/g, '');
-  if (!trimmed.startsWith('BL1.')) return null;
+  if (!trimmed.startsWith(prefix)) return null;
   try {
     const b64 = trimmed.slice(4).replace(/-/g, '+').replace(/_/g, '/');
     const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
@@ -47,6 +55,8 @@ export function decodeSetupCode(code: string): { url: string; key: string } | nu
     return null;
   }
 }
+
+export const encodeAdminCode = (url: string, key: string): string => `BLA.${encodeSetupCode(url, key).slice(4)}`;
 
 export function encodeSetupCode(url: string, key: string): string {
   const bytes = new TextEncoder().encode(JSON.stringify({ u: url, k: key }));

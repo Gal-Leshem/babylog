@@ -46,8 +46,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
 5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`, current proposal in its section 0 (one server per family,
-   the owner's server untouched). Stage 1 built (pipeline job `families`, list empty). Next, stage 2: the first family
-   (`npx tsx scripts/families.ts new`, push, the owner runs `setup` in the new script once and sends the code privately).
+   the owner's server untouched). Stages 1 to 3 built (pipeline job `families`, `--family` builds, send-only feedback +
+   admin codes, privacy page). Next: the owner's own test family, then a real one (`INSTALL.he.md` "משפחה נוספת": add an id,
+   push, the owner runs `setup` once, sends the family code privately and adds the admin code on his phone).
 6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
 
 ## How to resume (first 10 minutes in a new session)

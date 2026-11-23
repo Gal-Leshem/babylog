@@ -65,3 +65,54 @@ describe('feedback', () => {
     expect(handle({ action: 'feedbackList' }, deps)).toEqual({ ok: false, error: 'unauthorized' });
   });
 });
+
+// Owner (family servers): on a family's server the family's own key may only send feedback; the owner's admin key may only
+// read and clear it. The family's sheet link is never handed out.
+describe('a family server', () => {
+  const ADMIN = 'admin-key';
+  const fam = (): Deps => ({ ...deps, familyServer: true, checkAdmin: (k) => k === ADMIN });
+  const as = (key: string, req: Record<string, unknown>): ApiResponse => handle({ key, ...req }, fam());
+
+  it("the family's key sends feedback, and is refused the list and clearing", () => {
+    expect(ok(as(KEY, { action: 'feedback', id: 'f1', kind: 'bug', text: 'x', user: 'P' })).item?.no).toBe(1);
+    expect(as(KEY, { action: 'feedbackList' })).toEqual({ ok: false, error: 'send_only' });
+    expect(as(KEY, { action: 'feedbackClear' })).toEqual({ ok: false, error: 'send_only' });
+    expect(store.feedbackAll()).toHaveLength(1); // nothing was cleared
+  });
+
+  it("the admin key reads and clears the feedback, and nothing else: no log, no settings, no writes", () => {
+    as(KEY, { action: 'feedback', id: 'f1', kind: 'bug', text: 'x', user: 'P' });
+    expect(ok(as(ADMIN, { action: 'feedbackList' })).feedback!.map((f) => f.id)).toEqual(['f1']);
+    for (const action of ['list', 'sync', 'settings', 'status', 'next', 'poll', 'log', 'feedback']) {
+      expect(as(ADMIN, { action, from: '2026-11-14', to: '2026-11-14', id: 'a1', type: 'diaper', detail: 'wet', start: '2026-11-14 11:00', user: 'P', source: 'app', kind: 'bug', text: 'x' }), action).toEqual({
+        ok: false,
+        error: 'unauthorized',
+      });
+    }
+    expect(store.all()).toHaveLength(0);
+    expect(ok(as(ADMIN, { action: 'feedbackClear' })).feedback).toEqual([]);
+  });
+
+  it("the admin key means nothing on the owner's own server", () => {
+    expect(handle({ key: ADMIN, action: 'feedbackList' }, { ...deps, checkAdmin: (k) => k === ADMIN })).toEqual({ ok: false, error: 'unauthorized' });
+  });
+
+  it('clearing with ids removes only the items the owner saw; one sent meanwhile stays', () => {
+    for (const id of ['f1', 'f2', 'f3']) as(KEY, { action: 'feedback', id, kind: 'bug', text: id, user: 'P' });
+    expect(ok(as(ADMIN, { action: 'feedbackClear', ids: ['f1', 'f2'] })).feedback!.map((f) => f.id)).toEqual(['f3']);
+    expect(as(ADMIN, { action: 'feedbackClear', ids: 'f3' })).toMatchObject({ ok: false, error: 'bad_request' });
+  });
+
+  it('never gives out the sheet link, also not inside the answer to an operation in a sync', () => {
+    const withUrl = new MemoryStore();
+    withUrl.sheetUrl = () => 'https://docs.google.com/spreadsheets/d/x/edit';
+    const d: Deps = { ...fam(), store: withUrl };
+    const settings = handle({ key: KEY, action: 'settings' }, d);
+    expect(ok(settings).sheetUrl).toBeUndefined();
+    const s = ok(handle({ key: KEY, action: 'sync', from: '2026-11-14', to: '2026-11-14', ops: [{ action: 'settings', set: { babyName: 'B' } }] }, d));
+    expect(s.sheetUrl).toBeUndefined();
+    expect(s.results![0]!.ok && s.results![0]!.sheetUrl).toBeFalsy();
+    // the owner's own server still gives it
+    expect(ok(handle({ key: KEY, action: 'settings' }, { ...deps, store: withUrl })).sheetUrl).toContain('spreadsheets');
+  });
+});

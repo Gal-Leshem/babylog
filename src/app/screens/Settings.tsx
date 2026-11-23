@@ -4,6 +4,7 @@ import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
 import { Feedback } from './Feedback';
+import { Privacy } from './Privacy';
 import { SyncLog } from './SyncLog';
 
 const NIGHT: [NightMode, string][] = [
@@ -37,6 +38,7 @@ export function Settings() {
   const [medsOpen, setMedsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [fbOpen, setFbOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const synced = useRef(JSON.stringify([st.settings.babyName, st.settings.parents[0], st.settings.parents[1], st.settings.mergeWindowMin]));
 
   // Pick up server changes (e.g. the other parent renamed something), but only when the values really
@@ -78,6 +80,14 @@ export function Settings() {
     return (
       <section class="page" data-testid="settings">
         <Feedback onBack={() => setFbOpen(false)} />
+      </section>
+    );
+  }
+
+  if (privacyOpen) {
+    return (
+      <section class="page" data-testid="settings">
+        <Privacy onBack={() => setPrivacyOpen(false)} />
       </section>
     );
   }
@@ -239,6 +249,9 @@ export function Settings() {
             }}
           >
             {confirmReset ? 'לחצו שוב לאישור — ינתק ויימחק מהמכשיר' : 'ניתוק מהחשבון'}
+          </button>
+          <button type="button" data-testid="open-privacy" onClick={() => setPrivacyOpen(true)}>
+            פרטיות ותנאים
           </button>
         </div>,
         <p class="muted" key="v">

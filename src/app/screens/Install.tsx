@@ -3,6 +3,7 @@ import { NetworkError, callApi } from '../api';
 import { decodeSetupCode, isEditorTestUrl, isServerUrl } from '../config';
 import type { Settings } from '../../shared/types';
 import { engine } from '../state';
+import { privacyText } from './Privacy';
 
 export function Install() {
   const [code, setCode] = useState('');
@@ -14,6 +15,7 @@ export function Install() {
   const [me, setMe] = useState('');
   const [names, setNames] = useState<[string, string]>(['', '']);
   const [baby, setBaby] = useState('');
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const connect = async () => {
     setError('');
@@ -38,7 +40,7 @@ export function Install() {
       setBaby(settings.babyName);
       setMe(settings.parents[0]);
     } catch (e) {
-      setError(e instanceof NetworkError ? 'אין תגובה מהשרת. בדקו חיבור לאינטרנט ושהקוד נכון. אם זה קורה תמיד, ייתכן שה-Setup עוד לא אושר.' : 'שגיאה לא צפויה');
+      setError(e instanceof NetworkError ? 'אין תגובה מהשרת. בדקו את החיבור לאינטרנט ושהקוד הועתק במלואו. אם זה חוזר, פנו למי ששלח לכם את הקוד.' : 'שגיאה לא צפויה');
     } finally {
       setBusy(false);
     }
@@ -62,7 +64,9 @@ export function Install() {
     return (
       <main class="install" data-testid="install">
         <h1>BabyLog</h1>
-        <p>הדביקו כאן את קוד ההתקנה שהודפס בסיום ה-Setup של השרת (מתחיל ב-BL1).</p>
+        <p>
+          הדביקו כאן את קוד ההתקנה שקיבלתם (מתחיל ב-<bdi>BL1</bdi>).
+        </p>
         <textarea data-testid="setup-code" rows={5} value={code} placeholder="BL1...." onInput={(e) => setCode((e.target as HTMLTextAreaElement).value)} />
         {needExec && (
           <>
@@ -78,6 +82,10 @@ export function Install() {
         <button type="button" class="primary" data-testid="connect" disabled={busy || !code.trim()} onClick={() => void connect()}>
           {busy ? 'מתחבר…' : 'התחברות'}
         </button>
+        <button type="button" class="linklike" data-testid="install-privacy" onClick={() => setShowPrivacy(!showPrivacy)}>
+          פרטיות ותנאים
+        </button>
+        {showPrivacy && privacyText()}
       </main>
     );
   }
@@ -85,7 +93,7 @@ export function Install() {
   return (
     <main class="install" data-testid="install-step2">
       <h1>כמעט סיימנו</h1>
-      <p>השמות נשמרים בגיליון הפרטי שלכם בלבד. אם ההורה השני כבר הגדיר אותם, הם כבר מולאו.</p>
+      <p>השמות נשמרים רק בגיליון של המשפחה שלכם. אם ההורה השני כבר הגדיר אותם, הם כבר מולאו.</p>
       <label class="fl">הורה 1</label>
       <input data-testid="name-1" value={names[0]} maxLength={20} onInput={(e) => setNames([(e.target as HTMLInputElement).value, names[1]])} />
       <label class="fl">הורה 2</label>
