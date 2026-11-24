@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "66a0620",
+  "sha": "ebdadc8",
   "ref": "main",
-  "at": "2026-11-24T16:04:49.501Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45431834373",
+  "at": "2026-11-24T19:15:48.839Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45467403104",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,24 +21,24 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-BmO3pzIl.css   19.59 kB │ gzip:  4.66 kB",
-      "dist/assets/index-CmGDDCwS.js   139.69 kB │ gzip: 45.62 kB",
+      "dist/assets/index-BQCKuAtO.js   141.17 kB │ gzip: 46.12 kB",
       "",
-      "✓ built in 78ms",
+      "✓ built in 103ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (157.43 KiB)",
+      "precache  10 entries (158.87 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
       "shortcut templates written (32)",
-      "took 2s"
+      "took 3s"
     ],
     "enable-pages": [
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 3s"
+      "took 0s"
     ],
     "install": [
       "+ npm ci",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 7s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,16 +73,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 66a0620 to gh-pages",
-      "took 1s"
+      "published ebdadc8 to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 6bc7bd5, waiting for 66a0620",
-      "attempt 2: serves 6bc7bd5, waiting for 66a0620",
-      "attempt 3: serves 6bc7bd5, waiting for 66a0620",
-      "site is live and serves 66a0620",
-      "took 31s"
+      "attempt 1: serves 66a0620, waiting for ebdadc8",
+      "attempt 2: serves 66a0620, waiting for ebdadc8",
+      "site is live and serves ebdadc8",
+      "took 21s"
     ]
   }
 }
