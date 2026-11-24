@@ -258,6 +258,85 @@ test('recent list: a sleep shows as "נרדם" and "התעורר" at their own t
   await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
 });
 
+// Owner bug: a wake-up deleted from its "התעורר" row took the whole sleep with it (the baby woke for a moment and went straight back
+// to sleep). On the wake-up side the button deletes only the wake-up and the sleep is open again; on the falling-asleep side the
+// whole sleep, as before. Toasts (owner): "רישום ההתעוררות נמחק" / "רישום השינה נמחק".
+test('deleting from the "התעורר" row deletes only the wake-up: still asleep, and "בטל" puts it back', async ({ page, request }) => {
+  await seed(request, [{ id: 'nap', type: 'sleep', start: nowLocal(-40), end: nowLocal(-5) }]);
+  await install(page);
+  await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+  const rows = page.getByTestId('recent-row');
+  await expect(rows).toHaveCount(2);
+  await rows.first().click(); // "התעורר"
+  await expect(page.getByTestId('moment-end')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('delete')).toHaveText('מחיקת ההתעוררות');
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('event-form')).toHaveCount(0);
+  await expect(page.getByTestId('toast-text')).toHaveText('רישום ההתעוררות נמחק · עדיין ישן');
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר'); // asleep again
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('נרדם');
+  const nap = async () => (await serverEvents(request)).find((e) => e.id === 'nap');
+  await expect.poll(async () => (await nap())?.end).toBe('');
+  expect((await nap())?.start).not.toBe(''); // falling asleep kept
+  await page.getByTestId('toast-undo').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+  await expect(rows).toHaveCount(2);
+  await expect.poll(async () => (await nap())?.end).not.toBe('');
+});
+
+test('the delete button follows the side shown: the whole sleep on "נרדם", a wake-up on its own is deleted as before', async ({ page, request }) => {
+  await seed(request, [
+    { id: 'nap', type: 'sleep', start: nowLocal(-90), end: nowLocal(-60) },
+    { id: 'woke', type: 'sleep', start: '', end: nowLocal(-5) },
+  ]);
+  await install(page);
+  const rows = page.getByTestId('recent-row');
+  await expect(rows).toHaveCount(3);
+  // a wake-up marked on its own (no falling asleep): plain "מחיקה", the row goes
+  await rows.first().click();
+  await expect(page.getByTestId('delete')).toHaveText('מחיקה');
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('toast-text')).toHaveText('רישום ההתעוררות נמחק');
+  await expect.poll(async () => (await serverEvents(request)).some((e) => e.id === 'woke')).toBe(false);
+  // the sleep, opened on its wake-up, then switched to falling asleep: the whole sleep
+  await expect(rows).toHaveCount(2);
+  await rows.first().click();
+  await expect(page.getByTestId('delete')).toHaveText('מחיקת ההתעוררות');
+  await page.getByTestId('moment-start').click();
+  await expect(page.getByTestId('delete')).toHaveText('מחיקת השינה');
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('toast-text')).toHaveText('רישום השינה נמחק');
+  await expect(rows).toHaveCount(0);
+  await expect.poll(async () => (await serverEvents(request)).some((e) => e.id === 'nap')).toBe(false);
+  await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+});
+
+test('deleting a wake-up that reopens a sleep over a later one asks first; with a later sleep still open it is refused', async ({ page, request }) => {
+  await seed(request, [
+    { id: 'first', type: 'sleep', start: nowLocal(-90), end: nowLocal(-60) },
+    { id: 'second', type: 'sleep', start: nowLocal(-50), end: nowLocal(-10) },
+  ]);
+  await install(page);
+  const rows = page.getByTestId('recent-row');
+  await expect(rows).toHaveCount(4);
+  await rows.nth(2).click(); // the first sleep's "התעורר"
+  await expect(page.getByTestId('delete')).toHaveText('מחיקת ההתעוררות');
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('form-error')).toContainText('חופף לשינה אחרת');
+  await expect(page.getByTestId('form-error')).toContainText('למחוק בכל זאת?');
+  await expect(page.getByTestId('delete')).toHaveText('למחוק בכל זאת');
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('toast-text')).toHaveText('רישום ההתעוררות נמחק · עדיין ישן');
+  await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'first')?.end).toBe('');
+  // now "first" is open: the second sleep's wake-up cannot be deleted (two open sleeps); the form says why and stays
+  await rows.first().click(); // the second sleep's "התעורר"
+  await page.getByTestId('delete').click();
+  await expect(page.getByTestId('form-error')).toHaveText('כבר יש שינה פתוחה — סגרו אותה קודם');
+  await expect(page.getByTestId('event-form')).toBeVisible();
+  expect((await serverEvents(request)).find((e) => e.id === 'second')?.end).not.toBe('');
+});
+
 // Owner: logging a feed or a diaper while the baby is marked asleep. Nothing changes by itself (night feeds and changes often happen
 // in sleep); the confirmation says he is still marked asleep and offers "התעורר" in one tap.
 test('a feed or diaper while asleep offers "התעורר" in the confirmation; awake there is no such button', async ({ page, request }) => {

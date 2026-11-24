@@ -122,11 +122,29 @@ function undoOp(opId: string, inverse: ApiRequest): void {
   if (!r.ok) fail(r.error, r.detail);
 }
 
+/** What the toast says after a delete (owner: "רישום השינה נמחק" / "רישום ההתעוררות נמחק" for sleeps, kinder than "נמחק: שינה"). */
+export function deletedText(e: BabyEvent): string {
+  if (e.type === 'sleep') return e.start ? 'רישום השינה נמחק' : 'רישום ההתעוררות נמחק';
+  return `נמחק: ${KIND_LABEL[kindOf(e)]} ${timeOf(e.start || e.end)}`;
+}
+
 /** Soft delete from history, with undo. */
 export function deleteEvent(e: BabyEvent): void {
   const res = engine.dispatch({ action: 'delete', id: e.id });
   if (!res.ok) return fail(res.error, res.detail);
-  showToast({ text: `נמחק: ${KIND_LABEL[kindOf(e)]} ${timeOf(e.start || e.end)}`, undo: () => undoOp(res.opId, { action: 'restore', id: e.id }) });
+  showToast({ text: deletedText(e), undo: () => undoOp(res.opId, { action: 'restore', id: e.id }) });
+}
+
+/**
+ * (owner bug) Deletes only the wake-up of a finished sleep: the sleep is open again ("still asleep"), as when a baby woke for a
+ * moment and went straight back to sleep. Deleting the whole row took the falling asleep with it. "בטל" puts the wake-up back.
+ * Returns the error when the server rules refuse it (another sleep is open), so the form can show it.
+ */
+export function deleteWake(e: BabyEvent): { error: string } | null {
+  const res = engine.dispatch({ action: 'update', id: e.id, patch: { end: '' } });
+  if (!res.ok) return { error: errorText(res.error, res.detail) };
+  showToast({ text: `רישום ההתעוררות נמחק · ${W().stillAsleep}`, undo: () => undoOp(res.opId, { action: 'update', id: e.id, patch: { end: e.end } }) });
+  return null;
 }
 
 export interface Mark {

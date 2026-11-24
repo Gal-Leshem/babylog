@@ -209,6 +209,10 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   falling asleep). "עדיין ישן" belongs to the wake-up side. The date is shown in Hebrew ("14 בנובמבר 2026", `DateField.tsx`)
   with the phone's own date input laid invisibly over it, so the system picker opens only when the date is tapped; the app draws no calendar of
   its own (the owner did not want one). The system picker itself uses the phone's language. The time field is the system one.
+  Deleting a sleep (owner): the delete button follows the side shown. Wake-up side of a sleep with both moments: "מחיקת
+  ההתעוררות" clears only the end (`deleteWake` in `actions.ts`; the sleep is open again; undo puts the end back; an overlap with
+  another sleep asks once, a second open sleep is refused by the server rule); falling-asleep side: "מחיקת השינה" (the row);
+  a wake-up on its own: "מחיקה".
   A new sleep starts as "still asleep" (the usual case: the baby fell asleep a while ago); if a sleep is already open, the form asks for
   the wake time instead.
 - **Words about the baby** follow the baby's sex chosen in Settings (`babyWords` in `src/app/words.ts`; `babySex` in the

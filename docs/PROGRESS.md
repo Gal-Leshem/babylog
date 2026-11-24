@@ -49,7 +49,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    the owner's server untouched). Stages 1 to 3 built (pipeline job `families`, `--family` builds, send-only feedback +
    admin codes, privacy page). Next: the owner's own test family, then a real one (`INSTALL.he.md` "משפחה נוספת": add an id,
    push, the owner runs `setup` once, sends the family code privately and adds the admin code on his phone).
-6. Smaller: confirm the status bar follows a day/night change without closing the app; which insight cards get used (F8).
+6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
+7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") built; next from the owner's daily use.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).

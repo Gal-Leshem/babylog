@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { openSleep, overlappingSleep } from '../../shared/domain';
 import { localDate, parseLocal } from '../../shared/tz';
 import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared/types';
-import { deleteEvent } from '../actions';
+import { deleteEvent, deleteWake } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
 import { engine, showToast, useEngine } from '../state';
@@ -72,6 +72,8 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   // the overlap warning was shown: the next tap on save saves anyway (any change to the times asks again)
   const [overlapOk, setOverlapOk] = useState(false);
   useEffect(() => setOverlapOk(false), [sDate, sTime, eDate, eTime, stillAsleep, unknownStart, sel]);
+  // the same for deleting a wake-up that reopens a sleep overlapping another one
+  const [wakeDelOk, setWakeDelOk] = useState(false);
 
   const today = localDate(Date.now());
   const isSleep = kind === 'sleep';
@@ -114,6 +116,32 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   };
   const when = (date: string, time: string) => (date === today ? time : `${time} · ${dayName(date, today)}`);
 
+  const overlapText = (other: BabyEvent, ask: string) =>
+    `חופף לשינה אחרת (${w.fellAsleep} ${when(other.start.slice(0, 10), timeOf(other.start))}${other.end ? ` · ${w.wokeUp} ${when(other.end.slice(0, 10), timeOf(other.end))}` : ` · ${w.stillAsleep}`}). ${ask}`;
+
+  // (owner) the delete button follows the side of the sleep shown: on the wake-up side of a sleep that has both moments it
+  // deletes only the wake-up (the sleep is open again); on the falling-asleep side the whole sleep. Other entries: as before.
+  const delWake = mode === 'edit' && event?.type === 'sleep' && Boolean(event.start) && Boolean(event.end) && moment === 'end';
+  const delLabel = event?.type === 'sleep' && event.start ? (delWake ? (wakeDelOk ? 'למחוק בכל זאת' : 'מחיקת ההתעוררות') : 'מחיקת השינה') : 'מחיקה';
+  const remove = () => {
+    if (!event) return;
+    if (!delWake) {
+      deleteEvent(event);
+      return onClose();
+    }
+    // reopening it makes it last until now: say so once when that overlaps another sleep (a still open one is refused anyway)
+    if (!wakeDelOk && !openSleep(events.filter((e) => e.id !== event.id))) {
+      const other = overlappingSleep(events, parseLocal(event.start), Date.now(), Date.now(), event.id);
+      if (other) {
+        setWakeDelOk(true);
+        return setError(overlapText(other, 'למחוק בכל זאת?'));
+      }
+    }
+    const r = deleteWake(event);
+    if (r) return setError(r.error);
+    onClose();
+  };
+
   const save = () => {
     const start = isSleep && unknownStart ? '' : `${sDate} ${sTime}`;
     const end = isSleep && !stillAsleep ? `${eDate} ${eTime}` : '';
@@ -127,7 +155,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
       const other = overlappingSleep(events, parseLocal(start), end ? parseLocal(end) : Date.now(), Date.now(), event?.id);
       if (other) {
         setOverlapOk(true);
-        return setError(`חופף לשינה אחרת (${w.fellAsleep} ${when(other.start.slice(0, 10), timeOf(other.start))}${other.end ? ` · ${w.wokeUp} ${when(other.end.slice(0, 10), timeOf(other.end))}` : ` · ${w.stillAsleep}`}). לשמור בכל זאת?`);
+        return setError(overlapText(other, 'לשמור בכל זאת?'));
       }
     }
     const { type, detail: kindDetail } = fromKind(kind);
@@ -248,12 +276,9 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
               type="button"
               class="danger"
               data-testid="delete"
-              onClick={() => {
-                deleteEvent(event);
-                onClose();
-              }}
+              onClick={remove}
             >
-              מחיקה
+              {delLabel}
             </button>
           )}
         </div>

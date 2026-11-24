@@ -477,6 +477,18 @@ No names, addresses or secrets in this file (the repository is public).
   (built as before; the admin key means nothing there). Tests: core rules and the built family bundle in the fake Google runtime,
   the admin code, the family and owner feedback screens, the privacy page; each new rule failed when its fix was taken out. The
   privacy-guard test now looks for a rarer word (the list it checks shows the first 50 places, and "privacy" passed that).
+## Fifth working session (small fixes, in parallel with the families session)
+- Owner: the status bar after a day / night change (reload) works on the phone.
+- Bug **(owner)**: deleting a wake-up from its "התעורר" row (the baby woke for a moment and went straight back to sleep) deleted the
+  whole sleep, falling asleep included: a sleep is one row and the form's "מחיקה" deleted the row. Now **(owner: option 1 of three)**
+  the delete button follows the side of the sleep shown in the form: on the wake-up side of a sleep that has both moments it reads
+  "מחיקת ההתעוררות" and takes away only the wake-up (the sleep is open again, the Home button is back on "התעורר"; toast "רישום
+  ההתעוררות נמחק · עדיין ישן" with "בטל", which puts the wake-up back); on the falling-asleep side "מחיקת השינה" (the whole sleep,
+  as before); a wake-up marked on its own keeps "מחיקה". Toasts after deleting a sleep **(owner wording)**: "רישום השינה נמחק" /
+  "רישום ההתעוררות נמחק". Reopening a sleep that overlaps a later one shows the overlap warning first ("למחוק בכל זאת"); with a
+  later sleep still open the server rule refuses it and the form says why (owner accepted this behaviour). Browser tests: the
+  wake-up only, undo, the side switch, a wake-up on its own, the overlap and the refusal (all three failed on the old form, and
+  the first also with the new label but the old delete).
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
