@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "66a0620",
+  "sha": "ebdadc8",
   "ref": "main",
-  "at": "2026-11-24T16:04:50.570Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45431834373",
+  "at": "2026-11-24T19:15:47.333Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45467403104",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -17,7 +17,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 8s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -31,7 +31,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 8s"
+      "took 7s"
     ]
   }
 }
