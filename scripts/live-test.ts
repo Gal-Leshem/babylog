@@ -220,7 +220,7 @@ for (const n of ['sync1', 'sync2', 'beacon']) await call({ action: 'delete', id:
 // (owner, F15) usage counts on real Sheets: the tab is wider than a new tab's 26 columns; the same day sent again replaces its
 // row (a fixed day and phone, so the test sheet keeps one row however often this runs). Not log data: the revision stays.
 const revBefore = (await call({ action: 'ping' })).json?.rev;
-const usage = { action: 'usage', user: 'Live Test', install: 'live-test', version: 'live', days: [{ date: '2000-01-01', counts: { open: 1, 'tab.summary': 2 } }] };
+const usage = { action: 'usage', user: 'Live Test', install: 'live-test', version: 'live', days: [{ date: '2000-01-01', counts: { open: 1, 'tab.summary': 2, 'seen.gaps': 1 }, states: { gaps: 'shown', night: 'off', sides: 'waiting' } }] };
 const u1 = await call(usage);
 const u2 = await call({ ...usage, days: [{ date: '2000-01-01', counts: { open: 3 } }] });
 check('usage counts are stored in the "שימוש" tab, twice for the same day', u1.json?.ok === true && u2.json?.ok === true, `${JSON.stringify(u1.json)} ${JSON.stringify(u2.json)}`);

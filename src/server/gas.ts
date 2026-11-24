@@ -1,7 +1,7 @@
 /// <reference types="google-apps-script" />
 import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
-import { USAGE_LABELS, type UsageDay } from '../shared/usage';
+import { QUESTION_STATES, USAGE_LABELS, USAGE_QUESTIONS, type UsageDay, questionColumn } from '../shared/usage';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
 import { encodeAdminCode, encodeInstallCode, makeCheckKey } from './auth';
@@ -314,7 +314,7 @@ class SheetStore implements Store {
       };
       if (!sh) {
         sh = this.ss.insertSheet(USAGE);
-        const all = [...USAGE_FIXED, ...Object.values(USAGE_LABELS)];
+        const all = [...USAGE_FIXED, ...Object.values(USAGE_LABELS), ...Object.keys(USAGE_QUESTIONS).map(questionColumn)];
         room(sh, all.length);
         sh.getRange(1, 1, 1, all.length).setValues([all]).setFontWeight('bold');
         sh.setFrozenRows(1);
@@ -322,6 +322,7 @@ class SheetStore implements Store {
       const header = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), USAGE_FIXED.length)).getValues()[0]!.map((h) => String(h ?? ''));
       const width = header.length;
       for (const d of days) for (const k of Object.keys(d.counts)) if (!header.includes(USAGE_LABELS[k]!)) header.push(USAGE_LABELS[k]!);
+      for (const d of days) for (const k of Object.keys(d.states ?? {})) if (!header.includes(questionColumn(k))) header.push(questionColumn(k));
       if (header.length > width) {
         room(sh, header.length);
         sh.getRange(1, 1, 1, header.length).setValues([header]);
@@ -329,9 +330,12 @@ class SheetStore implements Store {
       const last = sh.getLastRow();
       const keys = last >= 2 ? sh.getRange(2, 1, last - 1, 3).getValues().map((r) => r.map((v) => String(v ?? '').replace(/^'/, ''))) : [];
       const byLabel = new Map(Object.entries(USAGE_LABELS).map(([k, label]) => [label, k]));
+      const byQuestion = new Map(Object.keys(USAGE_QUESTIONS).map((k) => [questionColumn(k), k]));
       for (const d of days) {
         const row = header.map((h, i) => {
           if (i < USAGE_FIXED.length) return [`'${d.date}`, user, install, version, toCell(now)][i]!;
+          const q = byQuestion.get(h);
+          if (q !== undefined) return d.states?.[q] ? QUESTION_STATES[d.states[q]] : '';
           const k = byLabel.get(h);
           return k !== undefined && d.counts[k] ? d.counts[k]! : '';
         });

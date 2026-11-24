@@ -78,7 +78,7 @@ export class MemoryStore implements Store {
   }
   usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void {
     for (const d of days) {
-      const row: UsageRow = { date: d.date, counts: { ...d.counts }, user, install, version, updated: now };
+      const row: UsageRow = { date: d.date, counts: { ...d.counts }, ...(d.states ? { states: { ...d.states } } : {}), user, install, version, updated: now };
       const i = this.usage.findIndex((r) => r.date === d.date && r.user === user && r.install === install);
       if (i >= 0) this.usage[i] = row;
       else this.usage.push(row);

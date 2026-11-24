@@ -95,7 +95,7 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   storage write); when the app is hidden or closed the counts are stored, and whole past days are handed to the browser once as
   one `usage` beacon (user = the parent chosen on the phone, a random phone id, the version). The server writes the "שימוש"
   tab without the lock and without a revision (each phone writes only its own rows; a day sent again replaces its row). Kept on
-  the phone: at most 14 days. Unknown counter names are refused: add a name and its Hebrew title in `USAGE_LABELS` first.
+  the phone: at most 14 days. Unknown counter names are refused: add a name and its Hebrew title in `USAGE_LABELS` first. Each day also carries the state of every insight question (`states`: shown / on / off / waiting, `USAGE_QUESTIONS`, written in words in a column per question) and `seen.<id>` counts (a card came into view).
 - Sync log (`SyncLogEntry`, `bl.synclog.v1`, last 60, per phone): every exchange with why it ran, its time, the server's part
   and breakdown (`debug: true` on every sync), size, and for an opening or return the time until the data was on screen. Shown
   in Settings > מתקדם > "יומן סנכרון" (`SyncLog.tsx`).

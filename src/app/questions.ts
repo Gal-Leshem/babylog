@@ -1,5 +1,6 @@
 import type { Insights, Progress } from '../shared/insights';
 import type { MoreAnswers } from '../shared/questions-data';
+import type { UsageQuestion } from '../shared/usage';
 
 /** Everything the questions are answered from. */
 export interface AllData {
@@ -15,6 +16,9 @@ export interface AllData {
  */
 export type QuestionId = 'feedsToday' | 'gaps' | 'nextFeed' | 'sides' | 'cluster' | 'night' | 'nightTrend' | 'sleepDay' | 'nightStart' | 'lastPoop' | 'diapersToday' | 'poop' | 'diaper' | 'unusual';
 export type Category = 'feed' | 'sleep' | 'diaper' | 'general';
+// the usage measurement knows every question by the same id (a question missing there does not compile)
+const sameIds: [QuestionId] extends [UsageQuestion] ? ([UsageQuestion] extends [QuestionId] ? true : never) : never = true;
+void sameIds;
 
 export const CATEGORIES: { id: Category; icon: string; title: string }[] = [
   { id: 'feed', icon: '🍼', title: 'האכלה' },

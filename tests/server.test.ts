@@ -779,6 +779,13 @@ describe('usage counts (owner, F15)', () => {
       '2026-11-13 Parent 2 {"log.wet":2}',
     ]);
   });
+  it("keeps each insight question's state for the day, and refuses unknown questions or states", () => {
+    ok(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: { open: 1 }, states: { gaps: 'shown', night: 'off', sides: 'waiting', nextFeed: 'on' } }] }));
+    expect(store.usageAll()[0]!.states).toEqual({ gaps: 'shown', night: 'off', sides: 'waiting', nextFeed: 'on' });
+    expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: {}, states: { nosuch: 'shown' } }] })).toMatchObject({ ok: false, error: 'bad_request' });
+    expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: {}, states: { gaps: 'maybe' } }] })).toMatchObject({ ok: false, error: 'bad_request' });
+  });
+
   it('is not log data: no lock, the revision does not move, nothing is answered but ok', () => {
     let locks = 0;
     deps = { ...deps, withLock: (fn) => (locks++, fn()) };

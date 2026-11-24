@@ -54,6 +54,18 @@ describe('usage on the phone', () => {
     expect(s.sent).toEqual([{ action: 'usage', user: 'Parent 1', install: 'old', version: 'v2', days: [{ date: '2026-11-13', counts: { open: 2 } }] }]);
   });
 
+  it("the questions' state is kept per day (the last one of the day wins) and sent with that day", () => {
+    const s = setup();
+    const a = s.u();
+    a.count('open');
+    a.leave(s.send, 'Parent 1', 'v1', () => ({ gaps: 'waiting' }));
+    a.leave(s.send, 'Parent 1', 'v1', () => ({ gaps: 'shown', night: 'off' }));
+    s.at('2026-11-14 08:00');
+    a.leave(s.send, 'Parent 1', 'v1', () => ({ gaps: 'shown', night: 'on' }));
+    expect(s.sent).toEqual([{ action: 'usage', user: 'Parent 1', install: 'inst1', version: 'v1', days: [{ date: '2026-11-13', counts: { open: 1 }, states: { gaps: 'shown', night: 'off' } }] }]);
+    expect(JSON.parse(s.kv.get(USAGE_KEY)!).states).toEqual({}); // sent: forgotten (today has no counts yet, so no state kept for it)
+  });
+
   it('a send the browser refused is kept for next time; without a parent chosen nothing is sent; at most 14 days are kept', () => {
     const s = setup();
     const a = s.u();

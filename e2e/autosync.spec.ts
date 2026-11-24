@@ -206,6 +206,13 @@ test('usage counts: nothing is sent while in use or for today; the next day, yes
   await page.getByTestId('btn-wet').click();
   await page.getByTestId('tab-summary').click();
   await page.getByTestId('view-insights').click();
+  // (owner) the questions' state per parent: one turned on by hand (its card is seen), one turned off, the rest waiting for data
+  await page.getByTestId('q-pick').click();
+  await page.getByTestId('pick-gaps-switch').click();
+  await page.getByTestId('pick-night-switch').click();
+  await page.getByTestId('pick-night-switch').click();
+  await page.getByTestId('pick-back').click();
+  await expect(page.getByTestId('q-gaps')).toBeVisible();
   await page.getByTestId('tab-home').click();
   await setVisibility('hidden');
   await setVisibility('visible');
@@ -214,7 +221,8 @@ test('usage counts: nothing is sent while in use or for today; the next day, yes
   expect(await actionsSeen(request)).not.toContain('usage');
   const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('bl.usage.v1') ?? 'null'));
   const today = localDate(start);
-  expect(kept.days[today]).toMatchObject({ open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'summary.table': 1, 'summary.insights': 1, 'tab.home': 1 });
+  expect(kept.days[today]).toMatchObject({ open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'summary.table': 1, 'summary.insights': 1, 'tab.home': 1, 'seen.gaps': 1 });
+  expect(kept.states[today]).toMatchObject({ gaps: 'on', night: 'off', sides: 'waiting', poop: 'waiting' });
 
   // the next morning the app is opened again and then left: yesterday's counts go, once
   await page.clock.setSystemTime(start + 24 * 3600_000);
@@ -222,7 +230,7 @@ test('usage counts: nothing is sent while in use or for today; the next day, yes
   await setVisibility('hidden');
   await expect.poll(async () => (await usageRows(request)).length).toBe(1);
   const [row] = await usageRows(request);
-  expect(row).toMatchObject({ date: today, user: 'Parent One', counts: { open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'summary.insights': 1 } });
+  expect(row).toMatchObject({ date: today, user: 'Parent One', counts: { open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'seen.gaps': 1 }, states: { gaps: 'on', night: 'off', sides: 'waiting' } });
   expect(row!.install).toMatch(/^[a-z0-9]{4,}$/);
   await setVisibility('visible');
   await setVisibility('hidden');

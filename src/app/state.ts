@@ -4,7 +4,10 @@ import { DEFAULT_PREFS, type NightMode, type NightTint, type Prefs, type Summary
 import { Engine } from './engine';
 import { browserStorage } from './storage';
 import { Usage, type UsageKV } from './usage';
-import type { UsageName } from '../shared/usage';
+import type { QuestionStateName, UsageName } from '../shared/usage';
+import { insights } from '../shared/insights';
+import { moreAnswers } from '../shared/questions-data';
+import { QUESTIONS, questionState } from './questions';
 
 export const engine = new Engine({ storage: browserStorage });
 
@@ -21,8 +24,20 @@ const usageStore: UsageKV = {
 };
 export const usage = new Usage(usageStore);
 export const count = (name: UsageName): void => usage.count(name);
-/** The app is being left: keep the counts and send whole past days in the background. */
-export const leaveUsage = (): void => usage.leave((req) => engine.sendAway(req), engine.getConfig()?.me, typeof __APP_COMMIT__ === 'string' ? __APP_COMMIT__ : '');
+/** (owner) Each insight question's state for this parent now: shown by itself, on / off by hand, or waiting for data. */
+function questionStates(): Record<string, QuestionStateName> {
+  const { events, settings } = engine.getState();
+  const now = Date.now();
+  const a = { ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin) };
+  const out: Record<string, QuestionStateName> = {};
+  for (const q of QUESTIONS) {
+    const c = prefs.questions[q.id];
+    out[q.id] = c ?? (questionState(q, a, undefined).ready ? 'shown' : 'waiting');
+  }
+  return out;
+}
+/** The app is being left: keep the counts (and the questions' state) and send whole past days in the background. */
+export const leaveUsage = (): void => usage.leave((req) => engine.sendAway(req), engine.getConfig()?.me, typeof __APP_COMMIT__ === 'string' ? __APP_COMMIT__ : '', questionStates);
 
 export const useEngine = () => useSyncExternalStore(engine.subscribe, engine.getState);
 

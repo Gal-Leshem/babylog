@@ -4,7 +4,7 @@ import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem,
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
 import { type Voice, voiceFor } from '../shared/speech';
-import { USAGE_LABELS, USAGE_MAX_DAYS, type UsageDay } from '../shared/usage';
+import { QUESTION_STATES, type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, USAGE_QUESTIONS, type UsageDay } from '../shared/usage';
 import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../shared/tz';
 import {
   type BabyEvent,
@@ -612,7 +612,17 @@ function saveUsage(o: Obj, store: Store, now: number): ApiResponse {
       if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 100_000) return fail('bad_request', 'counts must be whole numbers');
       counts[k] = v;
     }
-    out.push({ date: str(d.date), counts });
+    // (owner) the state of each insight question that day: shown / on / off by hand / waiting for data
+    let states: Record<string, QuestionStateName> | undefined;
+    if (d.states !== undefined) {
+      if (!isObj(d.states)) return fail('bad_request', 'states must be an object');
+      states = {};
+      for (const [k, v] of Object.entries(d.states)) {
+        if (!(k in USAGE_QUESTIONS) || typeof v !== 'string' || !(v in QUESTION_STATES)) return fail('bad_request', `bad question state ${k.slice(0, 40)}`);
+        states[k] = v as QuestionStateName;
+      }
+    }
+    out.push({ date: str(d.date), counts, ...(states ? { states } : {}) });
   }
   store.usageSave(user, install, version, out, stamp(now));
   return { ok: true };

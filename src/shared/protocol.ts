@@ -59,7 +59,7 @@ export type ApiRequest =
    * (owner, F15) Usage counts of one phone for whole past days, sent once a day in the background (beacon, no answer read).
    * Not log data: no lock, the revision does not move; a day sent twice replaces its row.
    */
-  | { action: 'usage'; user: string; install: string; version?: string; days: { date: string; counts: Record<string, number> }[] }
+  | { action: 'usage'; user: string; install: string; version?: string; days: { date: string; counts: Record<string, number>; states?: Record<string, string> }[] }
   /** `ids`: only these items (the ones the owner has seen); without it, all of them. */
   | { action: 'feedbackClear'; ids?: string[] }
   /** `medicines` saves medicines one by one (by id); a removal is allowed only before any dose was logged. */

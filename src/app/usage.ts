@@ -1,6 +1,6 @@
 import type { ApiRequest } from '../shared/protocol';
 import { localDate } from '../shared/tz';
-import { USAGE_LABELS, USAGE_MAX_DAYS, type UsageName } from '../shared/usage';
+import { type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, type UsageName } from '../shared/usage';
 
 /**
  * (owner, F15) Usage counts of this phone, per day (numbers only). Costs nothing while the app is used: `count` adds one in
@@ -18,6 +18,8 @@ export const USAGE_KEY = 'bl.usage.v1';
 interface Saved {
   install: string;
   days: Record<string, Record<string, number>>;
+  /** (owner) the state of each insight question, as last seen on that day */
+  states?: Record<string, Record<string, QuestionStateName>>;
 }
 
 export class Usage {
@@ -50,19 +52,38 @@ export class Usage {
     this.dirty = true;
   }
 
-  /** The app is being left: keep the counts, and hand whole past days to `send` (once; kept for next time if it was refused). */
-  leave(send: (req: ApiRequest) => boolean, user: string | undefined, version: string): void {
+  /**
+   * The app is being left: keep the counts (and, when given, today's state of each insight question), and hand whole past days
+   * to `send` (once; kept for next time if it was refused).
+   */
+  leave(send: (req: ApiRequest) => boolean, user: string | undefined, version: string, states?: () => Record<string, QuestionStateName>): void {
     const s = this.data();
     const today = localDate(this.now());
+    if (states) {
+      try {
+        const now = states();
+        const all = (s.states ??= {});
+        if (JSON.stringify(all[today] ?? null) !== JSON.stringify(now)) {
+          all[today] = now;
+          this.dirty = true;
+        }
+      } catch {
+        /* a snapshot that fails must not stop the counts */
+      }
+    }
     const dates = Object.keys(s.days).sort();
     for (const d of dates.slice(0, Math.max(0, dates.length - USAGE_MAX_DAYS))) delete s.days[d]; // never grows without end
+    for (const d of Object.keys(s.states ?? {})) if (!(d in s.days)) delete s.states![d]; // goes with its day
     const past = Object.keys(s.days).filter((d) => d < today).sort();
     if (user && past.length) {
       // a counter this version no longer knows (renamed) would make the server refuse the whole day: leave it out
       const known = (c: Record<string, number>) => Object.fromEntries(Object.entries(c).filter(([k]) => k in USAGE_LABELS));
-      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: known(s.days[date]!) })) });
+      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: known(s.days[date]!), ...(s.states?.[date] ? { states: s.states[date] } : {}) })) });
       if (ok) {
-        for (const d of past) delete s.days[d];
+        for (const d of past) {
+          delete s.days[d];
+          delete s.states?.[d];
+        }
         this.dirty = true;
       }
     }

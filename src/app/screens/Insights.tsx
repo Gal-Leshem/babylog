@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { type Insights as InsightsData, LONG_STRETCH_MIN, insights } from '../../shared/insights';
 import { type MoreAnswers, type Trend, moreAnswers } from '../../shared/questions-data';
 import { formatLocal } from '../../shared/tz';
@@ -11,6 +11,7 @@ import { hm } from '../labels';
 import { type AllData, CATEGORIES, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
+import type { UsageName } from '../../shared/usage';
 
 const shortDate = (d: string) => `${Number(d.slice(8, 10))}.${Number(d.slice(5, 7))}`;
 /** minutes after midnight (may pass 24:00) -> 'HH:MM' */
@@ -341,6 +342,27 @@ export function Insights() {
   const [menu, setMenu] = useState<QuestionId | null>(null);
   const [how, setHow] = useState<QuestionId | null>(null);
 
+  // (owner, usage) which question cards actually came into view: an open question nobody looks at is not the same as a useful one
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (mode !== 'cards' || typeof IntersectionObserver === 'undefined' || !listRef.current) return;
+    const seen = new Set<string>();
+    const io = new IntersectionObserver(
+      (list) => {
+        for (const e of list) {
+          const id = (e.target as HTMLElement).dataset.q;
+          if (!e.isIntersecting || !id || seen.has(id)) continue;
+          seen.add(id);
+          count(`seen.${id}` as UsageName);
+          io.unobserve(e.target);
+        }
+      },
+      { threshold: 0.6 },
+    );
+    for (const el of listRef.current.querySelectorAll('.q[data-q]')) io.observe(el);
+    return () => io.disconnect();
+  }, [mode, choices]);
+
   useEffect(() => {
     const from = addDays(r.from, -1);
     if (from < engine.defaultRange().from) void engine.ensureRange(from, r.to);
@@ -409,7 +431,7 @@ export function Insights() {
   const howQ = QUESTIONS.find((q) => q.id === how);
 
   return (
-    <div data-testid="insights">
+    <div data-testid="insights" ref={listRef}>
       <div class="qbar">
         <span class="qcount" data-testid="q-count">
           {shown.length === 1 ? 'שאלה אחת מוצגת' : `${shown.length} שאלות מוצגות`}
@@ -438,7 +460,7 @@ export function Insights() {
           {shown
             .filter((s) => s.q.cat === c.id)
             .map(({ q, ready }) => (
-              <div class="q" key={q.id} data-testid={`q-${q.id}`}>
+              <div class="q" key={q.id} data-testid={`q-${q.id}`} data-q={q.id}>
                 <button type="button" class="qm" aria-label="עוד" data-testid={`q-${q.id}-menu`} onClick={() => setMenu(menu === q.id ? null : q.id)}>
                   ⋯
                 </button>

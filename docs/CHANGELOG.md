@@ -552,6 +552,14 @@ No names, addresses or secrets in this file (the repository is public).
   good or bad. Every question has its own "איך זה מחושב?". Tests: unit (each answer on a made-up week with known values,
   "not enough days"), browser (each card shows the calculation's numbers, a clearly smaller day in the warning colour and
   under "היום חריג"); proven to fail with the "clear difference" rule broken.
+- Usage measurement of the questions **(owner: which questions stay open and which are closed, and whether an open one is
+  simply not looked at)**: every day row in "שימוש" now has a column per question, "שאלה: <name>", with its state for that
+  parent at the end of the day: "מוצגת" (by itself), "הודלקה ביד", "כובתה ביד" or "ממתינה לנתונים"; and a count per
+  question, "נצפתה: <name>", of the visits to "תובנות" in which its card actually came into view. With "סיכום: תובנות"
+  (visits to the view) this tells an open question nobody looks at from one that is used. The state is taken when the app is
+  left (no cost while it is used) and sent with the day, once. Tests: server (states kept, unknown ones refused), the sheet
+  (the columns in words), the phone (the last state of the day is sent with it), the browser (a question on, one off, one
+  card seen; proven to fail without the state), and the live test.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

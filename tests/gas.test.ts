@@ -449,6 +449,15 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     ]);
     expect(taken).toBe(0);
     expect(rt.props.get('REV')).toBe(rev);
+    // (owner) the state of each question that day, in words, in a column per question
+    send('Parent 1', 'p1', [{ date: '2026-11-14', counts: { open: 1, 'seen.gaps': 2 }, states: { gaps: 'shown', night: 'off', sides: 'waiting', nextFeed: 'on' } }]);
+    const h2 = rows[0]!.map(String);
+    const last = rows[rows.length - 1]!;
+    expect(last[h2.indexOf('שאלה: כל כמה זמן מאכילים')]).toBe('מוצגת');
+    expect(last[h2.indexOf('שאלה: הרצף הארוך בלילה')]).toBe('כובתה ביד');
+    expect(last[h2.indexOf('שאלה: ימין ושמאל')]).toBe('ממתינה לנתונים');
+    expect(last[h2.indexOf('שאלה: ההנקה הבאה')]).toBe('הודלקה ביד');
+    expect(last[h2.indexOf('נצפתה: כל כמה זמן מאכילים')]).toBe(2);
   });
 
   it("the baby's date of birth is a text row of the Settings sheet; a date typed by hand is read as that day", () => {
