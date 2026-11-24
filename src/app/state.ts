@@ -39,7 +39,8 @@ export function useNow(intervalMs = 15_000): number {
 // ---------- preferences (per device) ----------
 
 const PREFS_KEY = 'bl.prefs.v1';
-let prefs: Prefs = { ...DEFAULT_PREFS, ...(browserStorage.get<Partial<Prefs>>(PREFS_KEY) ?? {}) };
+const savedPrefs = browserStorage.get<Partial<Prefs>>(PREFS_KEY) ?? {};
+let prefs: Prefs = { ...DEFAULT_PREFS, ...savedPrefs, questions: savedPrefs.questions && typeof savedPrefs.questions === 'object' ? savedPrefs.questions : {} };
 const prefListeners = new Set<() => void>();
 
 function setPrefs(patch: Partial<Prefs>): void {
@@ -51,6 +52,13 @@ export const setNightMode = (mode: NightMode): void => setPrefs({ nightMode: mod
 export const setNightTint = (tint: NightTint): void => setPrefs({ nightTint: tint });
 export const setSummaryView = (view: SummaryView): void => setPrefs({ summaryView: view });
 export const setHistoryView = (view: HistoryView): void => setPrefs({ historyView: view });
+/** (owner, F16) 'on' / 'off' by hand, or undefined: back to automatic (shown once there is enough data). */
+export const setQuestion = (id: string, v: 'on' | 'off' | undefined): void => {
+  const questions = { ...prefs.questions };
+  if (v) questions[id] = v;
+  else delete questions[id];
+  setPrefs({ questions });
+};
 export const usePrefs = (): Prefs =>
   useSyncExternalStore(
     (fn) => {

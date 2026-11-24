@@ -46,6 +46,14 @@ describe('usage on the phone', () => {
     expect(b.peek()).toEqual({ '2026-11-14': { return: 1 } });
   });
 
+  it('a counter this version no longer knows (renamed since) is left out, so the server does not refuse the day', () => {
+    const s = setup();
+    s.kv.set(USAGE_KEY, JSON.stringify({ install: 'old', days: { '2026-11-13': { open: 2, 'insights.timeline': 1 } } }));
+    s.at('2026-11-14 08:00');
+    s.u().leave(s.send, 'Parent 1', 'v2');
+    expect(s.sent).toEqual([{ action: 'usage', user: 'Parent 1', install: 'old', version: 'v2', days: [{ date: '2026-11-13', counts: { open: 2 } }] }]);
+  });
+
   it('a send the browser refused is kept for next time; without a parent chosen nothing is sent; at most 14 days are kept', () => {
     const s = setup();
     const a = s.u();

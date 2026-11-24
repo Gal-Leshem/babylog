@@ -65,6 +65,12 @@ export interface NightSleepInsight {
   lastNight: number[];
 }
 
+/** How much data an insight has and needs (owner, F16: a question turns on by itself once `have` reaches `need`). */
+export interface Progress {
+  have: number;
+  need: number;
+}
+
 export interface Insights {
   from: string;
   to: string;
@@ -72,6 +78,8 @@ export interface Insights {
   poopAfterFeed: AfterFeedInsight | null;
   diaperAfterFeed: AfterFeedInsight | null;
   nightSleep: NightSleepInsight | null;
+  /** Enough data but still null means "no clear pattern" (the after-a-feed insights); not enough means not ready yet. */
+  progress: { feedGaps: Progress; poopAfterFeed: Progress; diaperAfterFeed: Progress; nightSleep: Progress };
 }
 
 // ---------- small statistics ----------
@@ -104,7 +112,7 @@ export function insightWindow(nowEpoch: number): { from: string; to: string; lo:
   return { from, to, lo: dayStart(from), hi: dayStart(today) };
 }
 
-export function feedGapInsight(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): FeedGapInsight | null {
+function feedGaps(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): { all: number[]; day: number[]; night: number[] } {
   const starts = feedGroups(events, mergeWindowMin)
     .map((g) => g.start)
     .filter((t) => t >= lo && t < hi);
@@ -117,6 +125,11 @@ export function feedGapInsight(events: readonly BabyEvent[], lo: number, hi: num
     all.push(gap);
     (isNightHour(localHour(starts[i - 1]!)) ? night : day).push(gap);
   }
+  return { all, day, night };
+}
+
+export function feedGapInsight(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): FeedGapInsight | null {
+  const { all, day, night } = feedGaps(events, lo, hi, mergeWindowMin);
   if (all.length < MIN_GAPS) return null;
   return {
     all: spread(all),
@@ -142,14 +155,17 @@ function afterFeedCoverage(feedStarts: readonly number[], lo: number, hi: number
  * Poop (or poop + pee) diapers: how many came within an hour of a feed's start, and the usual delay.
  * Chance level: the share of the day that lies within an hour after a feed.
  */
+const poopTimes = (events: readonly BabyEvent[], lo: number, hi: number): number[] =>
+  live(events)
+    .filter((e) => e.type === 'diaper' && (e.detail === 'poop' || e.detail === 'both') && e.start)
+    .map((e) => parseLocal(e.start))
+    .filter((t) => t >= lo && t < hi);
+
 export function poopAfterFeedInsight(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): AfterFeedInsight | null {
   const feeds = feedGroups(events, mergeWindowMin)
     .map((g) => g.start)
     .filter((t) => t >= lo - AFTER_FEED_MIN * MIN && t < hi);
-  const poops = live(events)
-    .filter((e) => e.type === 'diaper' && (e.detail === 'poop' || e.detail === 'both') && e.start)
-    .map((e) => parseLocal(e.start))
-    .filter((t) => t >= lo && t < hi);
+  const poops = poopTimes(events, lo, hi);
   if (poops.length < MIN_POOPS || feeds.length === 0) return null;
   const lags: number[] = [];
   for (const p of poops) {
@@ -166,10 +182,13 @@ export function poopAfterFeedInsight(events: readonly BabyEvent[], lo: number, h
  * Feeds followed by a diaper change (any kind) within an hour: how many, and the usual delay to the first change.
  * Chance level: how often a random hour of those days contains a diaper change (sampled every 5 minutes).
  */
-export function diaperAfterFeedInsight(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): AfterFeedInsight | null {
-  const feeds = feedGroups(events, mergeWindowMin)
+const feedsForDiapers = (events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): number[] =>
+  feedGroups(events, mergeWindowMin)
     .map((g) => g.start)
     .filter((t) => t >= lo && t < hi - AFTER_FEED_MIN * MIN);
+
+export function diaperAfterFeedInsight(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): AfterFeedInsight | null {
+  const feeds = feedsForDiapers(events, lo, hi, mergeWindowMin);
   const diapers = live(events)
     .filter((e) => e.type === 'diaper' && e.start)
     .map((e) => parseLocal(e.start))
@@ -196,7 +215,7 @@ export function diaperAfterFeedInsight(events: readonly BabyEvent[], lo: number,
  * Night sleep (19:00 to 07:00): the longest stretch per night and when it usually starts, plus how many stretches of 3 hours or
  * more a night usually has. A stretch belongs to the night in which it starts. Only finished sleeps count; only complete nights.
  */
-export function nightSleepInsight(events: readonly BabyEvent[], nowEpoch: number): NightSleepInsight | null {
+function nightsOf(events: readonly BabyEvent[], nowEpoch: number): { perNight: { longest: number; startMin: number; long: number[] }[]; lastNight: number[] } {
   const today = localDate(nowEpoch);
   const sleeps = live(events)
     .filter((e) => e.type === 'sleep' && e.start && e.end)
@@ -217,6 +236,11 @@ export function nightSleepInsight(events: readonly BabyEvent[], nowEpoch: number
     if (perNight.length === 0) lastNight = (long.length ? long : [best.len]).map((l) => roundTo(l, 5));
     perNight.push({ longest: best.len, startMin: (best.s - dayStart(d)) / MIN, long });
   }
+  return { perNight, lastNight };
+}
+
+export function nightSleepInsight(events: readonly BabyEvent[], nowEpoch: number): NightSleepInsight | null {
+  const { perNight, lastNight } = nightsOf(events, nowEpoch);
   if (perNight.length < MIN_NIGHTS) return null;
   const starts = spread(
     perNight.map((n) => n.startMin),
@@ -243,6 +267,12 @@ export function insights(events: readonly BabyEvent[], nowEpoch: number, mergeWi
     poopAfterFeed: poopAfterFeedInsight(events, w.lo, w.hi, mergeWindowMin),
     diaperAfterFeed: diaperAfterFeedInsight(events, w.lo, w.hi, mergeWindowMin),
     nightSleep: nightSleepInsight(events, nowEpoch),
+    progress: {
+      feedGaps: { have: feedGaps(events, w.lo, w.hi, mergeWindowMin).all.length, need: MIN_GAPS },
+      poopAfterFeed: { have: poopTimes(events, w.lo, w.hi).length, need: MIN_POOPS },
+      diaperAfterFeed: { have: feedsForDiapers(events, w.lo, w.hi, mergeWindowMin).length, need: MIN_FEEDS },
+      nightSleep: { have: nightsOf(events, nowEpoch).perNight.length, need: MIN_NIGHTS },
+    },
   };
 }
 

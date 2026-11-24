@@ -166,7 +166,23 @@ describe('night sleep', () => {
 
 describe('all insights together', () => {
   it('returns nulls on an empty log', () => {
-    expect(insights([], NOW, 20)).toEqual({ from: '2026-11-08', to: '2026-11-14', feedGaps: null, poopAfterFeed: null, diaperAfterFeed: null, nightSleep: null });
+    expect(insights([], NOW, 20)).toMatchObject({ from: '2026-11-08', to: '2026-11-14', feedGaps: null, poopAfterFeed: null, diaperAfterFeed: null, nightSleep: null });
+  });
+
+  // (owner, F16) a question turns on by itself once its insight has enough data, so each says how much it has and needs
+  it('says how much data each insight has and needs, counted the way the insight counts', () => {
+    const empty = insights([], NOW, 20).progress;
+    expect(empty).toEqual({ feedGaps: { have: 0, need: 20 }, poopAfterFeed: { have: 0, need: 8 }, diaperAfterFeed: { have: 0, need: 15 }, nightSleep: { have: 0, need: 4 } });
+    const two = insights(feedWeek(2), NOW, 20);
+    expect(two.feedGaps).toBeNull();
+    expect(two.progress.feedGaps.have).toBeGreaterThan(5); // two days of feeds: some gaps, not yet 20
+    expect(two.progress.feedGaps.have).toBeLessThan(20);
+    const full = insights(feedWeek(), NOW, 20);
+    expect(full.progress.feedGaps.have).toBe(full.feedGaps!.all.n); // the same gaps the insight uses
+    expect(full.progress.diaperAfterFeed.have).toBeGreaterThanOrEqual(15); // enough feeds, but no diapers: no pattern (null)
+    expect(full.diaperAfterFeed).toBeNull();
+    const poops = [ev({ type: 'diaper', detail: 'poop', start: '2026-11-10 09:00' }), ev({ type: 'diaper', detail: 'both', start: '2026-11-11 09:00' }), ev({ type: 'diaper', detail: 'poop', start: '2026-11-15 08:00' })];
+    expect(insights(poops, NOW, 20).progress.poopAfterFeed.have).toBe(2); // today's is not in the window
   });
 });
 

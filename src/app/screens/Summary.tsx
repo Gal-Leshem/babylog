@@ -7,6 +7,7 @@ import { KIND_LABEL, dayName, hm } from '../labels';
 import { count, engine, setSummaryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
 import { Insights } from './Insights';
+import { Week } from './Week';
 
 type Row = [label: string, value: (s: DailySummary) => string];
 
@@ -41,7 +42,15 @@ export function Summary() {
           תובנות
         </button>
       </div>
-      {view === 'insights' ? <Insights /> : <DaySummary />}
+      {view === 'insights' ? (
+        <Insights />
+      ) : (
+        <>
+          <DaySummary />
+          {/* (owner) the week at a glance is a dashboard, not an insight: under the day table */}
+          <Week />
+        </>
+      )}
     </section>
   );
 }

@@ -21,9 +21,14 @@ export interface Prefs {
   nightTint: NightTint;
   summaryView: SummaryView;
   historyView: HistoryView;
+  /**
+   * (owner, F16) The insight questions this parent turned on or off by hand. A question not listed is automatic: shown once it
+   * has enough data. Kept on this phone only (each parent chooses for themselves).
+   */
+  questions: Record<string, 'on' | 'off'>;
 }
 
-export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day', historyView: 'day' };
+export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day', historyView: 'day', questions: {} };
 
 /** An address the app may talk to: https, or plain http only for local development. */
 export const isServerUrl = (u: string): boolean => /^https:\/\//.test(u) || /^http:\/\/(127\.0\.0\.1|localhost)/.test(u);

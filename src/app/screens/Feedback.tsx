@@ -203,11 +203,11 @@ function syncLogText(): string {
  * (owner) A quick place to note a bug, an idea or anything else: kept in the sheet's "משוב" tab with a number from the
  * server, seen by both phones. Settings > מתקדם > "🐞 משוב". Sent directly (not queued): a failure says so and keeps the text.
  */
-export function Feedback({ onBack }: { onBack: () => void }) {
-  const [kind, setKind] = useState<FeedbackKind>('bug');
-  const [text, setText] = useState('');
+export function Feedback({ onBack, start, backLabel = 'חזרה להגדרות' }: { onBack: () => void; /** (F16) opened from "הציעו שאלה": the kind and a first line */ start?: { kind: FeedbackKind; text: string }; backLabel?: string }) {
+  const [kind, setKind] = useState<FeedbackKind>(start?.kind ?? 'bug');
+  const [text, setText] = useState(start?.text ?? '');
   // the sync log helps with a bug ("it was slow"); the owner did not decide the default for the other kinds: off
-  const [attach, setAttach] = useState(true);
+  const [attach, setAttach] = useState((start?.kind ?? 'bug') === 'bug');
   const [items, setItems] = useState<FeedbackItem[] | null>(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -294,7 +294,7 @@ export function Feedback({ onBack }: { onBack: () => void }) {
     <div data-testid="feedback">
       <div class="actions">
         <button type="button" data-testid="fb-back" onClick={onBack}>
-          חזרה להגדרות
+          {backLabel}
         </button>
       </div>
       <h2>

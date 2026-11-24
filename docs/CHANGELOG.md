@@ -512,6 +512,23 @@ No names, addresses or secrets in this file (the repository is public).
   refused send kept, 14 days at most), the browser (nothing sent in use or for today; the next day yesterday goes once, by
   parent); the request-count tests (one request per tap and per opening) are unchanged and pass. Proven to fail with the
   replaced-day lookup taken out, with the lock taken, and with today sent.
+- Insights as questions, stage A **(owner, F16, after two rounds of mockups)**: "תובנות" shows questions with short answers,
+  grouped by topic (🍼 האכלה, 🌙 שינה, 💧 חיתולים): "כל כמה זמן מאכילים?" (day and night side by side), "מה הרצף הארוך
+  בלילה?", "כמה זמן אחרי האכלה מגיע קקי?", "כמה זמן אחרי האכלה מחליפים חיתול?" (the four existing insights; with enough
+  data but no clear pattern the answer is now "אין קשר ברור" instead of nothing). Each question is automatic **(owner)**: it
+  shows by itself once it has enough data (`progress` in `insights()`: what each has and needs, counted the way the insight
+  counts). "⋯" on a card: "לא להציג יותר" (toast with "בטל") and "איך זה מחושב?" (a sheet with the method and the note).
+  "בחירת שאלות": a switch per question, per phone (`prefs.questions`: on / off by hand, absent = automatic); one turned on
+  without enough data shows "עוד אין מספיק נתונים" with a ring (have / need) and what is still missing. "💡 חסרה לכם שאלה?
+  הציעו אותה" opens the feedback screen as an idea with "שאלה מוצעת: ". Under the questions and in every "איך זה מחושב?"
+  **(owner)**: "כל ההשוואות הן רק מול מה שנרשם אצלכם עד עכשיו, לא מול נורמות או ערכים רפואיים. זו לא המלצה ולא ייעוץ
+  רפואי: בכל שאלה או דאגה פנו לרופא או לטיפת חלב." The timeline and the daily counts moved, unchanged, to "סיכום" under the
+  day table **(owner: a dashboard, not an insight)** (`Week.tsx`). Usage counters for the picker, hide, on / off, how and
+  suggest; the timeline / counts counters renamed (`summary.*`), and the phone now leaves out counter names the server no
+  longer knows, so a day counted by the previous version is not refused. Tests: progress (unit), browser: the four
+  answers, grouping, automatic on and off, hide with undo, the picker remembered after a reload, the waiting state, "אין קשר
+  ברור", the sheet and the note, the suggestion, the timeline under the table, no sideways overflow and 44 px "⋯" at
+  852 / 700 / 560 (proven to fail with the automatic rule removed and with the undo removed).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

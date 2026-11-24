@@ -1,6 +1,6 @@
 import type { ApiRequest } from '../shared/protocol';
 import { localDate } from '../shared/tz';
-import { USAGE_MAX_DAYS, type UsageName } from '../shared/usage';
+import { USAGE_LABELS, USAGE_MAX_DAYS, type UsageName } from '../shared/usage';
 
 /**
  * (owner, F15) Usage counts of this phone, per day (numbers only). Costs nothing while the app is used: `count` adds one in
@@ -58,7 +58,9 @@ export class Usage {
     for (const d of dates.slice(0, Math.max(0, dates.length - USAGE_MAX_DAYS))) delete s.days[d]; // never grows without end
     const past = Object.keys(s.days).filter((d) => d < today).sort();
     if (user && past.length) {
-      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: s.days[date]! })) });
+      // a counter this version no longer knows (renamed) would make the server refuse the whole day: leave it out
+      const known = (c: Record<string, number>) => Object.fromEntries(Object.entries(c).filter(([k]) => k in USAGE_LABELS));
+      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: known(s.days[date]!) })) });
       if (ok) {
         for (const d of past) delete s.days[d];
         this.dirty = true;
