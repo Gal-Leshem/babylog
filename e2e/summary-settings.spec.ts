@@ -211,6 +211,12 @@ test('privacy and terms: on the install screen before connecting, and in Setting
   await expect(page.getByTestId('privacy')).toContainText('סטטיסטיקת שימוש');
   await expect(page.getByTestId('privacy')).toContainText('מספרים בלבד, בלי תוכן הרישומים');
   await expect(page.getByTestId('privacy')).not.toContainText('אין מעקב');
+  await expect(page.getByTestId('privacy')).toContainText('נאספת אוטומטית, כחלק מהשימוש באפליקציה');
+  // (owner) the medical part doubles as a legal disclaimer; "בלי התחייבות" was taken out (back if the app goes commercial)
+  await expect(page.getByTestId('privacy')).toContainText('היא אינה מכשיר רפואי, אינה מאבחנת, אינה ממליצה על טיפול');
+  await expect(page.getByTestId('privacy')).toContainText('ובמצב חירום חייגו 101');
+  await expect(page.getByTestId('privacy')).not.toContainText('בלי התחייבות');
+  await expect(page.getByTestId('privacy-updated')).toHaveText('עודכן: נובמבר 2026');
   await page.getByTestId('privacy-back').click();
   await expect(page.getByTestId('sect-advanced')).toBeVisible();
 });

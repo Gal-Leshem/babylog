@@ -114,6 +114,10 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   session: ask the owner before building** (owner, November 2026): read every family's usage inside the app, under "משפחות
   נוספות" next to their feedback, with each family's admin code (`ADMIN_ACTIONS` would gain a read of the "שימוש" tab), and
   copy all of it at once. Not built; the owner wants to be asked about it.
+- **For the families session, ask the owner (November 2026):** an explicit "קראתי ומסכים/ה" to the privacy and terms page at
+  install for a new family (the privacy law since Amendment 13 may treat consent taken only from use as doubtful); and a
+  lawyer's reading of the page before a wider opening. "בלי התחייבות" was removed by the owner; back if the app goes
+  commercial.
 - **F16 Questions instead of insight cards (owner: liked)**: every insight is a question with a short answer, grouped by topic
   (feeding, sleep, diapers, general, visit); each parent picks the questions that interest them ("בחירת שאלות", "לא להציג
   יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups shown (owner liked the design).

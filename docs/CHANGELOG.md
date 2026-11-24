@@ -529,6 +529,13 @@ No names, addresses or secrets in this file (the repository is public).
   answers, grouping, automatic on and off, hide with undo, the picker remembered after a reload, the waiting state, "אין קשר
   ברור", the sheet and the note, the suggestion, the timeline under the table, no sideways overflow and 44 px "⋯" at
   852 / 700 / 560 (proven to fail with the automatic rule removed and with the undo removed).
+- Privacy and terms page **(owner, after a short legal check: medical-device rules for software, the privacy law's notice
+  duty since Amendment 13, how similar apps word it)**: "בלי ייעוץ רפואי" now also serves as a legal disclaimer (a log for
+  recording and organising only; not a medical device; no diagnosis, treatment advice or comparison with norms; the numbers
+  depend on what was logged; medicine doses are the parents' own and are not checked; no medical decision based on the app;
+  a doctor or טיפת חלב for any question, 101 in an emergency); the usage statistics are said to be collected automatically as
+  part of using the app; "עודכן: נובמבר 2026" at the end. "בלי התחייבות" was taken out **(owner: back if the app goes
+  commercial)**. Not a lawyer's text: a lawyer should read it before a wider opening. Browser test extended.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
