@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "ea4bd5b",
+  "sha": "6bc7bd5",
   "ref": "main",
-  "at": "2026-11-23T00:34:58.052Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45089107841",
+  "at": "2026-11-24T10:01:16.049Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45369823612",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,11 +19,11 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-BmO3pzIl.css   19.59 kB │ gzip:  4.66 kB",
-      "dist/assets/index-l1Tnuuid.js   138.87 kB │ gzip: 45.41 kB",
+      "dist/assets/index-C5VjWe9j.js   138.87 kB │ gzip: 45.41 kB",
       "",
-      "✓ built in 117ms",
+      "✓ built in 66ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 0s"
+      "took 2s"
     ],
     "install": [
       "+ npm ci",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 4s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 4s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,16 +73,16 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published ea4bd5b to gh-pages",
+      "published 6bc7bd5 to gh-pages",
       "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 1c1931a, waiting for ea4bd5b",
-      "attempt 2: serves 1c1931a, waiting for ea4bd5b",
-      "attempt 3: serves 1c1931a, waiting for ea4bd5b",
-      "site is live and serves ea4bd5b",
-      "took 32s"
+      "attempt 1: serves ea4bd5b, waiting for 6bc7bd5",
+      "attempt 2: serves ea4bd5b, waiting for 6bc7bd5",
+      "attempt 3: serves ea4bd5b, waiting for 6bc7bd5",
+      "site is live and serves 6bc7bd5",
+      "took 31s"
     ]
   }
 }
