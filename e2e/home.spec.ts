@@ -607,7 +607,8 @@ test.describe('the toast after a one-tap log: "it happened earlier"', () => {
     await expect(page.getByTestId('btn-feed_left')).toBeEnabled({ timeout: 3000 });
     await page.getByTestId('btn-feed_left').click();
     await page.getByTestId('toast-action').click();
-    await expect(page.getByTestId('toast-text')).toHaveText(/^נשמר: התעורר \d\d:\d\d · ישן 0:(29|30)$/);
+    // a minute can turn between falling asleep and waking up (a few seconds here; seen in CI): 0:30 or 0:31
+    await expect(page.getByTestId('toast-text')).toHaveText(/^נשמר: התעורר \d\d:\d\d · ישן 0:(29|30|31)$/);
     await expect(page.getByTestId('toast-asleep')).toHaveCount(0);
     await expect(page.getByTestId('toast-undo')).toBeEnabled();
     const woke = (await page.getByTestId('toast-text').textContent())!.match(/(\d\d:\d\d)/)![1]!;

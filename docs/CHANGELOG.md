@@ -536,6 +536,10 @@ No names, addresses or secrets in this file (the repository is public).
   a doctor or טיפת חלב for any question, 101 in an emergency); the usage statistics are said to be collected automatically as
   part of using the app; "עודכן: נובמבר 2026" at the end. "בלי התחייבות" was taken out **(owner: back if the app goes
   commercial)**. Not a lawyer's text: a lawyer should read it before a wider opening. Browser test extended.
+- CI caught a weak test on `dev` (the privacy commit stopped before `main`, as it should): "לסמן שהתעורר" expected the sleep
+  to read 0:29 or 0:30, but a minute turned between falling asleep and waking up on the slower runner (0:31). Not an app bug;
+  the test accepts 0:31. Lesson (mine): a local check chained with `&&` after a `grep | tail` pushed although one flaky test
+  had failed; push only after reading the result.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
