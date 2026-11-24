@@ -116,7 +116,12 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   copy all of it at once. Not built; the owner wants to be asked about it.
 - **F16 Questions instead of insight cards (owner: liked)**: every insight is a question with a short answer, grouped by topic
   (feeding, sleep, diapers, general, visit); each parent picks the questions that interest them ("בחירת שאלות", "לא להציג
-  יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups next.
+  יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups shown (owner liked the design).
+  Owner decisions: every question is on by default (a parent turns off what is not relevant); a question without enough
+  data still shows, with "עוד אין מספיק נתונים" and how much is still needed; trend labels compare only with what this family
+  logged ("כמו הרגיל אצלכם", more / less, orange only when clearly unusual), with a clear note that this is not a medical
+  comparison or advice; "מתי ההנקה הבאה צפויה" stays in the list. Open: the timeline and the daily counts as question
+  cards (second mockup shown).
 - **F17 Visit journal (owner: valuable)**: visits to the clinic / pediatrician with measurements, notes and "questions for the
   next visit", plus a one-page report for the visit (F9). The owner may send what he wrote at the last visit, as an example of
   the fields (never copied into the repository).
