@@ -5,7 +5,7 @@ import { NetworkError, callApi } from '../api';
 import { decodeAdminCode } from '../config';
 import { type FamilySource, loadFamilies, saveFamilies } from '../families';
 import { errorText } from '../labels';
-import { engine } from '../state';
+import { count, engine } from '../state';
 import { day, logLines } from './SyncLog';
 
 const KINDS: [FeedbackKind, string, string][] = [
@@ -259,6 +259,7 @@ export function Feedback({ onBack }: { onBack: () => void }) {
         // only what was sent goes: something typed while it was on its way stays (the slow-server run caught this)
         setText((t) => (t.trim() === body ? '' : t));
         sendId.current = uid();
+        count('feedback.sent');
         setMsg(sendOnly ? 'נשלח, תודה' : `נשלח (#${item.no})`);
       } else if (!r.ok) setMsg(refused(r.error, r.detail, 'לא נשלח'));
     } catch (e) {

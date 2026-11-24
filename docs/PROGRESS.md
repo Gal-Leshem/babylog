@@ -51,7 +51,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    push, the owner runs `setup` once, sends the family code privately and adds the admin code on his phone).
 6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
 7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") and the date of birth built. Open with the owner:
-   F15 usage measurement (design proposed, waiting for answers), F16 questions (mockups next), F17 visit journal (BACKLOG).
+   F15 usage measurement option A built; F16 questions (mockups next); F17 visit journal (the owner will send his notes from
+   the first visit). **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
+   `BACKLOG.md`): ask the owner about it; not built.
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).

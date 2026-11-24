@@ -385,6 +385,12 @@ export class Engine {
     return callApi(ep, req, this.fetchImpl);
   }
 
+  /** Hands one request to the browser to deliver on its own (no answer read); false when there is no server or it was not taken. */
+  sendAway(req: ApiRequest): boolean {
+    const ep = this.endpoint();
+    return ep ? this.beacon(ep, req) : false;
+  }
+
   private endpoint(): Endpoint | null {
     return this.config ? { url: this.config.url, key: this.config.key } : null;
   }

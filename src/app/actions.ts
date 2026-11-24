@@ -4,7 +4,7 @@ import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { KIND_LABEL, errorText, fromKind, hm, kindOf, nowLocal, timeOf, type Kind } from './labels';
-import { engine, showToast } from './state';
+import { count, engine, showToast } from './state';
 import { babyWords } from './words';
 
 const W = () => babyWords(engine.getState().settings.babySex);
@@ -70,6 +70,8 @@ export function quickLog(kind: Kind): void {
   const id = uid();
   const res = engine.dispatch({ action: 'log', id, type, detail, start, user: me(), source: 'app' });
   if (!res.ok) return fail(res.error, res.detail);
+  if (kind === 'feed_left' || kind === 'feed_right' || kind === 'wet' || kind === 'poop' || kind === 'both') count(`log.${kind}`);
+  else if (kind === 'vitamin_d') count('log.medicine');
   const label = KIND_LABEL[kind];
   const offline = engine.getState().status === 'offline';
   const vit = engine.getState().settings.medicines.find((m) => m.id === VITAMIN_D_ID);
@@ -99,6 +101,7 @@ export function toggleSleep(): void {
     const id = uid();
     const res = engine.dispatch({ action: 'asleep', id, user: me(), source: 'app', start });
     if (!res.ok) return fail(res.error, res.detail);
+    count('log.asleep');
     const mv = earlierFor(id, 'start', start, (t) => savedText(W().fellAsleep, timeOf(t), offline));
     showToast({ text: savedText(W().fellAsleep, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
     return;
@@ -106,6 +109,7 @@ export function toggleSleep(): void {
   const id = uid();
   const res = engine.dispatch({ action: 'awake', id, user: me(), source: 'app', end: start });
   if (!res.ok) return fail(res.error, res.detail);
+  count('log.awake');
   // If an open sleep was closed, undo reopens it; if an end-only row was created, undo deletes it.
   const sleepId = res.event?.id ?? id;
   const inverse: ApiRequest = sleepId !== id ? { action: 'update', id: sleepId, patch: { end: '' } } : { action: 'delete', id };
@@ -132,6 +136,7 @@ export function deletedText(e: BabyEvent): string {
 export function deleteEvent(e: BabyEvent): void {
   const res = engine.dispatch({ action: 'delete', id: e.id });
   if (!res.ok) return fail(res.error, res.detail);
+  count('form.delete');
   showToast({ text: deletedText(e), undo: () => undoOp(res.opId, { action: 'restore', id: e.id }) });
 }
 
@@ -143,6 +148,7 @@ export function deleteEvent(e: BabyEvent): void {
 export function deleteWake(e: BabyEvent): { error: string } | null {
   const res = engine.dispatch({ action: 'update', id: e.id, patch: { end: '' } });
   if (!res.ok) return { error: errorText(res.error, res.detail) };
+  count('form.deleteWake');
   showToast({ text: `רישום ההתעוררות נמחק · ${W().stillAsleep}`, undo: () => undoOp(res.opId, { action: 'update', id: e.id, patch: { end: e.end } }) });
   return null;
 }
@@ -174,6 +180,7 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
     fail(res.error, res.detail);
     return null;
   }
+  count(toast ? 'log.medicine' : 'meds.mark');
   const offline = engine.getState().status === 'offline';
   const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
   if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);

@@ -4,7 +4,7 @@ import { byTimeDesc, eventTime } from '../../shared/domain';
 import { formatLocal, localDate } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { FILTERS, dayName, eventIcon, eventLabel, eventTimeText, isBackfilled, sleepDurationText } from '../labels';
-import { engine, setHistoryView, useEngine, useNow, usePrefs } from '../state';
+import { count, engine, setHistoryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
 import { babyWords } from '../words';
 
@@ -43,6 +43,7 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
   const now = useNow(60_000);
   const today = localDate(now);
   const view = usePrefs().historyView;
+  useEffect(() => count(view === 'last24' ? 'history.24h' : 'history.day'), [view]); // (owner, F15)
   const [date, setDate] = useState(today);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
   const [loading, setLoading] = useState(false);
@@ -96,7 +97,7 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
       )}
       <div class="chips small" role="tablist" aria-label="סינון">
         {FILTERS.map((f) => (
-          <button type="button" key={f.id} class={`chip ${filter === f.id ? 'on' : ''}`} data-testid={`filter-${f.id}`} onClick={() => setFilter(f.id)}>
+          <button type="button" key={f.id} class={`chip ${filter === f.id ? 'on' : ''}`} data-testid={`filter-${f.id}`} onClick={() => (count('history.filter'), setFilter(f.id))}>
             {f.label}
           </button>
         ))}

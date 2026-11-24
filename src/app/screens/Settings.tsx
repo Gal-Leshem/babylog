@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
-import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
+import { count, engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
 import { DateField } from './DateField';
 import { ageText } from '../labels';
@@ -242,11 +242,11 @@ export function Settings() {
             </a>
           )}
           {/* (owner) hidden behind a button: the times of the last syncs */}
-          <button type="button" data-testid="open-sync-log" onClick={() => setLogOpen(true)}>
+          <button type="button" data-testid="open-sync-log" onClick={() => (count('settings.syncLog'), setLogOpen(true))}>
             יומן סנכרון
           </button>
           {/* (owner) a quick place to note a bug or an idea, next to the sync log */}
-          <button type="button" data-testid="open-feedback" onClick={() => setFbOpen(true)}>
+          <button type="button" data-testid="open-feedback" onClick={() => (count('settings.feedback'), setFbOpen(true))}>
             <span class="emo">🐞</span> משוב
           </button>
         </div>,

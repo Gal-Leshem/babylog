@@ -1,6 +1,15 @@
 import type { FeedbackItem } from '../shared/protocol';
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
 import type { Store } from './core';
+import type { UsageDay } from '../shared/usage';
+
+/** One stored usage row (tests and the mock server read them). */
+export interface UsageRow extends UsageDay {
+  user: string;
+  install: string;
+  version: string;
+  updated: string;
+}
 import { type Change, type Journal, type Since, record, since } from './journal';
 
 const copySettings = (s: Settings): Settings => ({
@@ -17,6 +26,7 @@ export class MemoryStore implements Store {
   private journal: Journal | null = null;
   private feedback: FeedbackItem[] = [];
   private feedbackSeq = 0;
+  private usage: UsageRow[] = [];
 
   constructor(rows: readonly BabyEvent[] = [], settings: Settings = DEFAULT_SETTINGS, rev = 0) {
     this.rev = rev;
@@ -65,6 +75,17 @@ export class MemoryStore implements Store {
   }
   changesSince(rev: string): Since | null {
     return since(this.journal, rev, String(this.rev));
+  }
+  usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void {
+    for (const d of days) {
+      const row: UsageRow = { date: d.date, counts: { ...d.counts }, user, install, version, updated: now };
+      const i = this.usage.findIndex((r) => r.date === d.date && r.user === user && r.install === install);
+      if (i >= 0) this.usage[i] = row;
+      else this.usage.push(row);
+    }
+  }
+  usageAll(): UsageRow[] {
+    return this.usage.map((r) => ({ ...r, counts: { ...r.counts } }));
   }
   feedbackAll(): FeedbackItem[] {
     return this.feedback.map((f) => ({ ...f }));

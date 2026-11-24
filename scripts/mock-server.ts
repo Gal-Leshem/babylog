@@ -53,6 +53,10 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
       }
       return void res.writeHead(200).end('ok');
     }
+    // (F15) the usage rows the phones sent (tests only)
+    if (req.url?.startsWith('/__usage')) {
+      return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(store.usageAll()));
+    }
     if (req.url?.startsWith('/__calls')) {
       return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(kinds));
     }

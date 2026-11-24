@@ -424,6 +424,33 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'settings' }).settings.babySex).toBe('girl');
   });
 
+  it('usage (F15): a "שימוש" tab with a column per counter, a row per day / parent / phone, replaced when sent again, without the lock or a new revision', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    let taken = 0;
+    rt.context.LockService = { getScriptLock: () => ({ waitLock: () => void taken++, tryLock: () => (taken++, true), releaseLock: () => undefined }) };
+    const rev = rt.props.get('REV');
+    const send = (user: string, install: string, days: unknown) => post({ key, action: 'usage', user, install, version: 'abc1234', days });
+    expect(send('Parent 1', 'p1', [{ date: '2026-11-12', counts: { open: 3, 'summary.insights': 2 } }])).toMatchObject({ ok: true });
+    expect(send('Parent 2', 'p2', [{ date: '2026-11-12', counts: { 'log.wet': 1 } }])).toMatchObject({ ok: true });
+    expect(send('Parent 1', 'p1', [{ date: '2026-11-12', counts: { open: 5 } }, { date: '2026-11-13', counts: { open: 1 } }])).toMatchObject({ ok: true });
+    const rows = rt.sheets.get('שימוש')!;
+    const head = rows[0]!.map(String);
+    expect(head.slice(0, 5)).toEqual(['תאריך', 'הורה', 'מכשיר', 'גרסה', 'עודכן']);
+    const col = (label: string) => head.indexOf(label);
+    expect(col('פתיחת האפליקציה')).toBeGreaterThan(4);
+    expect(col('סיכום: תובנות')).toBeGreaterThan(4);
+    const body = rows.slice(1).map((r) => [String(r[0]).replace(/^'/, ''), r[1], r[2], r[col('פתיחת האפליקציה')], r[col('סיכום: תובנות')], r[col('רישום: פיפי')]]);
+    expect(body).toEqual([
+      ['2026-11-12', 'Parent 1', 'p1', 5, '', ''], // sent again: replaced, not added
+      ['2026-11-12', 'Parent 2', 'p2', '', '', 1],
+      ['2026-11-13', 'Parent 1', 'p1', 1, '', ''],
+    ]);
+    expect(taken).toBe(0);
+    expect(rt.props.get('REV')).toBe(rev);
+  });
+
   it("the baby's date of birth is a text row of the Settings sheet; a date typed by hand is read as that day", () => {
     const { rt, g, post } = boot();
     g.setup!();

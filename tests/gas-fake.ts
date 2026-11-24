@@ -12,8 +12,11 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
   /** How many calls reached each Google service (the slow part of every request). */
   const calls = { props: 0, values: 0, find: 0 };
 
+  // like Google: a new tab has 26 columns, and a range beyond them is refused until columns are inserted
+  const maxCols = new Map<string, number>();
   const sheetObj = (name: string) => {
     const rows = () => sheets.get(name)!;
+    const cols = () => maxCols.get(name) ?? 26;
     const lastRow = () => {
       const r = rows();
       for (let i = r.length - 1; i >= 0; i--) if (r[i]!.some((c) => c !== '' && c !== undefined)) return i + 1;
@@ -71,8 +74,11 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
           const col = m[1]!.charCodeAt(0) - 64;
           return rangeObj(+m[2]!, col, Math.max(1000 - +m[2]! + 1, 1), 1);
         }
+        if (b! + (d ?? 1) - 1 > cols()) throw new Error('Exception: The coordinates of the range are outside the dimensions of the sheet.');
         return rangeObj(a, b!, c ?? 1, d ?? 1);
       },
+      getMaxColumns: cols,
+      insertColumnsAfter: (_after: number, n: number) => void maxCols.set(name, cols() + n),
       appendRow: (row: Cell[]) => rows().splice(lastRow(), 0, row),
       setFrozenRows: () => undefined,
       setColumnWidths: () => undefined,

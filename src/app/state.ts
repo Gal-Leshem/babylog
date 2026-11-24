@@ -3,8 +3,26 @@ import { useEffect, useState } from 'preact/hooks';
 import { DEFAULT_PREFS, type NightMode, type NightTint, type Prefs, type SummaryView, type HistoryView } from './config';
 import { Engine } from './engine';
 import { browserStorage } from './storage';
+import { Usage, type UsageKV } from './usage';
+import type { UsageName } from '../shared/usage';
 
 export const engine = new Engine({ storage: browserStorage });
+
+// (owner, F15) usage counts of this phone: `count` only adds one in memory (see usage.ts)
+const usageStore: UsageKV = {
+  getItem: (k) => {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (k, v) => localStorage.setItem(k, v),
+};
+export const usage = new Usage(usageStore);
+export const count = (name: UsageName): void => usage.count(name);
+/** The app is being left: keep the counts and send whole past days in the background. */
+export const leaveUsage = (): void => usage.leave((req) => engine.sendAway(req), engine.getConfig()?.me, typeof __APP_COMMIT__ === 'string' ? __APP_COMMIT__ : '');
 
 export const useEngine = () => useSyncExternalStore(engine.subscribe, engine.getState);
 

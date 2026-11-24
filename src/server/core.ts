@@ -4,6 +4,7 @@ import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem,
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
 import { type Voice, voiceFor } from '../shared/speech';
+import { USAGE_LABELS, USAGE_MAX_DAYS, type UsageDay } from '../shared/usage';
 import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../shared/tz';
 import {
   type BabyEvent,
@@ -41,6 +42,8 @@ export interface Store {
   bump(change?: Change): void;
   /** What changed after revision `rev` (from the journal of recent changes), or null when that cannot be told. */
   changesSince(rev: string): Since | null;
+  /** (owner, F15) Stores the usage counts of one phone (`install`) and parent for whole days; a day already stored is replaced. */
+  usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void;
   /** (owner) Feedback items, oldest first. */
   feedbackAll(): FeedbackItem[];
   /** Stores one item under the next number of a sequence that is never reset (call under the lock). */
@@ -310,6 +313,9 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       return deps.withLock(() => addFeedback(o, store, now));
     case 'feedbackList':
       return { ok: true, feedback: store.feedbackAll() };
+    // (owner, F15) not log data and nobody waits for it: no lock (each phone writes only its own rows), no revision
+    case 'usage':
+      return saveUsage(o, store, now);
     case 'feedbackClear':
       return deps.withLock(() => {
         const ids = o.ids;
@@ -591,6 +597,27 @@ function sleepMinutes(e: BabyEvent): number | null {
  * (owner) One feedback item: checked, cut to size, stored with the next number. A send that was retried (the same `id`) gets
  * the stored item back and writes nothing. Feedback is not log data: the data revision does not move.
  */
+function saveUsage(o: Obj, store: Store, now: number): ApiResponse {
+  const user = reqString(o, 'user', 20);
+  const install = reqString(o, 'install', 40);
+  const version = typeof o.version === 'string' ? o.version.slice(0, 40) : '';
+  const days = o.days;
+  if (!Array.isArray(days) || days.length === 0 || days.length > USAGE_MAX_DAYS) return fail('bad_request', `days must be 1-${USAGE_MAX_DAYS} days`);
+  const out: UsageDay[] = [];
+  for (const d of days) {
+    if (!isObj(d) || !isDateString(str(d.date)) || !isObj(d.counts)) return fail('bad_request', 'a day needs a date and counts');
+    const counts: Record<string, number> = {};
+    for (const [k, v] of Object.entries(d.counts)) {
+      if (!(k in USAGE_LABELS)) return fail('bad_request', `unknown counter ${k.slice(0, 40)}`);
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 100_000) return fail('bad_request', 'counts must be whole numbers');
+      counts[k] = v;
+    }
+    out.push({ date: str(d.date), counts });
+  }
+  store.usageSave(user, install, version, out, stamp(now));
+  return { ok: true };
+}
+
 function addFeedback(o: Obj, store: Store, now: number): ApiResponse {
   const id = reqString(o, 'id', 64);
   const kind = o.kind as FeedbackKind;

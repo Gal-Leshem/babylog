@@ -109,8 +109,11 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
 
 ### From the owner's ideas (feedback #2, November 2026)
 - **F15 Usage measurement (owner: wanted, with conditions)**: per parent (not per family); no cost to the app's speed (if there
-  is any doubt, no measurement); the founder sees everyone's numbers, families included. Design proposed to the owner, waiting
-  for his answers (see the session report). The cross-family reading touches the families session's parts (admin key).
+  is any doubt, no measurement); the founder sees everyone's numbers, families included. **Option A built** (counts per parent,
+  phone and day in each family's "שימוש" tab; every family's sheet is in the owner's Drive). **Option B, for the families
+  session: ask the owner before building** (owner, November 2026): read every family's usage inside the app, under "משפחות
+  נוספות" next to their feedback, with each family's admin code (`ADMIN_ACTIONS` would gain a read of the "שימוש" tab), and
+  copy all of it at once. Not built; the owner wants to be asked about it.
 - **F16 Questions instead of insight cards (owner: liked)**: every insight is a question with a short answer, grouped by topic
   (feeding, sleep, diapers, general, visit); each parent picks the questions that interest them ("בחירת שאלות", "לא להציג
   יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups next.

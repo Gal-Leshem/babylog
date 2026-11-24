@@ -33,4 +33,6 @@ export const README_ROWS: string[][] = [
   ['min_gap_hours / max_per_day', 'Optional limits the parents set (empty = none). The day runs midnight to midnight.'],
   ['course / course_count', 'none, or a course of course_count doses or days, counted from the first dose.'],
   ['status', 'active, or archived (finished; its doses stay in Events).'],
+  [''],
+  ['Sheet "שימוש": how often each parent used each screen and action of the app, per day and phone (counts only, for analytics). Not baby data: leave it out of any analysis of the baby.'],
 ];

@@ -5,7 +5,7 @@ import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared
 import { deleteEvent, deleteWake } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
 import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
-import { engine, showToast, useEngine } from '../state';
+import { count, engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 import { babyWords } from '../words';
 
@@ -167,6 +167,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
         ? engine.dispatch({ action: 'log', id: uid(), type, detail, start, ...(end ? { end } : {}), user: me, source: 'app', note })
         : engine.dispatch({ action: 'update', id: event!.id, patch: { type, detail, start, end, note } });
     if (!res.ok) return setError(errorText(res.error, res.detail));
+    count(mode === 'add' ? 'form.add' : 'form.edit');
     if (mode === 'add') showToast({ text: `נוסף: ${label} ${timeOf(start || end)}` }, FORM_TOAST_MS);
     // (owner) an edit made by mistake: "בטל" puts back exactly what was there before it
     else showToast({ text: 'השינויים נשמרו', undo: () => takeBack(res.opId, event!.id, coreOf(event!)) }, FORM_TOAST_MS);
@@ -179,6 +180,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     if (!event || !before) return;
     const res = engine.dispatch({ action: 'update', id: event.id, patch: before });
     if (!res.ok) return setError(errorText(res.error, res.detail));
+    count('form.restore');
     showToast({ text: 'הוחזר למה שהיה לפני העריכה', undo: () => takeBack(res.opId, event.id, coreOf(event)) }, FORM_TOAST_MS);
     onClose();
   };

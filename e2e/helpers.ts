@@ -62,6 +62,11 @@ export async function api<T = any>(request: APIRequestContext, body: Record<stri
   return (await res.json()) as T;
 }
 
+/** (F15) The usage rows the phones sent to this worker's mock server. */
+export async function usageRows(request: APIRequestContext): Promise<{ date: string; user: string; install: string; version: string; counts: Record<string, number> }[]> {
+  return (await request.get(`${MOCK}/__usage`)).json();
+}
+
 /** All (non-deleted) events on the server for the last two days. */
 export async function serverEvents(request: APIRequestContext): Promise<BabyEvent[]> {
   const r = await api(request, { action: 'list', from: localDate(Date.now() - 2 * 86_400_000), to: todayLocal() });

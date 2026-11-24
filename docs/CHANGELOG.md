@@ -496,6 +496,22 @@ No names, addresses or secrets in this file (the repository is public).
   failed with their part taken out), browser (set, in the sheet, the other phone follows).
 - Ideas **(owner, feedback #2)**, discussed and recorded in `BACKLOG.md` (F15 usage measurement, F16 questions per parent,
   F17 visit journal, age-based advice postponed).
+- Usage measurement **(owner, F15, option A; conditions: no cost to speed, per parent, the founder sees everyone's)**: the
+  phone counts what each parent opens and does, per day (`src/app/usage.ts`, names and sheet titles in `src/shared/usage.ts`:
+  openings, returns, tabs, "סיכום" / "תובנות", reaching the timeline and the daily counts, History views and filter, each
+  one-tap log, the medicines window, the toast's "היה לפני" / "בטל" / wake-up, add, edit, delete, delete of a wake-up, put
+  back, "שכחתם התעוררות", sync log, feedback). Numbers only, no content. A count is one addition in memory; the counts are
+  written to the phone's storage only when the app is left, and whole past days (never today) are then sent once in ONE
+  background request (beacon: not in the sync queue, nobody waits for it). The server's new action `usage` takes no lock and
+  does not move the revision; it writes the sheet's new "שימוש" tab: a row per day, parent and phone (date, parent, a random
+  phone id, version, time), a column per counter with a Hebrew title (new counters get a column at the end); a day sent again
+  replaces its row. The founder reads it in each family's sheet (all in his Drive); reading it inside the app is option B,
+  left for the families session (`BACKLOG.md`). The privacy page says so ("סטטיסטיקת שימוש", owner: no switch) and no longer
+  says "אין מעקב". Tests: the server (rows, replaced day, no lock, no revision, refusals, not inside a sync), the sheet in the
+  fake Google runtime (titles, rows, no lock), the phone (no write or request while counting, today never sent, once, a
+  refused send kept, 14 days at most), the browser (nothing sent in use or for today; the next day yesterday goes once, by
+  parent); the request-count tests (one request per tap and per opening) are unchanged and pass. Proven to fail with the
+  replaced-day lookup taken out, with the lock taken, and with today sent.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

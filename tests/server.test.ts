@@ -766,6 +766,43 @@ describe("the baby's sex (owner: wording only)", () => {
   });
 });
 
+describe('usage counts (owner, F15)', () => {
+  const day = (date: string, counts: Record<string, number>) => ({ date, counts });
+  it('stores one row per day, parent and phone; a day sent again replaces its row', () => {
+    ok(call({ action: 'usage', user: 'Parent 1', install: 'p1', version: 'abc1234', days: [day('2026-11-12', { open: 3, 'tab.summary': 1 }), day('2026-11-13', { open: 1 })] }));
+    ok(call({ action: 'usage', user: 'Parent 2', install: 'p2', days: [day('2026-11-13', { 'log.wet': 2 })] }));
+    ok(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [day('2026-11-13', { open: 4 })] })); // again: replaced
+    const rows = store.usageAll();
+    expect(rows.map((r) => `${r.date} ${r.user} ${JSON.stringify(r.counts)}`)).toEqual([
+      '2026-11-12 Parent 1 {"open":3,"tab.summary":1}',
+      '2026-11-13 Parent 1 {"open":4}',
+      '2026-11-13 Parent 2 {"log.wet":2}',
+    ]);
+  });
+  it('is not log data: no lock, the revision does not move, nothing is answered but ok', () => {
+    let locks = 0;
+    deps = { ...deps, withLock: (fn) => (locks++, fn()) };
+    const rev = store.revision();
+    expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [day('2026-11-13', { open: 1 })] })).toEqual({ ok: true });
+    expect(locks).toBe(0);
+    expect(store.revision()).toBe(rev);
+  });
+  it('refuses unknown counters, bad numbers, bad dates, too many days, and is never part of a sync', () => {
+    const bad = (days: unknown) => expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days })).toMatchObject({ ok: false, error: 'bad_request' });
+    bad([day('2026-11-13', { nosuch: 1 })]);
+    bad([day('2026-11-13', { open: -1 })]);
+    bad([day('2026-11-13', { open: 1.5 })]);
+    bad([day('13/11/2026', { open: 1 })]);
+    bad([]);
+    bad(Array.from({ length: 15 }, (_, i) => day(`2026-10-${String(i + 1).padStart(2, '0')}`, { open: 1 })));
+    expect(call({ action: 'usage', install: 'p1', days: [day('2026-11-13', { open: 1 })] })).toMatchObject({ ok: false });
+    expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [day('2026-11-13', { open: 1 })] }, 'wrong')).toMatchObject({ ok: false, error: 'unauthorized' });
+    const r = ok(call({ action: 'sync', from: '2026-11-14', to: '2026-11-14', ops: [{ action: 'usage', user: 'Parent 1', install: 'p1', days: [day('2026-11-13', { open: 1 })] }] }));
+    expect(r.results?.[0]).toMatchObject({ ok: false });
+    expect(store.usageAll()).toEqual([]);
+  });
+});
+
 describe("the baby's date of birth (owner)", () => {
   it('is stored, read back, kept by other changes, cleared with an empty value; only a real day from 2000 on', () => {
     expect(ok(call({ action: 'settings' })).settings!.babyBirth).toBeUndefined(); // older sheets: none

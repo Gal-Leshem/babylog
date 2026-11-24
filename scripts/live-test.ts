@@ -217,6 +217,15 @@ const afterBeacon = await call({ action: 'list', ...range });
 check('a write is recorded even when its answer is never fetched (what a beacon does)', (afterBeacon.json?.events ?? []).some((e: R) => e.id === id('beacon')), `HTTP ${beacon.status}`);
 for (const n of ['sync1', 'sync2', 'beacon']) await call({ action: 'delete', id: id(n) });
 
+// (owner, F15) usage counts on real Sheets: the tab is wider than a new tab's 26 columns; the same day sent again replaces its
+// row (a fixed day and phone, so the test sheet keeps one row however often this runs). Not log data: the revision stays.
+const revBefore = (await call({ action: 'ping' })).json?.rev;
+const usage = { action: 'usage', user: 'Live Test', install: 'live-test', version: 'live', days: [{ date: '2000-01-01', counts: { open: 1, 'tab.summary': 2 } }] };
+const u1 = await call(usage);
+const u2 = await call({ ...usage, days: [{ date: '2000-01-01', counts: { open: 3 } }] });
+check('usage counts are stored in the "שימוש" tab, twice for the same day', u1.json?.ok === true && u2.json?.ok === true, `${JSON.stringify(u1.json)} ${JSON.stringify(u2.json)}`);
+check('...and do not move the data revision', (await call({ action: 'ping' })).json?.rev === revBefore);
+
 // clean up what this run created (soft delete; the test medicine is removed once its dose is deleted)
 for (const n of ['feed', 'asleep', 'awake', 'dose']) await call({ action: 'delete', id: id(n) });
 const after = await call({ action: 'list', from: today, to: today });

@@ -3,7 +3,7 @@ import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, medicine
 import { localDate } from '../../shared/tz';
 import { EARLIER_MIN, type Mark, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
-import { engine, useEngine, useNow } from '../state';
+import { count, engine, useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 
 /**
@@ -53,9 +53,11 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
   // (owner) the dose just marked can be moved earlier or taken back from its own row, like the toast after a tap
   const moveEarlier = (mk: Mark, mins: number) => {
     if (mk.pick?.(mins) === null) return;
+    count('toast.earlier');
     setMarks(marks.map((x) => (x === mk ? { ...x, chosen: mins } : x)));
   };
   const takeBack = (mk: Mark) => {
+    count('toast.undo');
     undoMarks([mk]);
     setMarks(marks.filter((x) => x !== mk));
   };

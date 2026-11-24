@@ -207,6 +207,10 @@ test('privacy and terms: on the install screen before connecting, and in Setting
   await page.getByTestId('tab-settings').click();
   await page.getByTestId('open-privacy').click();
   await expect(page.getByTestId('privacy')).toContainText('מי יכול לראות');
+  // (owner, F15) the usage counts are told, without a switch
+  await expect(page.getByTestId('privacy')).toContainText('סטטיסטיקת שימוש');
+  await expect(page.getByTestId('privacy')).toContainText('מספרים בלבד, בלי תוכן הרישומים');
+  await expect(page.getByTestId('privacy')).not.toContainText('אין מעקב');
   await page.getByTestId('privacy-back').click();
   await expect(page.getByTestId('sect-advanced')).toBeVisible();
 });

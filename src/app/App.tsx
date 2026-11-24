@@ -11,7 +11,7 @@ import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
 import { EARLIER_MIN } from './actions';
-import { TOAST_DONE_MS, engine, hideToast, holdToast, isToastGone, releaseToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
+import { TOAST_DONE_MS, count, engine, hideToast, holdToast, isToastGone, releaseToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
 const TABS: [Tab, string, string][] = [
@@ -122,6 +122,7 @@ function ToastView() {
           aria-pressed={t.done === 'undo'}
           disabled={t.done === 'undo'}
           onClick={() => {
+            count('toast.undo');
             t.undo?.();
             // (owner) a moment with "בטל" lit, then gone; a failure has already put its own toast in place (another id: no change)
             updateToast(t.id, { text: 'בוטל', done: 'undo' }, TOAST_DONE_MS);
@@ -136,6 +137,7 @@ function ToastView() {
           data-testid="toast-action"
           disabled={t.done === 'undo'}
           onClick={() => {
+            count('toast.wake');
             hideToast();
             t.action?.run();
           }}
@@ -155,6 +157,7 @@ function ToastView() {
             data-testid="toast-action"
             disabled={t.done === 'undo'}
             onClick={() => {
+              count('toast.wake');
               hideToast();
               t.action?.run();
             }}
@@ -176,6 +179,7 @@ function ToastView() {
               disabled={t.done === 'undo'}
               data-testid={`toast-back-${m}`}
               onClick={() => {
+                count('toast.earlier');
                 const text = t.earlier?.pick(m);
                 // (owner) the new time with the minute lit for a moment, then the toast goes
                 if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m }, done: 'earlier' }, TOAST_DONE_MS);
@@ -230,7 +234,7 @@ export function App() {
       <Banner />
       {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
       <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={`${tab}-${n}`}>
-        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => setMedsOpen(true)} onFixWake={(event) => setForm({ mode: 'edit', event, focus: 'end', wake: true })} />}
+        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => (count('meds.window'), setMedsOpen(true))} onFixWake={(event) => (count('sleep.forgotWake'), setForm({ mode: 'edit', event, focus: 'end', wake: true }))} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event, focus: historyFocus(event) })} />}
         {tab === 'summary' && <Summary />}
         {tab === 'settings' && <Settings />}
@@ -238,7 +242,7 @@ export function App() {
       <ToastView />
       <nav class="tabs" aria-label="ניווט">
         {TABS.map(([id, icon, label]) => (
-          <button type="button" key={id} class={tab === id ? 'on' : ''} data-testid={`tab-${id}`} aria-current={tab === id ? 'page' : undefined} onClick={() => setNav((v) => ({ tab: id, n: v.tab === id ? v.n + 1 : v.n }))}>
+          <button type="button" key={id} class={tab === id ? 'on' : ''} data-testid={`tab-${id}`} aria-current={tab === id ? 'page' : undefined} onClick={() => (count(`tab.${id}`), setNav((v) => ({ tab: id, n: v.tab === id ? v.n + 1 : v.n })))}>
             <span class="ti">{icon}</span>
             <span>{label}</span>
           </button>

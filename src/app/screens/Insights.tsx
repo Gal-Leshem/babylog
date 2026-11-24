@@ -1,10 +1,10 @@
 import type { JSX } from 'preact';
-import { useEffect, useMemo } from 'preact/hooks';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { dailySummary } from '../../shared/domain';
 import { type AfterFeedInsight, type FeedGapInsight, type NightSleepInsight, type TimelineRow, LONG_STRETCH_MIN, insights, timeline } from '../../shared/insights';
 import { addDays, localDate } from '../../shared/tz';
 import { hm } from '../labels';
-import { engine, useEngine, useNow } from '../state';
+import { count, engine, useEngine, useNow } from '../state';
 
 const shortDate = (d: string) => `${Number(d.slice(8, 10))}.${Number(d.slice(5, 7))}`;
 /** minutes after midnight (may pass 24:00) -> 'HH:MM' */
@@ -130,6 +130,26 @@ export function Insights() {
     return { r, rows, days, countDays, sums };
   }, [events, now, settings.mergeWindowMin]);
   const today = localDate(now);
+  const tlRef = useRef<HTMLDivElement>(null);
+  const barsRef = useRef<HTMLDivElement>(null);
+  // (owner, F15) whether the parent scrolled down to the timeline / the daily counts (once per visit to this view)
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const seen = new Set<Element>();
+    const io = new IntersectionObserver(
+      (list) => {
+        for (const e of list) {
+          if (!e.isIntersecting || seen.has(e.target)) continue;
+          seen.add(e.target);
+          count(e.target === tlRef.current ? 'insights.timeline' : 'insights.bars');
+          io.unobserve(e.target);
+        }
+      },
+      { threshold: 0.6 },
+    );
+    for (const el of [tlRef.current, barsRef.current]) if (el) io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const from = addDays(r.from, -1);
@@ -155,7 +175,7 @@ export function Insights() {
           </span>
         ))}
       </div>
-      <div data-testid="timeline">{rows.map((row) => timelineRow(row, today))}</div>
+      <div data-testid="timeline" ref={tlRef}>{rows.map((row) => timelineRow(row, today))}</div>
       <div class="tl-legend">
         <span>
           <i class="s" /> שינה
@@ -175,7 +195,7 @@ export function Insights() {
       </div>
 
       <h3>ספירות יומיות</h3>
-      <div class="cnts">
+      <div class="cnts" ref={barsRef}>
         {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
         {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}
         {countCard('poop', 'קקי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.poop + s.diapers.both), today)}

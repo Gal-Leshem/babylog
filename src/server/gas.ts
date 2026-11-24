@@ -1,6 +1,7 @@
 /// <reference types="google-apps-script" />
 import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
+import { USAGE_LABELS, type UsageDay } from '../shared/usage';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
 import { encodeAdminCode, encodeInstallCode, makeCheckKey } from './auth';
@@ -36,6 +37,9 @@ const FEEDBACK = 'משוב';
 const FB_HEADER = ['מספר', 'נוצר', 'מי', 'סוג', 'טקסט', 'גרסה', 'יומן סנכרון', 'id'];
 const FB_KIND: Record<FeedbackKind, string> = { bug: 'באג', idea: 'רעיון', other: 'אחר' };
 /** A cell that starts with = + - or @ would be taken as a formula: an apostrophe in front keeps it text (Sheets hides it). */
+// (owner, F15) usage counts: one row per day, parent and phone; a column per counter (new counters get a column at the end)
+const USAGE = 'שימוש';
+const USAGE_FIXED = ['תאריך', 'הורה', 'מכשיר', 'גרסה', 'עודכן'];
 const asText = (t: string): string => (/^[=+\-@]/.test(t) ? `'${t}` : t);
 const fromText = (v: unknown): string => String(v ?? '').replace(/^'(?=[=+\-@])/, '');
 
@@ -298,6 +302,45 @@ class SheetStore implements Store {
     timed('props', () => props().setProperty('FEEDBACK_SEQ', String(no)));
     P().FEEDBACK_SEQ = String(no);
     return { ...item, no };
+  }
+  /** No lock: each phone writes only its own rows (date, parent, phone), and a beacon is never waited for. */
+  usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void {
+    timed('write', () => {
+      let sh = this.ss.getSheetByName(USAGE);
+      // a tab has 26 columns at first; a range beyond them is refused, so make room before writing wider rows
+      const room = (s: GoogleAppsScript.Spreadsheet.Sheet, n: number) => {
+        const max = s.getMaxColumns();
+        if (n > max) s.insertColumnsAfter(max, n - max);
+      };
+      if (!sh) {
+        sh = this.ss.insertSheet(USAGE);
+        const all = [...USAGE_FIXED, ...Object.values(USAGE_LABELS)];
+        room(sh, all.length);
+        sh.getRange(1, 1, 1, all.length).setValues([all]).setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      const header = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), USAGE_FIXED.length)).getValues()[0]!.map((h) => String(h ?? ''));
+      const width = header.length;
+      for (const d of days) for (const k of Object.keys(d.counts)) if (!header.includes(USAGE_LABELS[k]!)) header.push(USAGE_LABELS[k]!);
+      if (header.length > width) {
+        room(sh, header.length);
+        sh.getRange(1, 1, 1, header.length).setValues([header]);
+      }
+      const last = sh.getLastRow();
+      const keys = last >= 2 ? sh.getRange(2, 1, last - 1, 3).getValues().map((r) => r.map((v) => String(v ?? '').replace(/^'/, ''))) : [];
+      const byLabel = new Map(Object.entries(USAGE_LABELS).map(([k, label]) => [label, k]));
+      for (const d of days) {
+        const row = header.map((h, i) => {
+          if (i < USAGE_FIXED.length) return [`'${d.date}`, user, install, version, toCell(now)][i]!;
+          const k = byLabel.get(h);
+          return k !== undefined && d.counts[k] ? d.counts[k]! : '';
+        });
+        const i = keys.findIndex((r) => r[0] === d.date && r[1] === user && r[2] === install);
+        const at = i >= 0 ? i + 2 : keys.push([d.date, user, install]) + 1;
+        sh.getRange(at, 1, 1, row.length).setValues([row]);
+      }
+      SpreadsheetApp.flush();
+    });
   }
   /** Empties the tab below its titles (the numbering in FEEDBACK_SEQ goes on). Rows are cleared, not deleted: a sheet refuses to lose all its unfrozen rows. */
   feedbackClear(ids?: readonly string[]): void {

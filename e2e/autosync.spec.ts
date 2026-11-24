@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { actionsSeen, api, control, install, installExisting, nowLocal, resetCalls, resetServer, serverEvents } from './helpers';
+import { actionsSeen, api, control, install, installExisting, nowLocal, resetCalls, resetServer, serverEvents, usageRows } from './helpers';
+import { addDays, localDate } from '../src/shared/tz';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -189,4 +190,44 @@ test('after an offline period it catches up without any tap once the connection 
   await api(request, { action: 'log', id: 'back-1', type: 'feed', detail: 'right', start: nowLocal(), user: 'Parent Two', source: 'app' });
   await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 20_000 });
   await expect(page.getByTestId('tile-feed')).toContainText('ימין', { timeout: 20_000 });
+});
+
+// (owner, F15) usage per parent: counted on the phone at no cost (no request while it is used), sent once for whole past days
+// in one background request when the app is left, and never for today.
+test('usage counts: nothing is sent while in use or for today; the next day, yesterday goes once, by parent', async ({ page, request }) => {
+  const setVisibility = (state: 'hidden' | 'visible') =>
+    page.evaluate((s) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => s });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, state);
+  const start = Date.now();
+  await page.clock.setSystemTime(start);
+  await install(page);
+  await page.getByTestId('btn-wet').click();
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  await page.getByTestId('tab-home').click();
+  await setVisibility('hidden');
+  await setVisibility('visible');
+  await setVisibility('hidden');
+  await page.waitForTimeout(1_000);
+  expect(await actionsSeen(request)).not.toContain('usage');
+  const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('bl.usage.v1') ?? 'null'));
+  const today = localDate(start);
+  expect(kept.days[today]).toMatchObject({ open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'summary.table': 1, 'summary.insights': 1, 'tab.home': 1 });
+
+  // the next morning the app is opened again and then left: yesterday's counts go, once
+  await page.clock.setSystemTime(start + 24 * 3600_000);
+  await setVisibility('visible');
+  await setVisibility('hidden');
+  await expect.poll(async () => (await usageRows(request)).length).toBe(1);
+  const [row] = await usageRows(request);
+  expect(row).toMatchObject({ date: today, user: 'Parent One', counts: { open: 1, return: 1, 'log.wet': 1, 'tab.summary': 1, 'summary.insights': 1 } });
+  expect(row!.install).toMatch(/^[a-z0-9]{4,}$/);
+  await setVisibility('visible');
+  await setVisibility('hidden');
+  await page.waitForTimeout(1_000);
+  expect((await actionsSeen(request)).filter((a) => a === 'usage')).toHaveLength(1);
+  const left = await page.evaluate(() => JSON.parse(localStorage.getItem('bl.usage.v1') ?? 'null'));
+  expect(Object.keys(left.days)).toEqual([addDays(today, 1)]);
 });
