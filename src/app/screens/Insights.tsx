@@ -12,6 +12,7 @@ import { type AllData, CATEGORIES, NOT_MEDICAL, type Question, type QuestionId, 
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
 import type { UsageName } from '../../shared/usage';
+import { babyWords } from '../words';
 
 const shortDate = (d: string) => `${Number(d.slice(8, 10))}.${Number(d.slice(5, 7))}`;
 /** minutes after midnight (may pass 24:00) -> 'HH:MM' */
@@ -21,6 +22,8 @@ const clockOf = (m: number) => {
 };
 /** ranges in words: a dash between numbers reads backwards in right-to-left text */
 const range = (lo: number, hi: number) => (lo === hi ? `סביב ${hm(lo)}` : `בין ${hm(lo)} ל-${hm(hi)}`);
+const WEEKDAY_LETTER = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUTCDay()]!;
 const many = (n: number) => (n === 1 ? 'אחד' : n === 2 ? 'שניים' : String(n));
 
 // Plain functions returning JSX (no components defined inside components).
@@ -186,13 +189,45 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
       );
     }
     case 'cluster': {
+      // (owner) in words a parent can use: regular, now and then, or a tendency, with the usual hours and how often
       const c = m.cluster!;
+      const dots = (
+        <div class="dots" aria-hidden="true" data-testid="q-cluster-days">
+          {c.byDay.map((d) => (
+            <div key={d.date} class={d.run ? 'on' : ''}>
+              <i />
+              <em>{weekdayOf(d.date)}</em>
+            </div>
+          ))}
+        </div>
+      );
+      const hours = c.from === c.to ? `בסביבות ${clockOf(c.from)}` : `בדרך כלל בין ${clockOf(c.from)} ל-${clockOf(c.to)}`;
+      if (c.days === 0)
+        return (
+          <>
+            <div class="qa small">ההאכלות סדירות</div>
+            <div class="qs">ב-7 הימים האחרונים לא היו שעות של הנקות צפופות{c.usualGap ? `; בדרך כלל מאכילים כל ${hm(c.usualGap)}` : ''}.</div>
+            {dots}
+          </>
+        );
+      if (c.days <= 2)
+        return (
+          <>
+            <div class="qa small">מדי פעם</div>
+            <div class="qs">
+              ב-{c.days} מתוך 7 הימים האחרונים היו כמה שעות של הנקות צפופות, {hours}.
+            </div>
+            {dots}
+          </>
+        );
       return (
         <>
-          <div class="qa">{c.yes ? 'כן' : 'לא בולט'}</div>
+          <div class="qa small">יש נטייה להתקבצות הנקות</div>
           <div class="qs">
-            בערב מאכילים בדרך כלל כל {hm(c.evening.median)}, ובשעות היום כל {hm(c.day.median)}
+            {hours}, ב-{c.days} מתוך 7 הימים האחרונים.
           </div>
+          <div class="qs">בשעות האלה צפויות כמה הנקות קרובות זו לזו, וכדאי להתכונן אליהן מראש.</div>
+          {dots}
         </>
       );
     }
@@ -429,6 +464,12 @@ export function Insights() {
     showToast({ text: 'השאלה הוסתרה. אפשר להחזיר אותה ב"בחירת שאלות"', undo: () => setQuestion(id, before) }, 4_500);
   };
   const howQ = QUESTIONS.find((q) => q.id === how);
+  const openHow = (id: QuestionId) => {
+    setMenu(null);
+    count('questions.how');
+    hideToast(); // a sheet opens: the toast would lie over its button
+    setHow(id);
+  };
 
   return (
     <div data-testid="insights" ref={listRef}>
@@ -472,19 +513,24 @@ export function Insights() {
                     <button
                       type="button"
                       data-testid="q-how"
-                      onClick={() => {
-                        setMenu(null);
-                        count('questions.how');
-                        hideToast(); // a sheet opens: the toast would lie over its button
-                        setHow(q.id);
-                      }}
+                      onClick={() => openHow(q.id)}
                     >
-                      <span class="emo">ℹ️</span> איך זה מחושב?
+                      <span class="emo">ℹ️</span> {q.about ? 'מה זה ואיך זה מחושב?' : 'איך זה מחושב?'}
                     </button>
                   </div>
                 )}
                 <div class="qq">{q.q}</div>
+                {q.term && (
+                  <div class="qterm">
+                    <bdi>{q.term}</bdi>
+                  </div>
+                )}
                 {ready ? answer(q, a, now) : waiting(q, a)}
+                {q.about && (
+                  <button type="button" class="qabout" data-testid={`q-${q.id}-about`} onClick={() => openHow(q.id)}>
+                    <span class="emo">ℹ️</span> מה זה אומר?
+                  </button>
+                )}
               </div>
             ))}
         </div>
@@ -497,9 +543,24 @@ export function Insights() {
       {disclaimer('q-disclaimer')}
       {howQ && (
         <div class="sheet-backdrop" data-testid="q-how-sheet" onClick={(e) => e.target === e.currentTarget && setHow(null)}>
-          <div class="sheet" role="dialog" aria-modal="true" aria-label="איך זה מחושב?">
-            <h2>איך זה מחושב?</h2>
-            <p class="muted">{howQ.q}</p>
+          <div class="sheet" role="dialog" aria-modal="true" aria-label={howQ.about ? 'מה זה אומר?' : 'איך זה מחושב?'}>
+            <h2>{howQ.about ? 'מה זה אומר?' : 'איך זה מחושב?'}</h2>
+            <p class="muted">
+              {howQ.q}
+              {howQ.term && (
+                <>
+                  {' '}
+                  (<bdi>{howQ.term}</bdi>)
+                </>
+              )}
+            </p>
+            {howQ.about?.(babyWords(settings.babySex)).map((x) => (
+              <div key={x.title} data-testid="q-about-part">
+                <h3>{x.title}</h3>
+                <p>{x.text}</p>
+              </div>
+            ))}
+            {howQ.about && <h3>איך זה מחושב</h3>}
             {howQ.how(settings.mergeWindowMin).map((t) => (
               <p key={t}>{t}</p>
             ))}

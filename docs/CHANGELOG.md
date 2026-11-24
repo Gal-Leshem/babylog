@@ -560,6 +560,16 @@ No names, addresses or secrets in this file (the repository is public).
   left (no cost while it is used) and sent with the day, once. Tests: server (states kept, unknown ones refused), the sheet
   (the columns in words), the phone (the last state of the day is sent with it), the browser (a question on, one off, one
   card seen; proven to fail without the state), and the live test.
+- Cluster feeding card **(owner: unclear; needs the English term, what it means and why it is worth knowing, and friendly
+  words instead of "כן / לא בולט")**: the question is now "יש התקבצות הנקות?" with "Cluster feeding" under it. It finds real
+  runs (at least 3 feeds, each starting within 75 minutes of the one before, on each of the 7 full days) instead of comparing
+  evening and daytime gaps, and answers in words: "יש נטייה להתקבצות הנקות" with the usual hours ("בדרך כלל בין 18:15
+  ל-20:45") and on how many days ("ב-3 מתוך 7 הימים האחרונים") plus what it means in practice; "מדי פעם" for one or two
+  days; "ההאכלות סדירות" (and the usual gap) when there were none. A row of seven dots shows the days (oldest on the right).
+  A "מה זה אומר?" button on the card opens the sheet with "מה זה", "למה כדאי לדעת" (planning those hours, things ready by
+  the nursing place, sharing tasks with the other parent), "אם משהו מדאיג" (lactation consultant, doctor, טיפת חלב), then the
+  method and the non-medical note. The baby's noun follows the boy / girl choice (`words.ts`: התינוק / התינוקת). Tests: unit
+  (which days, the hours, two close feeds are not a run), browser (the words, the dots, the sheet's parts).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

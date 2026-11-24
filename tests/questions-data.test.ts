@@ -53,13 +53,28 @@ describe('the newer questions (F16 stage B)', () => {
   it('left / right, cluster feeding in the evening, and the next feed from the usual gap', () => {
     const r = moreAnswers(week(), NOW, 20);
     expect(r.sides).toEqual({ left: 35, right: 35 });
-    expect(r.cluster).toMatchObject({ yes: true });
-    expect(r.cluster!.evening.median).toBe(120);
-    expect(r.cluster!.day.median).toBe(180);
+    expect(r.cluster).toMatchObject({ days: 0 }); // every 2 to 3 hours: regular, no run of close feeds
+    expect(r.cluster!.byDay).toHaveLength(7);
     // the last feed was today 12:00 (day): the usual daytime gap after it
     expect(r.nextFeed!.last).toBe(T('2026-11-15 12:00'));
     expect(r.nextFeed!.night).toBe(false);
     expect(r.nextFeed!.at).toBe(T('2026-11-15 12:00') + r.nextFeed!.gapMin * MIN);
+  });
+
+  // (owner) cluster feeding in words a parent can use: on which days and at what hours there were runs of close feeds
+  it('cluster feeding: runs of 3 or more feeds at most 75 minutes apart, on which days and at what usual hours', () => {
+    const extra: BabyEvent[] = [];
+    for (const d of ['2026-11-09', '2026-11-11', '2026-11-12', '2026-11-14']) {
+      for (const h of ['18:00', '20:00']) extra.push(ev({ type: 'feed', detail: 'left', start: `${d} ${h}` }));
+    }
+    const r = moreAnswers([...week(), ...extra], NOW, 20);
+    expect(r.cluster!.days).toBe(4);
+    expect(r.cluster!.byDay.map((d) => d.run)).toEqual([false, true, false, true, true, false, true]);
+    expect(r.cluster!.from).toBe(17 * 60); // 17:00, 18:00, 19:00, 20:00, 21:00
+    expect(r.cluster!.to).toBe(21 * 60);
+    // two feeds close together are not a run
+    const pair = [...week(), ev({ type: 'feed', detail: 'left', start: '2026-11-10 13:00' })]; // 12:00, 13:00, then 15:00
+    expect(moreAnswers(pair, NOW, 20).cluster!.days).toBe(0);
   });
 
   it('sleep per day, when the night starts, and a night stretch that grows', () => {

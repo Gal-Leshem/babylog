@@ -15,6 +15,8 @@ export interface BabyWords {
   /** the button that marks the wake-up from a toast */
   markAwake: string;
   slept: string;
+  /** the noun: "התינוק" / "התינוקת" */
+  baby: string;
 }
 
 const BOY: BabyWords = {
@@ -27,6 +29,7 @@ const BOY: BabyWords = {
   stillMarkedAsleep: 'עדיין מסומן כישן',
   markAwake: 'לסמן שהתעורר',
   slept: 'ישן',
+  baby: 'התינוק',
 };
 
 const GIRL: BabyWords = {
@@ -39,6 +42,7 @@ const GIRL: BabyWords = {
   stillMarkedAsleep: 'עדיין מסומנת כישנה',
   markAwake: 'לסמן שהתעוררה',
   slept: 'ישנה',
+  baby: 'התינוקת',
 };
 
 export const babyWords = (sex: BabySex | undefined): BabyWords => (sex === 'girl' ? GIRL : BOY);

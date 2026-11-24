@@ -1,6 +1,7 @@
 import type { Insights, Progress } from '../shared/insights';
 import type { MoreAnswers } from '../shared/questions-data';
 import type { UsageQuestion } from '../shared/usage';
+import type { BabyWords } from './words';
 
 /** Everything the questions are answered from. */
 export interface AllData {
@@ -39,6 +40,10 @@ export interface Question {
   wait: (p: Progress) => string;
   /** "איך זה מחושב?" */
   how: (mergeWindowMin: number) => string[];
+  /** (owner) the common name of the pattern, shown under the question (Latin, isolated) */
+  term?: string;
+  /** (owner) what it is and why it is worth knowing, shown before the method; a card with it has its own "מה זה אומר?" */
+  about?: (w: BabyWords) => { title: string; text: string }[];
 }
 
 const soFar = (p: Progress) => `עד עכשיו ${p.have}.`;
@@ -136,13 +141,26 @@ const MORE: Question[] = [
   {
     id: 'cluster',
     cat: 'feed',
-    q: 'יש התקבצות הנקות בערב?',
-    desc: 'האם בערב מאכילים בצפיפות רבה יותר',
+    q: 'יש התקבצות הנקות?',
+    term: 'Cluster feeding',
+    desc: 'שעות של הנקות צפופות, באילו ימים ובאיזו שעה',
     prog: (a) => a.more.progress.cluster,
-    wait: (p) => `התשובה תופיע אחרי ${p.need} רווחים בין האכלות בערב וגם ביום. ${soFar(p)}`,
-    how: () => [
-      'הרווח הרגיל בין האכלות שמתחילות בין 17:00 ל-23:00, מול הרווח הרגיל בין 07:00 ל-17:00, ב-7 הימים המלאים האחרונים.',
-      '"כן" כשהרווח בערב קצר לפחות ברבע מהרווח ביום.',
+    wait: days,
+    how: (merge) => [
+      `בכל אחד מ-7 הימים המלאים האחרונים מחפשים רצף של לפחות 3 האכלות שכל אחת מתחילה עד שעה ורבע אחרי הקודמת (הנקות בהפרש של עד ${merge} דקות הן האכלה אחת).`,
+      'מוצג בכמה ימים היה רצף כזה, והשעות שבהן הוא בדרך כלל מתחיל ונגמר.',
+    ],
+    about: (w) => [
+      {
+        // the English name is isolated (U+2068 / U+2069), or the parenthesis after it flips in right-to-left text
+        title: 'מה זה',
+        text: `התקבצות הנקות (באנגלית \u2068Cluster feeding\u2069) היא פרק של כמה שעות שבו ${w.baby} רוצה לינוק שוב ושוב, בהפרשים קצרים, במקום בקצב הרגיל. אצל תינוקות רבים זה קורה בעיקר בשעות הערב, ובחלק מהימים יותר מבאחרים.`,
+      },
+      {
+        title: 'למה כדאי לדעת',
+        text: 'כשיודעים באילו שעות זה קורה אצלכם בדרך כלל, אפשר להתכונן: לפנות את השעות האלה, להכין מראש מים ומשהו לאכול ליד מקום ההנקה, ולחלק משימות עם ההורה השני (ארוחת ערב, אמבטיה, סידורים). זה עוזר גם לראות שמדובר בדפוס שחוזר אצלכם, ולא בשינוי פתאומי.',
+      },
+      { title: 'אם משהו מדאיג', text: 'אם משהו בדפוס ההנקות מדאיג אתכם, פנו ליועצת הנקה, לרופא או לטיפת חלב.' },
     ],
   },
   {

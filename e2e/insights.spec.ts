@@ -309,7 +309,10 @@ test('questions, stage B: today against a usual day, next feed, sides, nights, p
   await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות ${formatLocal(m.nextFeed!.at).slice(11, 16)}`);
   await expect(page.getByTestId('q-nextFeed')).toContainText('הערכה לפי הקצב שלכם בלבד, לא המלצה');
   await expect(page.getByTestId('q-sides')).toContainText('כמעט שווה'); // every feed is left and then right
-  await expect(page.getByTestId('q-cluster')).toContainText(m.cluster!.yes ? 'כן' : 'לא בולט');
+  const c = m.cluster!;
+  await expect(page.getByTestId('q-cluster')).toContainText(c.days === 0 ? 'ההאכלות סדירות' : c.days <= 2 ? 'מדי פעם' : 'יש נטייה להתקבצות הנקות');
+  await expect(page.getByTestId('q-cluster')).toContainText('Cluster feeding');
+  await expect(page.getByTestId('q-cluster-days').locator('.on')).toHaveCount(c.days);
   await expect(page.getByTestId('q-nightTrend')).toContainText('בערך אותו דבר'); // the same two stretches every night
   await expect(page.getByTestId('q-nightTrend').locator('.spark > div')).toHaveCount(m.nightTrend!.nights.length);
   await expect(page.getByTestId('q-sleepDay')).toContainText(`${hm(m.sleepDay!.usual.median)} בדרך כלל`);
@@ -333,4 +336,29 @@ test('questions, stage B: fewer feeds today than usual is said, in the warning c
   await expect(page.getByTestId('q-feedsToday-trend')).toHaveAttribute('data-tone', 'note');
   await expect(page.getByTestId('q-unusual')).toContainText('יש הבדל');
   await expect(page.getByTestId('q-unusual-feeds')).toHaveText('פחות האכלות מהרגיל עד עכשיו');
+});
+
+// (owner) cluster feeding: friendly words (a tendency, the usual hours, how many days), the English term, and what it means
+test('questions: cluster feeding says when and how often, and "מה זה אומר?" explains it and why it is worth knowing', async ({ page, request }) => {
+  const data = week();
+  // three evenings with a feed every hour from 18:00 to 21:00
+  for (const d of ['2026-11-10', '2026-11-12', '2026-11-13']) for (const h of ['18:00', '19:00', '20:00', '21:00']) data.push({ type: 'feed', detail: 'left', start: `${d} ${h}` });
+  await seed(request, data);
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  const card = page.getByTestId('q-cluster');
+  await expect(card).toContainText('יש התקבצות הנקות?');
+  await expect(card).toContainText('יש נטייה להתקבצות הנקות');
+  await expect(card).toContainText('ב-3 מתוך 7 הימים האחרונים');
+  await expect(card).toContainText('בשעות האלה צפויות כמה הנקות קרובות זו לזו');
+  await expect(card).not.toContainText('לא בולט');
+  await expect(page.getByTestId('q-cluster-days').locator('.on')).toHaveCount(3);
+  await page.getByTestId('q-cluster-about').click();
+  const sheet = page.getByTestId('q-how-sheet');
+  await expect(sheet).toContainText('מה זה אומר?');
+  await expect(sheet).toContainText('Cluster feeding');
+  await expect(page.getByTestId('q-about-part')).toHaveText([/^מה זה.*התינוק רוצה לינוק שוב ושוב/, /^למה כדאי לדעת.*להתכונן/, /^אם משהו מדאיג/]);
+  await expect(sheet).toContainText('איך זה מחושב');
+  await expect(page.getByTestId('q-how-disclaimer')).toBeVisible();
 });

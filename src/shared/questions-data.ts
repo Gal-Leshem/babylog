@@ -15,13 +15,15 @@ export type Trend = 'same' | 'more' | 'less';
 /** Days with data needed before "a usual day" means anything. */
 export const MIN_DAYS = 5;
 export const MIN_SIDES = 20;
-export const MIN_CLUSTER_GAPS = 8;
 export const MIN_TREND_NIGHTS = 6;
 /** A sleep counted as the start of the night: begins 18:00 to 02:00 and lasts at least this long. */
 export const NIGHT_START_MIN_LEN = 120;
-/** Evening for cluster feeding: gaps that start 17:00 to 23:00, against the day 07:00 to 17:00. */
-const EVENING = [17, 23] as const;
-const DAYTIME = [7, 17] as const;
+/**
+ * Cluster feeding: a run of at least CLUSTER_MIN_FEEDS feeds, each starting at most CLUSTER_GAP_MIN after the one before
+ * (feeds already merged by the merge window). Found per day; the screen says on how many days and at what hours.
+ */
+export const CLUSTER_GAP_MIN = 75;
+export const CLUSTER_MIN_FEEDS = 3;
 
 const median = (xs: readonly number[]) => quantile([...xs].sort((a, b) => a - b), 0.5);
 /** A clear difference: at least `abs` and at least `rel` of the usual value. */
@@ -42,7 +44,11 @@ export interface TodayVsUsual {
 export interface MoreAnswers {
   feedsToday: TodayVsUsual | null;
   sides: { left: number; right: number } | null;
-  cluster: { evening: Spread; day: Spread; yes: boolean } | null;
+  /**
+   * cluster feeding over the 7 full days: which days had a run (oldest first), and the usual hours of the runs (minutes after
+   * midnight, rounded to 15); `usualGap` is the usual time between feeds otherwise (for "the feeds are regular")
+   */
+  cluster: { byDay: { date: string; run: boolean }[]; days: number; from: number; to: number; usualGap: number } | null;
   /** last feed's start, the usual gap used (minutes, day or night) and the estimate; null last = no feed in the last 12 hours */
   nextFeed: { last: number | null; gapMin: number; at: number; night: boolean } | null;
   sleepDay: { usual: Spread; yesterday: number; trend: Trend } | null;
@@ -99,25 +105,39 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
   const left = presses.filter((e) => e.detail === 'left').length;
   const right = presses.length - left;
 
-  // cluster feeding: evening gaps against daytime gaps
-  const startsIn = feedStarts.filter((t) => t >= w.lo && t < w.hi);
-  const evening: number[] = [];
-  const daytime: number[] = [];
-  for (let i = 1; i < startsIn.length; i++) {
-    const gap = (startsIn[i]! - startsIn[i - 1]!) / MIN;
-    if (gap > 6 * 60) continue;
-    const h = localHour(startsIn[i - 1]!);
-    if (h >= EVENING[0] && h < EVENING[1]) evening.push(gap);
-    else if (h >= DAYTIME[0] && h < DAYTIME[1]) daytime.push(gap);
+  // cluster feeding: on each full day, the longest run of feeds close to each other
+  const runStarts: number[] = [];
+  const runEnds: number[] = [];
+  const byDay: { date: string; run: boolean }[] = [];
+  let daysWithFeeds = 0;
+  for (const d of days) {
+    const a = dayStart(d);
+    const inDay = feedStarts.filter((t) => t >= a && t < dayStart(addDays(d, 1)));
+    if (inDay.length) daysWithFeeds++;
+    let best: [number, number] | null = null;
+    let i = 0;
+    while (i < inDay.length) {
+      let j = i;
+      while (j + 1 < inDay.length && inDay[j + 1]! - inDay[j]! <= CLUSTER_GAP_MIN * MIN) j++;
+      if (j - i + 1 >= CLUSTER_MIN_FEEDS && (!best || j - i > best[1] - best[0])) best = [i, j];
+      i = j + 1;
+    }
+    byDay.push({ date: d, run: best !== null });
+    if (best) {
+      runStarts.push((inDay[best[0]]! - a) / MIN);
+      runEnds.push((inDay[best[1]]! - a) / MIN);
+    }
   }
-  const clusterHave = Math.min(evening.length, daytime.length);
+  const gapsAll = feedGaps(evs, w.lo, w.hi, mergeWindowMin).all;
   const cluster =
-    clusterHave >= MIN_CLUSTER_GAPS
-      ? (() => {
-          const e = spread(evening);
-          const d = spread(daytime);
-          return { evening: e, day: d, yes: e.median <= 0.75 * d.median };
-        })()
+    daysWithFeeds >= MIN_DAYS
+      ? {
+          byDay,
+          days: runStarts.length,
+          from: runStarts.length ? spread(runStarts, 15).median : 0,
+          to: runEnds.length ? spread(runEnds, 15).median : 0,
+          usualGap: gapsAll.length ? spread(gapsAll).median : 0,
+        }
       : null;
 
   // next feed: the usual gap (day or night) after the last feed, from this family's pace only
@@ -217,7 +237,7 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
     progress: {
       feedsToday: { have: ft.days, need: MIN_DAYS },
       sides: { have: presses.length, need: MIN_SIDES },
-      cluster: { have: clusterHave, need: MIN_CLUSTER_GAPS },
+      cluster: { have: daysWithFeeds, need: MIN_DAYS },
       nextFeed: { have: feedGaps(evs, w.lo, w.hi, mergeWindowMin).all.length, need: MIN_GAPS },
       sleepDay: { have: withSleep.length, need: MIN_DAYS },
       nightStart: { have: starts.length, need: 4 },
