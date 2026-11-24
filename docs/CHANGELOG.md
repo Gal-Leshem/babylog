@@ -540,6 +540,18 @@ No names, addresses or secrets in this file (the repository is public).
   to read 0:29 or 0:30, but a minute turned between falling asleep and waking up on the slower runner (0:31). Not an app bug;
   the test accepts 0:31. Lesson (mine): a local check chained with `&&` after a `grep | tail` pushed although one flaky test
   had failed; push only after reading the result.
+- Insights as questions, stage B **(owner)**: ten new questions, 14 in all, each automatic like the first four
+  (`src/shared/questions-data.ts`, same rules: medians, only this family's own days, a minimum of data, `progress`). 🍼 "כמה
+  האכלות היום, לעומת יום רגיל?" (today so far against the median of the 7 full days by the same hour, a bar with the usual
+  mark), "מתי ההנקה הבאה צפויה?" (the last feed plus the usual day / night gap; "הערכה לפי הקצב שלכם בלבד, לא המלצה"), "יש
+  איזון בין ימין לשמאל?", "יש התקבצות הנקות בערב?" (17:00 to 23:00 against 07:00 to 17:00); 🌙 "הרצף הארוך בלילה מתארך?"
+  (the nights as bars; the last three against the ones before), "כמה שעות שינה ביממה?" (and yesterday), "מתי מתחילה שינת
+  הלילה?"; 💧 "מתי היה הקקי האחרון?" (and the usual time between poops), "כמה פיפי וקקי היום?"; 📅 "היום חריג לעומת
+  הרגיל?" (feeds, pee, poop so far and last night's long stretch). Labels under an answer compare only with what this
+  family logged: "כמו ביום רגיל אצלכם" (quiet), and more / less only when the difference is clear (warning colour); never
+  good or bad. Every question has its own "איך זה מחושב?". Tests: unit (each answer on a made-up week with known values,
+  "not enough days"), browser (each card shows the calculation's numbers, a clearly smaller day in the warning colour and
+  under "היום חריג"); proven to fail with the "clear difference" rule broken.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

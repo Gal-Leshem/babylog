@@ -1,0 +1,97 @@
+import { describe, expect, it } from 'vitest';
+import { moreAnswers } from '../src/shared/questions-data';
+import { addDays, formatLocal } from '../src/shared/tz';
+import type { BabyEvent } from '../src/shared/types';
+import { ev, T } from './helpers';
+
+const MIN = 60_000;
+const at = (t: number) => formatLocal(t);
+const NOW = T('2026-11-15 14:00'); // the window is Nov 8 .. Nov 14; today until 14:00
+
+/**
+ * A regular made-up week (and today until NOW): a feed every 3 hours from 00:00 (left at 00/06/12/18, right at 03/09/15/21),
+ * every 2 hours between 17:00 and 23:00 instead (cluster feeding), a pee 15 minutes after each feed, a poop at 10:30 and 22:30,
+ * and one night sleep starting 21:30 whose length grows by 10 minutes a night (from 3:00).
+ */
+function week(opts: { feedsToday?: number } = {}): BabyEvent[] {
+  const out: BabyEvent[] = [];
+  for (let d = 0; d < 7; d++) {
+    const day = addDays('2026-11-08', d);
+    const hours = [0, 3, 6, 9, 12, 15, 17, 19, 21, 23];
+    hours.forEach((h, i) => {
+      const t = T(`${day} ${String(h).padStart(2, '0')}:00`);
+      out.push(ev({ type: 'feed', detail: i % 2 ? 'right' : 'left', start: at(t) }));
+      out.push(ev({ type: 'diaper', detail: 'wet', start: at(t + 15 * MIN) }));
+    });
+    out.push(ev({ type: 'diaper', detail: 'poop', start: `${day} 10:30` }), ev({ type: 'diaper', detail: 'poop', start: `${day} 22:30` }));
+    const s = T(`${day} 21:30`);
+    out.push(ev({ type: 'sleep', start: at(s), end: at(s + (180 + d * 10) * MIN) }));
+  }
+  // today until 14:00: by default the same as a usual day (00, 03, 06, 09, 12 = 5 feeds)
+  const todayHours = [0, 3, 6, 9, 12].slice(0, opts.feedsToday ?? 5);
+  for (const h of todayHours) out.push(ev({ type: 'feed', detail: 'left', start: `2026-11-15 ${String(h).padStart(2, '0')}:00` }), ev({ type: 'diaper', detail: 'wet', start: `2026-11-15 ${String(h).padStart(2, '0')}:15` }));
+  out.push(ev({ type: 'diaper', detail: 'poop', start: '2026-11-15 10:30' }));
+  return out;
+}
+
+describe('the newer questions (F16 stage B)', () => {
+  it('nothing is answered on an empty log, and each says how much it needs', () => {
+    const r = moreAnswers([], NOW, 20);
+    for (const k of ['feedsToday', 'sides', 'cluster', 'nextFeed', 'sleepDay', 'nightStart', 'nightTrend', 'lastPoop', 'diapersToday', 'unusual'] as const) {
+      expect(r[k], k).toBeNull();
+      expect(r.progress[k].have, k).toBe(0);
+      expect(r.progress[k].need, k).toBeGreaterThan(0);
+    }
+  });
+
+  it('feeds today against a usual day by this hour: the same, then clearly fewer', () => {
+    expect(moreAnswers(week(), NOW, 20).feedsToday).toEqual({ today: 5, usualByNow: 5, usualDay: 10, trend: 'same' });
+    expect(moreAnswers(week({ feedsToday: 2 }), NOW, 20).feedsToday).toMatchObject({ today: 2, usualByNow: 5, trend: 'less' });
+    expect(moreAnswers(week({ feedsToday: 4 }), NOW, 20).feedsToday!.trend).toBe('same'); // one less is not a clear difference
+  });
+
+  it('left / right, cluster feeding in the evening, and the next feed from the usual gap', () => {
+    const r = moreAnswers(week(), NOW, 20);
+    expect(r.sides).toEqual({ left: 35, right: 35 });
+    expect(r.cluster).toMatchObject({ yes: true });
+    expect(r.cluster!.evening.median).toBe(120);
+    expect(r.cluster!.day.median).toBe(180);
+    // the last feed was today 12:00 (day): the usual daytime gap after it
+    expect(r.nextFeed!.last).toBe(T('2026-11-15 12:00'));
+    expect(r.nextFeed!.night).toBe(false);
+    expect(r.nextFeed!.at).toBe(T('2026-11-15 12:00') + r.nextFeed!.gapMin * MIN);
+  });
+
+  it('sleep per day, when the night starts, and a night stretch that grows', () => {
+    const r = moreAnswers(week(), NOW, 20);
+    expect(r.nightStart).toMatchObject({ median: 21 * 60 + 30, nights: 7 });
+    expect(r.nightTrend!.nights).toHaveLength(7);
+    expect(r.nightTrend!.trend).toBe('more'); // the last three nights are 40 minutes longer than the ones before
+    expect(r.sleepDay!.usual.median).toBeGreaterThan(0);
+  });
+
+  it('the last poop and the usual time between poops; long since the last one is "more"', () => {
+    const r = moreAnswers(week(), NOW, 20);
+    expect(r.lastPoop).toMatchObject({ last: T('2026-11-15 10:30'), sinceMin: 210, trend: 'same' });
+    expect(r.lastPoop!.gap.median).toBe(720);
+    const late = moreAnswers(week(), T('2026-11-16 02:00'), 20);
+    expect(late.lastPoop!.trend).toBe('more'); // 15:30 since the last one, longer than usual here
+  });
+
+  it('pee and poop today, and what is unusual today', () => {
+    const same = moreAnswers(week(), NOW, 20);
+    expect(same.diapersToday!.wet).toMatchObject({ today: 5, usualByNow: 5, trend: 'same' });
+    expect(same.diapersToday!.poop).toMatchObject({ today: 1, usualByNow: 1, trend: 'same' });
+    expect(same.unusual!.notes.filter((n) => n.what !== 'night')).toEqual([]);
+    const fewer = moreAnswers(week({ feedsToday: 2 }), NOW, 20);
+    expect(fewer.unusual!.notes).toEqual(expect.arrayContaining([{ what: 'feeds', trend: 'less' }, { what: 'wet', trend: 'less' }]));
+  });
+
+  it('a log of only a few days is not enough for "a usual day"', () => {
+    const two = week().filter((e) => e.start >= '2026-11-13');
+    const r = moreAnswers(two, NOW, 20);
+    expect(r.feedsToday).toBeNull();
+    expect(r.progress.feedsToday).toEqual({ have: 2, need: 5 });
+    expect(r.unusual).toBeNull();
+  });
+});

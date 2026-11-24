@@ -126,10 +126,8 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   logged ("כמו הרגיל אצלכם", more / less, orange only when clearly unusual), with a clear note that this is not a medical
   comparison or advice; "מתי ההנקה הבאה צפויה" stays in the list; a question without enough data is off until it has
   enough, then turns on by itself; the timeline and daily counts go under the day table in "סיכום" (a dashboard). **Stage A
-  built** (structure with the four existing insights). **Stage B next**: the new questions (feeds today vs a usual day,
-  left / right balance, evening cluster feeding, next feed expected, sleep per day, when the night starts, does the long
-  stretch get longer, last poop, pee and poop today, is today unusual) and trend labels ("כמו הרגיל אצלכם", more / less).
-  Legal wording of the disclaimer: proposed to the owner (see the session report).
+  built** (structure with the four existing insights). **Stage B built** (ten new questions and the labels). Next: whatever
+  the parents' use and the usage counts show (which questions are hidden, which are opened), and suggested questions.
 - **F17 Visit journal (owner: valuable)**: visits to the clinic / pediatrician with measurements, notes and "questions for the
   next visit", plus a one-page report for the visit (F9). The owner may send what he wrote at the last visit, as an example of
   the fields (never copied into the repository).

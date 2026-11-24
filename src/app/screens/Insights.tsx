@@ -1,9 +1,14 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { type Insights as InsightsData, LONG_STRETCH_MIN, insights } from '../../shared/insights';
+import { type MoreAnswers, type Trend, moreAnswers } from '../../shared/questions-data';
+import { formatLocal } from '../../shared/tz';
+
+/** a wall-clock time as HH:MM ("00:48", never "0:48", which reads like a duration) */
+const hhmm = (t: number) => formatLocal(t).slice(11, 16);
 import { addDays } from '../../shared/tz';
 import { hm } from '../labels';
-import { CATEGORIES, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
+import { type AllData, CATEGORIES, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
 
@@ -20,7 +25,7 @@ const many = (n: number) => (n === 1 ? 'אחד' : n === 2 ? 'שניים' : Strin
 // Plain functions returning JSX (no components defined inside components).
 
 /** The answer of a question that has enough data (also "no clear pattern" for the after-a-feed questions). */
-function answer(q: Question, r: InsightsData): JSX.Element {
+function answerFirst(q: Question, r: InsightsData): JSX.Element {
   if (q.id === 'gaps' && r.feedGaps) {
     const g = r.feedGaps;
     const cell = (icon: string, label: string, s: NonNullable<typeof g.day>, id: string) => (
@@ -93,9 +98,206 @@ function answer(q: Question, r: InsightsData): JSX.Element {
   return <div class="qs">אין תשובה כרגע</div>;
 }
 
+/** A label under an answer: the same as usual for you (quiet), or clearly more / less (warning colour); never good or bad. */
+function chip(tone: 'same' | 'up' | 'note', text: string, id: string): JSX.Element {
+  return (
+    <span class={`tr ${tone}`} data-testid={id} data-tone={tone} key={id}>
+      {text}
+    </span>
+  );
+}
+const toneOf = (t: Trend): 'same' | 'note' => (t === 'same' ? 'same' : 'note');
+const more = (t: Trend, more: string, less: string, same: string) => (t === 'more' ? more : t === 'less' ? less : same);
+/** an elapsed time in words-friendly form: "35 דק׳" under an hour, else H:MM */
+const since = (min: number) => (min < 60 ? `${min} דק׳` : hm(min));
+
+/** Today against a usual day by this hour: the count, a bar with the usual-by-now mark, and the whole day's usual. */
+function todayBar(today: number, byNow: number, whole: number): JSX.Element {
+  const scale = Math.max(whole, today, 1);
+  return (
+    <>
+      <div class="vbar" aria-hidden="true">
+        <i style={{ width: `${Math.round((today / scale) * 100)}%` }} />
+        <b style={{ right: `${Math.round((byNow / scale) * 100)}%` }} />
+      </div>
+      <div class="vlab">
+        <span>יום רגיל, עד שעה כזו: {byNow}</span>
+        <span>ביום שלם: {whole}</span>
+      </div>
+    </>
+  );
+}
+
+const UNUSUAL: Record<'feeds' | 'wet' | 'poop' | 'night', [string, string]> = {
+  feeds: ['יותר האכלות מהרגיל עד עכשיו', 'פחות האכלות מהרגיל עד עכשיו'],
+  wet: ['יותר פיפי מהרגיל עד עכשיו', 'פחות פיפי מהרגיל עד עכשיו'],
+  poop: ['יותר קקי מהרגיל עד עכשיו', 'פחות קקי מהרגיל עד עכשיו'],
+  night: ['הרצף הארוך בלילה האחרון ארוך מהרגיל', 'הרצף הארוך בלילה האחרון קצר מהרגיל'],
+};
+
+/** The answer of a newer question that has enough data (stage B). */
+function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
+  switch (q.id) {
+    case 'feedsToday': {
+      const f = m.feedsToday!;
+      return (
+        <>
+          <div class="qa">
+            {f.today} <small>עד עכשיו</small>
+          </div>
+          {todayBar(f.today, f.usualByNow, f.usualDay)}
+          <div class="qf">{chip(toneOf(f.trend), more(f.trend, 'יותר מהרגיל אצלכם עד עכשיו', 'פחות מהרגיל אצלכם עד עכשיו', 'כמו ביום רגיל אצלכם'), 'q-feedsToday-trend')}</div>
+        </>
+      );
+    }
+    case 'nextFeed': {
+      const n = m.nextFeed!;
+      if (n.last === null) return <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>;
+      return (
+        <>
+          <div class="qa">
+            בסביבות <bdi>{hhmm(n.at)}</bdi>
+          </div>
+          <div class="qs">
+            ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {n.night ? 'בלילה' : 'ביום'} מאכילים בדרך כלל כל {hm(n.gapMin)}
+          </div>
+          {n.at < now && <div class="qs">השעה הזו כבר עברה</div>}
+          <div class="qbasis">הערכה לפי הקצב שלכם בלבד, לא המלצה</div>
+        </>
+      );
+    }
+    case 'sides': {
+      const s = m.sides!;
+      const right = Math.round((s.right / (s.left + s.right)) * 100);
+      return (
+        <>
+          <div class="qa">{Math.abs(right - 50) <= 10 ? 'כמעט שווה' : right > 50 ? 'יותר ימין' : 'יותר שמאל'}</div>
+          <div class="split" aria-hidden="true">
+            <i style={{ flex: right }} />
+            <i style={{ flex: 100 - right }} />
+          </div>
+          <div class="vlab">
+            <span>ימין {right}%</span>
+            <span>שמאל {100 - right}%</span>
+          </div>
+          <div class="qbasis">לפי {s.left + s.right} הנקות ב-7 ימים</div>
+        </>
+      );
+    }
+    case 'cluster': {
+      const c = m.cluster!;
+      return (
+        <>
+          <div class="qa">{c.yes ? 'כן' : 'לא בולט'}</div>
+          <div class="qs">
+            בערב מאכילים בדרך כלל כל {hm(c.evening.median)}, ובשעות היום כל {hm(c.day.median)}
+          </div>
+        </>
+      );
+    }
+    case 'nightTrend': {
+      const n = m.nightTrend!;
+      const max = Math.max(...n.nights, 1);
+      const diff = Math.abs(n.recent - n.before);
+      return (
+        <>
+          <div class="qa">
+            {more(n.trend, 'כן', 'מתקצר', 'בערך אותו דבר')} <small>{hm(n.nights[n.nights.length - 1]!)} בלילה האחרון</small>
+          </div>
+          <div class="spark" aria-hidden="true">
+            {n.nights.map((v, i) => (
+              <div class={i === n.nights.length - 1 ? 'last' : ''} key={i}>
+                <span style={{ height: `${Math.max(4, Math.round((v / max) * 100))}%` }} />
+              </div>
+            ))}
+          </div>
+          {n.trend !== 'same' && (
+            <div class="qf">
+              {chip(n.trend === 'more' ? 'up' : 'note', n.trend === 'more' ? `↗ 3 הלילות האחרונים ארוכים ב-${diff} דק׳` : `↘ 3 הלילות האחרונים קצרים ב-${diff} דק׳`, 'q-nightTrend-trend')}
+            </div>
+          )}
+          <div class="qbasis">לפי {n.nights.length} לילות, הישן ביותר מימין</div>
+        </>
+      );
+    }
+    case 'sleepDay': {
+      const s = m.sleepDay!;
+      return (
+        <>
+          <div class="qa">
+            {hm(s.usual.median)} <small>בדרך כלל</small>
+          </div>
+          <div class="qs">רוב הימים {range(s.usual.low, s.usual.high)} · אתמול {hm(s.yesterday)}</div>
+          <div class="qf">{chip(toneOf(s.trend), more(s.trend, 'אתמול יותר מהרגיל אצלכם', 'אתמול פחות מהרגיל אצלכם', 'אתמול כמו בדרך כלל'), 'q-sleepDay-trend')}</div>
+        </>
+      );
+    }
+    case 'nightStart': {
+      const n = m.nightStart!;
+      return (
+        <>
+          <div class="qa">
+            בסביבות <bdi>{clockOf(n.median)}</bdi>
+          </div>
+          <div class="qs">{n.low === n.high ? 'כמעט באותה שעה כל ערב' : `בדרך כלל בין ${clockOf(n.low)} ל-${clockOf(n.high)}`}</div>
+          <div class="qbasis">לפי {n.nights} לילות</div>
+        </>
+      );
+    }
+    case 'lastPoop': {
+      const l = m.lastPoop!;
+      return (
+        <>
+          <div class="qa">
+            לפני {since(l.sinceMin)} <small>{l.sinceMin < 60 ? '' : 'שעות'}</small>
+          </div>
+          <div class="qs">בדרך כלל {range(l.gap.low, l.gap.high)} שעות בין קקי לקקי</div>
+          <div class="qf">{chip(toneOf(l.trend), l.trend === 'more' ? 'יותר זמן מהרגיל אצלכם' : 'בטווח הרגיל אצלכם', 'q-lastPoop-trend')}</div>
+        </>
+      );
+    }
+    case 'diapersToday': {
+      const d = m.diapersToday!;
+      const notes = [d.wet.trend !== 'same' && chip('note', more(d.wet.trend, 'יותר פיפי מהרגיל עד עכשיו', 'פחות פיפי מהרגיל עד עכשיו', ''), 'q-wet-trend'), d.poop.trend !== 'same' && chip('note', more(d.poop.trend, 'יותר קקי מהרגיל עד עכשיו', 'פחות קקי מהרגיל עד עכשיו', ''), 'q-poop-trend')].filter(Boolean);
+      return (
+        <>
+          <div class="qa">
+            {d.wet.today} פיפי · {d.poop.today} קקי <small>עד עכשיו</small>
+          </div>
+          <div class="qs">
+            יום רגיל, עד שעה כזו: {d.wet.usualByNow} פיפי · {d.poop.usualByNow} קקי
+          </div>
+          <div class="qf wrap">{notes.length ? notes : chip('same', 'כמו ביום רגיל אצלכם', 'q-diapers-trend')}</div>
+        </>
+      );
+    }
+    case 'unusual': {
+      const u = m.unusual!;
+      if (!u.notes.length)
+        return (
+          <>
+            <div class="qa">דומה לרגיל</div>
+            <div class="qs">האכלות, פיפי וקקי עד עכשיו, והרצף הארוך בלילה האחרון, בטווח הרגיל אצלכם</div>
+          </>
+        );
+      return (
+        <>
+          <div class="qa">יש הבדל</div>
+          <div class="qf wrap">{u.notes.map((n) => chip('note', UNUSUAL[n.what][n.trend === 'more' ? 0 : 1], `q-unusual-${n.what}`))}</div>
+        </>
+      );
+    }
+    default:
+      return <div class="qs">אין תשובה כרגע</div>;
+  }
+}
+
+const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop', 'diaper']);
+const answer = (q: Question, a: AllData, now: number) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins) : answerMore(q, a.more, now));
+
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
-function waiting(q: Question, r: InsightsData): JSX.Element {
-  const p = r.progress[q.key];
+function waiting(q: Question, a: AllData): JSX.Element {
+  const p = q.prog(a);
   return (
     <div class="wait" data-testid={`q-${q.id}-wait`}>
       <div class="ring" style={{ '--p': String(Math.min(100, Math.round((p.have / p.need) * 100))) }}>
@@ -133,7 +335,8 @@ export function Insights() {
   const choices = usePrefs().questions;
   const now = useNow(60_000);
   // Recomputed only when the events change or a minute passes (the engine keeps `events` the same object while nothing changed).
-  const r = useMemo(() => insights(events, now, settings.mergeWindowMin), [events, now, settings.mergeWindowMin]);
+  const a = useMemo<AllData>(() => ({ ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin) }), [events, now, settings.mergeWindowMin]);
+  const r = a.ins;
   const [mode, setMode] = useState<'cards' | 'pick' | 'suggest'>('cards');
   const [menu, setMenu] = useState<QuestionId | null>(null);
   const [how, setHow] = useState<QuestionId | null>(null);
@@ -149,7 +352,7 @@ export function Insights() {
   };
   if (mode === 'suggest') return <Feedback onBack={() => setMode('cards')} start={{ kind: 'idea', text: 'שאלה מוצעת: ' }} backLabel="חזרה לתובנות" />;
 
-  const states = QUESTIONS.map((q) => ({ q, ...questionState(q, r, choices[q.id]) }));
+  const states = QUESTIONS.map((q) => ({ q, ...questionState(q, a, choices[q.id]) }));
 
   if (mode === 'pick') {
     return (
@@ -259,7 +462,7 @@ export function Insights() {
                   </div>
                 )}
                 <div class="qq">{q.q}</div>
-                {ready ? answer(q, r) : waiting(q, r)}
+                {ready ? answer(q, a, now) : waiting(q, a)}
               </div>
             ))}
         </div>

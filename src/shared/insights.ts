@@ -100,7 +100,7 @@ export function spread(values: readonly number[], step = 5): Spread {
   return { median: roundTo(quantile(s, 0.5), step), low: roundTo(quantile(s, 0.25), step), high: roundTo(quantile(s, 0.75), step), n: s.length };
 }
 
-const isNightHour = (h: number) => h >= NIGHT_FROM_HOUR || h < NIGHT_TO_HOUR;
+export const isNightHour = (h: number) => h >= NIGHT_FROM_HOUR || h < NIGHT_TO_HOUR;
 
 // ---------- the insights ----------
 
@@ -112,7 +112,7 @@ export function insightWindow(nowEpoch: number): { from: string; to: string; lo:
   return { from, to, lo: dayStart(from), hi: dayStart(today) };
 }
 
-function feedGaps(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): { all: number[]; day: number[]; night: number[] } {
+export function feedGaps(events: readonly BabyEvent[], lo: number, hi: number, mergeWindowMin: number): { all: number[]; day: number[]; night: number[] } {
   const starts = feedGroups(events, mergeWindowMin)
     .map((g) => g.start)
     .filter((t) => t >= lo && t < hi);
@@ -155,7 +155,7 @@ function afterFeedCoverage(feedStarts: readonly number[], lo: number, hi: number
  * Poop (or poop + pee) diapers: how many came within an hour of a feed's start, and the usual delay.
  * Chance level: the share of the day that lies within an hour after a feed.
  */
-const poopTimes = (events: readonly BabyEvent[], lo: number, hi: number): number[] =>
+export const poopTimes = (events: readonly BabyEvent[], lo: number, hi: number): number[] =>
   live(events)
     .filter((e) => e.type === 'diaper' && (e.detail === 'poop' || e.detail === 'both') && e.start)
     .map((e) => parseLocal(e.start))
@@ -215,7 +215,7 @@ export function diaperAfterFeedInsight(events: readonly BabyEvent[], lo: number,
  * Night sleep (19:00 to 07:00): the longest stretch per night and when it usually starts, plus how many stretches of 3 hours or
  * more a night usually has. A stretch belongs to the night in which it starts. Only finished sleeps count; only complete nights.
  */
-function nightsOf(events: readonly BabyEvent[], nowEpoch: number): { perNight: { longest: number; startMin: number; long: number[] }[]; lastNight: number[] } {
+export function nightsOf(events: readonly BabyEvent[], nowEpoch: number): { perNight: { longest: number; startMin: number; long: number[] }[]; lastNight: number[] } {
   const today = localDate(nowEpoch);
   const sleeps = live(events)
     .filter((e) => e.type === 'sleep' && e.start && e.end)

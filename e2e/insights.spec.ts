@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test';
 import { formatLocal, parseLocal } from '../src/shared/tz';
 import type { BabyEvent } from '../src/shared/types';
 import { install, resetServer, seed } from './helpers';
+import { moreAnswers } from '../src/shared/questions-data';
+import { hm } from '../src/app/labels';
+import { ev } from '../tests/helpers';
 
 // F8: the summary tab has a "סיכום" / "תובנות" switch; insights are patterns of the last 7 full days.
 const NOW = new Date('2026-11-15T08:00:00Z'); // 10:00 in Israel; the window is Nov 8 .. 14
@@ -42,8 +45,8 @@ test('insights: the usual feed gaps, poop and diaper after a feed, and long nigh
   await page.getByTestId('tab-summary').click();
   await expect(page.getByTestId('day-summary')).toBeVisible(); // the day table stays the default
   await page.getByTestId('view-insights').click();
-  // (owner, F16) questions with short answers; all four have enough data, so all show without any choice
-  await expect(page.getByTestId('q-count')).toHaveText('4 שאלות מוצגות');
+  // (owner, F16) questions with short answers; a regular week is enough data for all of them, so all show without any choice
+  await expect(page.getByTestId('q-count')).toHaveText('14 שאלות מוצגות');
   await expect(page.getByTestId('q-gaps')).toContainText('כל כמה זמן מאכילים?');
   await expect(page.getByTestId('q-gaps-day')).toContainText('2:30');
   await expect(page.getByTestId('q-gaps-night')).toContainText('3:15');
@@ -56,7 +59,7 @@ test('insights: the usual feed gaps, poop and diaper after a feed, and long nigh
   await expect(page.getByTestId('q-night')).toContainText('הלילה האחרון: 3:40, 3:05');
   await expect(page.getByTestId('insights')).toContainText('מ-8.11 עד 14.11');
   // grouped by topic, in this order
-  await expect(page.locator('.qsec')).toHaveText(['🍼 האכלה', '🌙 שינה', '💧 חיתולים']);
+  await expect(page.locator('.qsec')).toHaveText(['🍼 האכלה', '🌙 שינה', '💧 חיתולים', '📅 כללי']);
   // the timeline and the daily counts are no longer here: they are under the day table (owner)
   await expect(page.getByTestId('timeline')).toHaveCount(0);
 });
@@ -183,11 +186,11 @@ test('questions: hide one with "⋯" (undo brings it back), and bring it back in
   await page.clock.setFixedTime(NOW);
   await install(page);
   await openInsights(page);
-  await expect(page.locator('.q')).toHaveCount(4);
+  await expect(page.locator('.q')).toHaveCount(14);
   await page.getByTestId('q-poop-menu').click();
   await page.getByTestId('q-hide').click();
   await expect(page.getByTestId('q-poop')).toHaveCount(0);
-  await expect(page.getByTestId('q-count')).toHaveText('3 שאלות מוצגות');
+  await expect(page.getByTestId('q-count')).toHaveText('13 שאלות מוצגות');
   await expect(page.getByTestId('toast-text')).toContainText('השאלה הוסתרה');
   await page.getByTestId('toast-undo').click();
   await expect(page.getByTestId('q-poop')).toBeVisible();
@@ -258,7 +261,7 @@ test('questions: "איך זה מחושב?" explains and says it is not medical; 
   await expect(page.getByTestId('q-pop')).toBeVisible();
   await page.getByTestId('q-shield').click({ position: { x: 10, y: 10 } });
   await expect(page.getByTestId('q-pop')).toHaveCount(0);
-  await expect(page.locator('.q')).toHaveCount(4);
+  await expect(page.locator('.q')).toHaveCount(14);
 });
 
 test('questions: "הציעו שאלה" opens the feedback as an idea with a first line, and goes back to the questions', async ({ page, request }) => {
@@ -288,4 +291,46 @@ test('questions: nothing sticks out sideways, and the buttons are big enough, at
     expect(await fits(), `picker at ${h}`).toBe(true);
     await page.getByTestId('pick-back').click();
   }
+});
+
+// (owner, F16 stage B) the newer questions: each shows the numbers of the same calculation, with a label that compares only with
+// this family's own days ("כמו הרגיל אצלכם" / more / less), never with norms.
+test('questions, stage B: today against a usual day, next feed, sides, nights, poop, diapers, unusual', async ({ page, request }) => {
+  const data = week();
+  await seed(request, data);
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  const m = moreAnswers(data.map((e, i) => ev({ id: `x${i}`, type: e.type!, ...e })), NOW.getTime(), 20);
+  const f = m.feedsToday!;
+  await expect(page.getByTestId('q-feedsToday')).toContainText(`${f.today} עד עכשיו`);
+  await expect(page.getByTestId('q-feedsToday')).toContainText(`יום רגיל, עד שעה כזו: ${f.usualByNow}`);
+  await expect(page.getByTestId('q-feedsToday-trend')).toHaveText({ same: 'כמו ביום רגיל אצלכם', more: 'יותר מהרגיל אצלכם עד עכשיו', less: 'פחות מהרגיל אצלכם עד עכשיו' }[f.trend]);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות ${formatLocal(m.nextFeed!.at).slice(11, 16)}`);
+  await expect(page.getByTestId('q-nextFeed')).toContainText('הערכה לפי הקצב שלכם בלבד, לא המלצה');
+  await expect(page.getByTestId('q-sides')).toContainText('כמעט שווה'); // every feed is left and then right
+  await expect(page.getByTestId('q-cluster')).toContainText(m.cluster!.yes ? 'כן' : 'לא בולט');
+  await expect(page.getByTestId('q-nightTrend')).toContainText('בערך אותו דבר'); // the same two stretches every night
+  await expect(page.getByTestId('q-nightTrend').locator('.spark > div')).toHaveCount(m.nightTrend!.nights.length);
+  await expect(page.getByTestId('q-sleepDay')).toContainText(`${hm(m.sleepDay!.usual.median)} בדרך כלל`);
+  await expect(page.getByTestId('q-nightStart')).toContainText('בסביבות 22:00');
+  await expect(page.getByTestId('q-lastPoop')).toContainText(`לפני ${hm(m.lastPoop!.sinceMin)}`);
+  await expect(page.getByTestId('q-diapersToday')).toContainText(`${m.diapersToday!.wet.today} פיפי · ${m.diapersToday!.poop.today} קקי`);
+  await expect(page.getByTestId('q-unusual')).toContainText(m.unusual!.notes.length ? 'יש הבדל' : 'דומה לרגיל');
+  // a clear difference is in the warning colour; "the same as usual" is quiet
+  const tone = await page.getByTestId('q-feedsToday-trend').getAttribute('data-tone');
+  expect(tone).toBe(f.trend === 'same' ? 'same' : 'note');
+});
+
+test('questions, stage B: fewer feeds today than usual is said, in the warning colour, also under "היום חריג"', async ({ page, request }) => {
+  // the regular week without today's feeds after midnight: by 10:00 a usual day has several
+  const data = week().filter((e) => !(e.type === 'feed' && e.start! >= '2026-11-15 00:00'));
+  await seed(request, data);
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  await expect(page.getByTestId('q-feedsToday-trend')).toHaveText('פחות מהרגיל אצלכם עד עכשיו');
+  await expect(page.getByTestId('q-feedsToday-trend')).toHaveAttribute('data-tone', 'note');
+  await expect(page.getByTestId('q-unusual')).toContainText('יש הבדל');
+  await expect(page.getByTestId('q-unusual-feeds')).toHaveText('פחות האכלות מהרגיל עד עכשיו');
 });

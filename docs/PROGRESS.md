@@ -51,7 +51,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    push, the owner runs `setup` once, sends the family code privately and adds the admin code on his phone).
 6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
 7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") and the date of birth built. Open with the owner:
-   F15 usage measurement option A built; F16 questions stage A built (stage B: the new questions; legal wording proposed); F17 visit journal (the owner will send his notes from
+   F15 usage measurement option A built; F16 questions built (stages A and B, 14 questions; privacy page wording approved and live); F17 visit journal (the owner will send his notes from
    the first visit). **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
    `BACKLOG.md`): ask the owner about it; not built.
 
