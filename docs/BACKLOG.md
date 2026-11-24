@@ -129,8 +129,14 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   built** (structure with the four existing insights). **Stage B built** (ten new questions and the labels). Next: whatever
   the parents' use and the usage counts show (which questions are hidden, which are opened), and suggested questions.
 - **F17 Visit journal (owner: valuable)**: visits to the clinic / pediatrician with measurements, notes and "questions for the
-  next visit", plus a one-page report for the visit (F9). The owner may send what he wrote at the last visit, as an example of
-  the fields (never copied into the repository).
+  next visit", plus a one-page report for the visit (F9). Research (November 2026): the Ministry of Health's own apps (טיפ UP,
+  טיפת חלב) already hold appointments and reminders, the digital vaccination booklet, growth measurements and screening
+  results, so BabyLog should not copy them; other trackers offer a doctor-visit log, "questions for the doctor" and a PDF
+  summary for the visit (often paid). The owner's notes from one visit (structure only, never stored): most items were
+  guidance to remember and tasks with a deadline, a few appointments, two things to follow in the log, and some items about
+  the parent rather than the baby. Proposal sent to the owner (tasks, questions for the next visit, the next appointment,
+  guidance, follow-ups linked to the questions, pasting notes and sorting each line with one tap, a summary before the visit);
+  waiting for his decisions.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted
