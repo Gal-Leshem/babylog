@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "42a45b6",
+  "sha": "c5f18da",
   "ref": "main",
-  "at": "2026-11-24T21:14:33.002Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45488121091",
+  "at": "2026-11-24T21:26:43.192Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45490243081",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -14,20 +14,20 @@
       "",
       "vite v8.3.8 building client environment for production...",
       "transforming...",
-      "✓ 55 modules transformed.",
+      "✓ 56 modules transformed.",
       "rendering chunks...",
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
-      "dist/assets/index-BR9aWCOW.css   25.02 kB │ gzip:  5.37 kB",
-      "dist/assets/index-DgeTikhK.js   157.07 kB │ gzip: 50.86 kB",
+      "dist/assets/index-Dx5cPOYQ.css   26.45 kB │ gzip:  5.64 kB",
+      "dist/assets/index-Dhm0PEic.js   173.01 kB │ gzip: 55.14 kB",
       "",
-      "✓ built in 103ms",
+      "✓ built in 105ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (179.69 KiB)",
+      "precache  10 entries (196.66 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 0s"
+      "took 1s"
     ],
     "install": [
       "+ npm ci",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 8s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,15 +73,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 42a45b6 to gh-pages",
-      "took 2s"
+      "published c5f18da to gh-pages",
+      "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 0436038, waiting for 42a45b6",
-      "attempt 2: serves 0436038, waiting for 42a45b6",
-      "attempt 3: serves 0436038, waiting for 42a45b6",
-      "site is live and serves 42a45b6",
+      "attempt 1: serves 42a45b6, waiting for c5f18da",
+      "attempt 2: serves 42a45b6, waiting for c5f18da",
+      "attempt 3: serves 42a45b6, waiting for c5f18da",
+      "site is live and serves c5f18da",
       "took 31s"
     ]
   }
