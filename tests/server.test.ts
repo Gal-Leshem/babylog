@@ -766,6 +766,18 @@ describe("the baby's sex (owner: wording only)", () => {
   });
 });
 
+describe("the baby's date of birth (owner)", () => {
+  it('is stored, read back, kept by other changes, cleared with an empty value; only a real day from 2000 on', () => {
+    expect(ok(call({ action: 'settings' })).settings!.babyBirth).toBeUndefined(); // older sheets: none
+    expect(ok(call({ action: 'settings', set: { babyBirth: '2026-09-14' } })).settings!.babyBirth).toBe('2026-09-14');
+    expect(ok(call({ action: 'settings', set: { babySex: 'girl' } })).settings!.babyBirth).toBe('2026-09-14');
+    for (const bad of ['2026-02-30', '14/09/2026', '1999-12-31', 5, null]) {
+      expect(call({ action: 'settings', set: { babyBirth: bad } })).toMatchObject({ ok: false, error: 'bad_request' });
+    }
+    expect(store.getSettings().babyBirth).toBe('2026-09-14');
+    expect(ok(call({ action: 'settings', set: { babyBirth: '' } })).settings!.babyBirth).toBeUndefined();
+  });
+});
 
 // Owner: Siri on the other parent's phone speaks Hebrew. A request with lang 'he' gets Hebrew sentences, in the baby's wording.
 describe('Siri sentences in Hebrew', () => {

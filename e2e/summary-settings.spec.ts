@@ -1,6 +1,7 @@
 import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { expect, test } from '@playwright/test';
-import { api, install, nowLocal, resetServer, seed, todayLocal, addDaysLocal } from './helpers';
+import { api, install, nowLocal, pinPageDay, resetServer, seed, todayLocal, addDaysLocal } from './helpers';
+import { ageText } from '../src/app/labels';
 
 test.beforeEach(async ({ request }) => {
   await resetServer(request);
@@ -208,4 +209,25 @@ test('privacy and terms: on the install screen before connecting, and in Setting
   await expect(page.getByTestId('privacy')).toContainText('מי יכול לראות');
   await page.getByTestId('privacy-back').click();
   await expect(page.getByTestId('sect-advanced')).toBeVisible();
+});
+
+// (owner) the baby's date of birth in Settings > family: saved at once in the sheet (both phones), with the age under it.
+test("settings: the baby's date of birth is saved for both phones and shows the age", async ({ page, request }) => {
+  const day = await pinPageDay(page);
+  await install(page);
+  await page.getByTestId('tab-settings').click();
+  await expect(page.getByTestId('baby-birth-label')).toHaveText('לבחירת תאריך');
+  await expect(page.getByTestId('baby-age')).toHaveCount(0);
+  const birth = addDaysLocal(day, -40);
+  await page.getByTestId('baby-birth').fill(birth);
+  await expect(page.getByTestId('baby-age')).toHaveText(`גיל: ${ageText(birth, day)}`);
+  expect(ageText(birth, day)).toMatch(/^חודש ו-\d+ ימים$/);
+  await expect.poll(async () => (await api(request, { action: 'settings' })).settings.babyBirth).toBe(birth); // in the sheet
+  // set on the other phone: this one follows
+  const other = addDaysLocal(day, -12);
+  await api(request, { action: 'settings', set: { babyBirth: other } });
+  await page.getByTestId('tab-home').click();
+  await page.getByTestId('tab-settings').click();
+  await expect(page.getByTestId('baby-age')).toHaveText('גיל: 12 ימים', { timeout: 20_000 });
+  await expect(page.getByTestId('baby-birth')).toHaveValue(other);
 });

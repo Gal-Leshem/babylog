@@ -107,6 +107,18 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
 - F13 Push notifications ("the other parent logged a feed", vitamin D reminder): iPhone home-screen apps can receive web push, but
   someone must send it; that needs a small extra server with signing keys. Not planned unless the owner accepts that.
 
+### From the owner's ideas (feedback #2, November 2026)
+- **F15 Usage measurement (owner: wanted, with conditions)**: per parent (not per family); no cost to the app's speed (if there
+  is any doubt, no measurement); the founder sees everyone's numbers, families included. Design proposed to the owner, waiting
+  for his answers (see the session report). The cross-family reading touches the families session's parts (admin key).
+- **F16 Questions instead of insight cards (owner: liked)**: every insight is a question with a short answer, grouped by topic
+  (feeding, sleep, diapers, general, visit); each parent picks the questions that interest them ("בחירת שאלות", "לא להציג
+  יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups next.
+- **F17 Visit journal (owner: valuable)**: visits to the clinic / pediatrician with measurements, notes and "questions for the
+  next visit", plus a one-page report for the visit (F9). The owner may send what he wrote at the last visit, as an example of
+  the fields (never copied into the repository).
+- Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
+
 ### Not possible or not wanted
 - Home-screen / lock-screen widgets, Live Activities, Apple Watch app, haptic feedback, local scheduled reminders: not available to
   iPhone web apps.

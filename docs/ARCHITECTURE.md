@@ -216,7 +216,7 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   A new sleep starts as "still asleep" (the usual case: the baby fell asleep a while ago); if a sleep is already open, the form asks for
   the wake time instead.
 - **Words about the baby** follow the baby's sex chosen in Settings (`babyWords` in `src/app/words.ts`; `babySex` in the
-  Settings sheet; missing = boy). Never write "נרדם" / "ישן" etc. directly in a screen: take them from there.
+  Settings sheet; missing = boy). The date of birth (`babyBirth`, 'YYYY-MM-DD', a text row of the Settings sheet) is shown with the age in words (`ageText`). Never write "נרדם" / "ישן" etc. directly in a screen: take them from there.
 - **Next feed:** the side to feed next has a frame and a "הנקה הבאה" tag; feed buttons are size containers, and when short
   their icon and label go side by side with the tag above (so it never covers them).
 - **Wording:** diaper kinds are "פיפי", "קקי", "פיפי + קקי" (`KIND_LABEL` in `labels.ts` is the single source, also used by the summary

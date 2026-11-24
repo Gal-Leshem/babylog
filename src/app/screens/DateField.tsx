@@ -9,17 +9,19 @@ interface Props {
   min?: string;
   onChange: (date: string) => void;
   testId: string;
+  /** shown instead of a date while `value` is empty */
+  placeholder?: string;
 }
 
 /**
  * The date, written in Hebrew ("14 בנובמבר 2026"). Tapping it opens the phone's own date picker, which appears only
  * then. The system control is laid invisibly over the label, so one tap on the date goes straight to it.
  */
-export function DateField({ value, max, min, onChange, testId }: Props) {
+export function DateField({ value, max, min, onChange, testId, placeholder }: Props) {
   return (
     <div class="datefield">
       <div class="datebtn" aria-hidden="true">
-        <span data-testid={`${testId}-label`}>{dateLabel(value)}</span>
+        <span data-testid={`${testId}-label`}>{value ? dateLabel(value) : (placeholder ?? '')}</span>
         <span>📅</span>
       </div>
       <input

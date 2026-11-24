@@ -202,6 +202,14 @@ function mergeMedicines(current: readonly Medicine[], changes: readonly Medicine
   return list;
 }
 
+/** A real calendar day from 2000 on, 'YYYY-MM-DD' (the app does not offer days after today). */
+function isBirthDate(v: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v < '2000-01-01') return false;
+  const [y, m, d] = v.split('-').map(Number) as [number, number, number];
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
 function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } {
   if (!isObj(raw)) return fail('bad_request', 'set must be an object');
   const out: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } = {};
@@ -209,6 +217,11 @@ function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { m
   if (raw.babySex !== undefined) {
     if (raw.babySex !== 'boy' && raw.babySex !== 'girl') fail('bad_request', 'babySex must be boy or girl');
     out.babySex = raw.babySex as 'boy' | 'girl';
+  }
+  if (raw.babyBirth !== undefined) {
+    const v = raw.babyBirth;
+    if (typeof v !== 'string' || (v !== '' && !isBirthDate(v))) fail('bad_request', 'babyBirth must be YYYY-MM-DD');
+    out.babyBirth = v as string;
   }
   if (raw.babyName !== undefined) {
     const v = raw.babyName;
@@ -384,6 +397,7 @@ function saveSettings(set: unknown, deps: Deps, now: number): ApiResponse {
   const { medicines, ...patch } = parseSettings(set);
   const current = settingsOf(store);
   const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
+  if (merged.babyBirth === '') delete merged.babyBirth; // cleared
   store.setSettings(merged);
   return { ok: true, settings: merged, sheetUrl: store.sheetUrl() };
 }

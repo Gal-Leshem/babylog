@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
+import { DateField } from './DateField';
+import { ageText } from '../labels';
+import { localDate } from '../../shared/tz';
 import { Feedback } from './Feedback';
 import { Privacy } from './Privacy';
 import { SyncLog } from './SyncLog';
@@ -144,6 +147,16 @@ export function Settings() {
             </button>
           ))}
         </div>,
+        // (owner) date of birth, saved at once for both phones, with the age under it
+        <label class="fl" key="lb">
+          תאריך לידה
+        </label>,
+        <DateField key="birth" testId="baby-birth" value={st.settings.babyBirth ?? ''} max={localDate(Date.now())} placeholder="לבחירת תאריך" onChange={(d) => engine.dispatch({ action: 'settings', set: { babyBirth: d } })} />,
+        st.settings.babyBirth ? (
+          <p class="muted" key="age" data-testid="baby-age">
+            גיל: {ageText(st.settings.babyBirth, localDate(Date.now()))}
+          </p>
+        ) : null,
         <label class="fl" key="l2">
           הורה 1
         </label>,

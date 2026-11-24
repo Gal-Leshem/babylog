@@ -488,7 +488,15 @@ No names, addresses or secrets in this file (the repository is public).
   "רישום ההתעוררות נמחק". Reopening a sleep that overlaps a later one shows the overlap warning first ("למחוק בכל זאת"); with a
   later sleep still open the server rule refuses it and the form says why (owner accepted this behaviour). Browser tests: the
   wake-up only, undo, the side switch, a wake-up on its own, the overlap and the refusal (all three failed on the old form, and
-  the first also with the new label but the old delete).
+  the first also with the new label but the old delete).- Date of birth **(owner, from feedback #2)**: Settings > family: "תאריך לידה" (the phone's date picker, saved at once in the
+  Settings sheet as the text row `babyBirth`; both phones follow) and under it the age in words ("12 ימים", "חודש ו-5 ימים",
+  "חודשיים ויומיים", "שנה ו-3 חודשים"; calendar months, end of month clamped; `ageText` in `labels.ts`). The server accepts a
+  real day from 2000 on, or empty to clear; a date typed into the sheet by hand is read as that day. Nothing else uses it yet
+  (questions by age and the visit journal may). Tests: age wording (unit), server, the sheet in the fake Google runtime (both
+  failed with their part taken out), browser (set, in the sheet, the other phone follows).
+- Ideas **(owner, feedback #2)**, discussed and recorded in `BACKLOG.md` (F15 usage measurement, F16 questions per parent,
+  F17 visit journal, age-based advice postponed).
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

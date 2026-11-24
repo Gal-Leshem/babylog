@@ -424,6 +424,22 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(post({ key, action: 'settings' }).settings.babySex).toBe('girl');
   });
 
+  it("the baby's date of birth is a text row of the Settings sheet; a date typed by hand is read as that day", () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    expect(post({ key, action: 'settings' }).settings.babyBirth).toBeUndefined();
+    post({ key, action: 'settings', set: { babyBirth: '2026-09-14' } });
+    expect(rt.sheets.get('Settings')!.some((r) => r[0] === 'babyBirth' && r[1] === "'2026-09-14")).toBe(true);
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.babyBirth).toBe('2026-09-14');
+    // the owner fixes it in the sheet by hand: Sheets keeps a Date there
+    const row = rt.sheets.get('Settings')!.find((r) => r[0] === 'babyBirth')!;
+    row[1] = new Date('2026-09-13T22:00:00Z'); // midnight of 14 September in Israel
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.babyBirth).toBe('2026-09-14');
+  });
+
   // A text that starts like a formula must stay text in the sheet (Sheets would compute "=1+1").
   it('feedback starting with = + - or @ is kept as text in the sheet and comes back unchanged', () => {
     const b = boot();

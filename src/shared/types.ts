@@ -58,6 +58,8 @@ export interface Settings {
   babyName: string;
   /** (owner) chosen in Settings; the wording follows it. Missing (older sheets) = boy, the wording used before. */
   babySex?: BabySex;
+  /** (owner) the baby's date of birth, 'YYYY-MM-DD', set in Settings; missing until the parents set it. */
+  babyBirth?: string;
   mergeWindowMin: number;
   /** The two parents' display names, as chosen in the app (kept only in the private sheet). */
   parents: [string, string];

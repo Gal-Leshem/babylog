@@ -180,12 +180,17 @@ class SheetStore implements Store {
     const sh = this.ss.getSheetByName(SETTINGS);
     const map: Record<string, string> = {};
     if (sh && sh.getLastRow() >= 1) {
-      for (const [k, v] of sh.getRange(1, 1, sh.getLastRow(), 2).getValues()) map[String(k)] = String(v);
+      for (const [k, v] of sh.getRange(1, 1, sh.getLastRow(), 2).getValues()) {
+        // a date typed into the sheet by hand comes back as a Date: keep it a plain day
+        const d = v as { getTime?: () => number } | null;
+        map[String(k)] = d && typeof d === 'object' && typeof d.getTime === 'function' ? formatLocal(d.getTime()).slice(0, 10) : String(v);
+      }
     }
     const win = Number(map.mergeWindowMin);
     return {
       babyName: map.babyName || DEFAULT_SETTINGS.babyName,
       ...(map.babySex === 'girl' || map.babySex === 'boy' ? { babySex: map.babySex } : {}),
+      ...(/^\d{4}-\d{2}-\d{2}$/.test(map.babyBirth?.replace(/^'/, '') ?? '') ? { babyBirth: map.babyBirth!.replace(/^'/, '') } : {}),
       mergeWindowMin: Number.isFinite(win) && map.mergeWindowMin !== '' && map.mergeWindowMin !== undefined ? win : DEFAULT_SETTINGS.mergeWindowMin,
       parents: [map.parent1 || DEFAULT_SETTINGS.parents[0], map.parent2 || DEFAULT_SETTINGS.parents[1]],
       medicines: this.readMedicines(),
@@ -234,6 +239,8 @@ class SheetStore implements Store {
       ['parent1', s.parents[0]],
       ['parent2', s.parents[1]],
       ['babySex', s.babySex ?? ''],
+      // written as text ("'" keeps the sheet from turning it into a date)
+      ['babyBirth', s.babyBirth ? `'${s.babyBirth}` : ''],
     ];
     sh.getRange(1, 1, rows.length, 2).setValues(rows);
     this.writeMedicines(s.medicines);

@@ -82,6 +82,37 @@ export function dateLabel(date: string): string {
   return `${d} ב${MONTHS[m - 1]} ${y}`;
 }
 
+/**
+ * (owner) The baby's age on `today`, from the date of birth (both 'YYYY-MM-DD'), in words: "12 ימים", "חודש ו-5 ימים",
+ * "חודשיים ויומיים", "שנה ו-3 חודשים". Months are calendar months (born on the 14th: a month more on every 14th). Neutral
+ * words (no "בן" / "בת"). Empty when the date is missing or after today.
+ */
+export function ageText(birth: string | undefined, today: string): string {
+  if (!birth || birth > today) return '';
+  const [by, bm, bd] = birth.split('-').map(Number) as [number, number, number];
+  const [ty, tm, td] = today.split('-').map(Number) as [number, number, number];
+  // the day k full months were reached (clamped to the month's length: born on the 31st, a month on 28 or 29 February)
+  const anchor = (k: number) => {
+    const y = by + Math.floor((bm - 1 + k) / 12);
+    const m = ((bm - 1 + k) % 12) + 1;
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return Date.UTC(y, m - 1, Math.min(bd, last));
+  };
+  const now = Date.UTC(ty, tm - 1, td);
+  let months = (ty - by) * 12 + (tm - bm);
+  if (anchor(months) > now) months -= 1;
+  const days = Math.round((now - anchor(months)) / 86_400_000);
+  const n = (k: number, one: string, two: string, many: string) => (k === 1 ? one : k === 2 ? two : `${k} ${many}`);
+  const and = (s: string) => (/^\d/.test(s) ? ` ו-${s}` : ` ו${s}`);
+  const dayWords = (k: number) => n(k, 'יום אחד', 'יומיים', 'ימים');
+  if (months === 0) return days === 0 ? 'היום הראשון' : dayWords(days);
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const monthWords = (k: number) => n(k, 'חודש', 'חודשיים', 'חודשים');
+  if (years === 0) return monthWords(months) + (days ? and(dayWords(days)) : '');
+  return n(years, 'שנה', 'שנתיים', 'שנים') + (rest ? and(monthWords(rest)) : '');
+}
+
 /** 'YYYY-MM-DD' -> 'יום ראשון, 14 בנובמבר' */
 export function dayHeading(date: string): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
