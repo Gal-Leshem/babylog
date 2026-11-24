@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "ebdadc8",
+  "sha": "ca64d9d",
   "ref": "main",
-  "at": "2026-11-24T19:15:48.839Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45467403104",
+  "at": "2026-11-24T19:41:45.870Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45472003361",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -14,20 +14,20 @@
       "",
       "vite v8.3.8 building client environment for production...",
       "transforming...",
-      "✓ 51 modules transformed.",
+      "✓ 53 modules transformed.",
       "rendering chunks...",
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-BmO3pzIl.css   19.59 kB │ gzip:  4.66 kB",
-      "dist/assets/index-BQCKuAtO.js   141.17 kB │ gzip: 46.12 kB",
+      "dist/assets/index-DvH7cDam.js   146.65 kB │ gzip: 48.04 kB",
       "",
-      "✓ built in 103ms",
+      "✓ built in 98ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (158.87 KiB)",
+      "precache  10 entries (164.22 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 0s"
+      "took 2s"
     ],
     "install": [
       "+ npm ci",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 8s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 9s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,14 +73,14 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published ebdadc8 to gh-pages",
+      "published ca64d9d to gh-pages",
       "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 66a0620, waiting for ebdadc8",
-      "attempt 2: serves 66a0620, waiting for ebdadc8",
-      "site is live and serves ebdadc8",
+      "attempt 1: serves ebdadc8, waiting for ca64d9d",
+      "attempt 2: serves ebdadc8, waiting for ca64d9d",
+      "site is live and serves ca64d9d",
       "took 21s"
     ]
   }
