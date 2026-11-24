@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "42a45b6",
+  "sha": "c5f18da",
   "ref": "main",
-  "at": "2026-11-24T21:14:18.808Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45488121091",
+  "at": "2026-11-24T21:26:43.935Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45490243081",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
