@@ -103,6 +103,21 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   report by its own commit on `ci-status` (`git log origin/ci-status --format='%h %s' | grep "report: server <sha>"`, then
   `git show <that>:reports/server.json`) and wait for the `dev` test AND server reports before pushing to `main`.
 
+## Two sessions in parallel (owner, November 2026)
+The owner may run two sessions at once: one for **other families** (`MULTI_FAMILY_PLAN.md`) and one for **small fixes and
+features**. Both push to the same `dev` and `main` and share one pipeline, so:
+- Ownership: only the families session touches `families.json`, `scripts/families.ts`, `scripts/deploy-families.ts`, the
+  `families` job, the family-server parts (`--family`, `familyServer` / `checkAdmin` in `core.ts`, `ADMIN_KEY` in `gas.ts`,
+  "משפחות נוספות" in `Feedback.tsx`, `src/app/families.ts`) and `MULTI_FAMILY_PLAN.md`. The other session leaves them alone, or
+  asks the owner first.
+- Before every push: `git fetch origin` and merge `origin/dev` into your work (never force-push, never rebase pushed commits);
+  rerun the tests if the merge brought changes. Conflicts in `CHANGELOG.md` / `PROGRESS.md`: keep both sides.
+- One pipeline run at a time: before pushing, check that the newest commits of `origin/dev` and `origin/main` already have their
+  reports on `ci-status` (`git log origin/ci-status --format='%h %s' | grep <sha7>`: test and server for `dev`; test, server,
+  prod and families for `main`). If one is missing, the other session's run is still going: wait, then fetch and merge again.
+- `ship.sh` pushes the given commit to `main`: run it only for a commit that contains `origin/main` (otherwise the push is refused,
+  and that is correct: fetch, merge, push to `dev` again).
+
 ## Open risks (cannot be tested in the sandbox)
 - Whether `shortcuts sign` accepts the generated files and iOS imports them (only simulated). Whether a network shortcut runs on a locked phone.
 - Whether Gemini can read a sheet shared from another account. Behavior of the system date/time pickers on every iOS version (they follow the phone's language).
