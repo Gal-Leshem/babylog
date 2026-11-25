@@ -137,6 +137,19 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   the parent rather than the baby. Proposal sent to the owner (tasks, questions for the next visit, the next appointment,
   guidance, follow-ups linked to the questions, pasting notes and sorting each line with one tap, a summary before the visit);
   waiting for his decisions.
+  **Deep research (owner, 25 Nov 2026), three tracks: parents' problems (evidence), competing apps, the Israeli system.**
+  Evidence: people forget much of what clinicians say (often quoted 40-80%; recall falls as topics pile up), written notes
+  help; question lists before a visit raise questions asked (not tested for well-baby visits); mothers carry most of the
+  anticipating and scheduling of children's care (one study: 92% vs 51% schedule appointments); reminders raise vaccination by
+  about 8 points but mostly where coverage is low; no evidence that consumer milestone tracking helps, some of anxiety, and
+  parents log milestones rarely. Market: growth charts, vaccine logs, milestone checklists, age content, activities, PDF exports
+  and partner sync are commoditised; thin: the loop around a visit (questions before, what was said, follow-ups after, tied to
+  the daily log and seen by both parents) and a pre-visit summary built from what was already logged. Israel: the official
+  Tipat Halav app (Tip UP) has booking, reminders, the vaccine booklet and growth data, only for Ministry / Jerusalem stations,
+  one login, 2.5 stars (login and crashes); the national digital vaccine register exists since 2025; Tipat Halav and the
+  health-fund pediatrician are two systems that do not share information (parents carry results between them); many Hebrew
+  indie trackers appeared in 2026 with almost no traction. Conclusion sent to the owner: no market gap; a modest personal gap
+  (the visit loop shared by both parents, bridging the two systems), to be tried by hand before anything is built.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted
