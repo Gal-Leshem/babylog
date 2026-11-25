@@ -74,10 +74,13 @@ describe('a family server', () => {
   const as = (key: string, req: Record<string, unknown>): ApiResponse => handle({ key, ...req }, fam());
 
   it("the family's key sends feedback, and is refused the list and clearing", () => {
-    expect(ok(as(KEY, { action: 'feedback', id: 'f1', kind: 'bug', text: 'x', user: 'P' })).item?.no).toBe(1);
+    const sent = ok(as(KEY, { action: 'feedback', id: 'f1', kind: 'bug', text: 'x', user: 'P' }));
+    expect(sent.item?.no).toBe(1);
+    expect(sent.sendOnly).toBe(true); // the phone may get this before the list's refusal (seen against a slow server)
     expect(as(KEY, { action: 'feedbackList' })).toEqual({ ok: false, error: 'send_only' });
     expect(as(KEY, { action: 'feedbackClear' })).toEqual({ ok: false, error: 'send_only' });
     expect(store.feedbackAll()).toHaveLength(1); // nothing was cleared
+    expect(ok(send('f0')).sendOnly).toBeUndefined(); // the owner's own server: as before
   });
 
   it("the admin key reads and clears the feedback, and nothing else: no log, no settings, no writes", () => {

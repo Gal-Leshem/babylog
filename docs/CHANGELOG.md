@@ -571,6 +571,14 @@ No names, addresses or secrets in this file (the repository is public).
   method and the non-medical note. The baby's noun follows the boy / girl choice (`words.ts`: התינוק / התינוקת). Tests: unit
   (which days, the hours, two close feeds are not a run), browser (the words, the dots, the sheet's parts).
 
+- Other families, a check before the first real family **(owner)**: a browser test with two families and the owner side by side,
+  each phone on its own server (two parents of family A on two phones, one of family B, the owner's phone): each sees only its
+  own log and names, a family's code and admin code open nothing of the other family, both families' feedback reaches only the
+  owner, each under its own name. Against the slow server it found a real bug: a family parent who sent feedback before the
+  screen had learnt from its list that the phone only sends got the owner's "נשלח (#1)" and a moment of the list. The server's
+  answer to a send on a family server now says `sendOnly` too, and the screen takes it from there. The test failed three times
+  out of three without the fix and passes with it.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
