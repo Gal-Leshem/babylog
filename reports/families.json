@@ -1,15 +1,43 @@
 {
   "job": "families",
-  "status": "success",
-  "sha": "6e9072c",
+  "status": "failure",
+  "sha": "2821383",
   "ref": "main",
-  "at": "2026-11-25T13:24:17.265Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45622257379",
+  "at": "2026-11-25T13:37:14.781Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45624127402",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
-      "no family servers (families.json is empty)",
-      "took 1s"
+      "creating \"BabyLog r6swjd5e\" (sheet + bound script)",
+      "::add-mask::[token]",
+      "To https://github.com/[redacted]-[redacted]/babylog",
+      " ! [rejected]        HEAD -> ci-status (fetch first)",
+      "error: failed to push some refs to 'https://github.com/[redacted]-[redacted]/babylog'",
+      "hint: Updates were rejected because the remote contains work that you do not",
+      "hint: have locally. This is usually caused by another repository pushing to",
+      "hint: the same ref. If you want to integrate the remote changes, use",
+      "hint: 'git pull' before pushing again.",
+      "hint: See the 'Note about fast-forwards' in 'git push --help' for details.",
+      "script created and its id saved",
+      "::add-mask::[deployment]",
+      "server bundle ready (family, 66 KB)",
+      "Pushed 2 files at 1:35:28 PM.",
+      "└─ apps-script/dist/appsscript.json",
+      "└─ apps-script/dist/Code.js",
+      "::add-mask::[deployment]",
+      "created web app deployment (version 1); embedding its address",
+      "server bundle ready (family, 66 KB)",
+      "Pushed 2 files at 1:35:36 PM.",
+      "└─ apps-script/dist/appsscript.json",
+      "└─ apps-script/dist/Code.js",
+      "redeployed with the embedded address (version 2)",
+      "::add-mask::[deployment]",
+      "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=2 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "family-r6swjd5e server deployed",
+      "FAMILY r6swjd5e: FAILED (HTTP 403, not JSON)",
+      "1 of 1 family servers FAILED",
+      "took 129s"
     ],
     "install": [
       "+ npm ci",
@@ -17,7 +45,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -31,7 +59,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 8s"
     ]
   }
 }
