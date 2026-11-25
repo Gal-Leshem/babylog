@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { bundleHash, deployedAs, describeAs } from './deploy-skip';
 import { familyEnv } from './families';
 import { describeDeployments } from './google-api';
 
@@ -86,7 +87,10 @@ const build = (execUrl: string) =>
   execFileSync('npx', ['tsx', 'scripts/build-server.ts', ...(env === 'test' ? ['--test'] : fam ? ['--family'] : [])], { stdio: 'inherit', env: { ...process.env, EXEC_URL: execUrl } });
 const execUrlOf = (id: string) => `https://script.google.com/macros/s/${id}/exec`;
 const push = () => console.log(clasp('push', '-f').trim().split('\n').slice(-3).join('\n'));
-const redeploy = (id: string): Deployment => json<Deployment>(clasp('--json', 'create-deployment', '--deploymentId', id, '--description', `babylog ${sha}`));
+const hash = () => bundleHash(readFileSync('apps-script/dist/Code.js', 'utf8'), readFileSync('apps-script/dist/appsscript.json', 'utf8'), sha);
+const redeploy = (id: string): Deployment => json<Deployment>(clasp('--json', 'create-deployment', '--deploymentId', id, '--description', describeAs(sha, hash())));
+/** The build the web app answers from after this run: this commit's, or an older one when the server did not change. */
+let servedBuild = sha;
 
 writeFileSync('.clasp.json', JSON.stringify({ scriptId, rootDir: 'apps-script/dist' }) + '\n');
 const webApps = listDeployments().filter((d) => d.versionNumber !== undefined && d.versionNumber !== null);
@@ -94,10 +98,18 @@ let deploymentId: string;
 if (webApps.length > 0) {
   const current = webApps.sort((a, b) => (b.versionNumber ?? 0) - (a.versionNumber ?? 0))[0]!;
   build(execUrlOf(current.deploymentId));
-  push();
-  const d = redeploy(current.deploymentId);
-  deploymentId = d.deploymentId || current.deploymentId;
-  console.log(`redeployed existing web app deployment (version ${d.versionNumber ?? '?'})`);
+  const was = deployedAs(current.description);
+  if (was && was.hash === hash() && !process.env.FORCE_DEPLOY) {
+    // the same server as the one already running: no push, no new version (Apps Script keeps only 200)
+    deploymentId = current.deploymentId;
+    servedBuild = was.build;
+    console.log(`server unchanged since ${was.build}: no new version (version ${current.versionNumber ?? '?'} stays)`);
+  } else {
+    push();
+    const d = redeploy(current.deploymentId);
+    deploymentId = d.deploymentId || current.deploymentId;
+    console.log(`redeployed existing web app deployment (version ${d.versionNumber ?? '?'})`);
+  }
 } else {
   build('');
   push();
@@ -122,5 +134,5 @@ try {
 }
 
 // 4. Hand the (secret) URL to later steps of this job only
-writeFileSync(join(outDir, `server-${env}.json`), JSON.stringify({ url: `https://script.google.com/macros/s/${deploymentId}/exec` }));
-console.log(`${env} server deployed`);
+writeFileSync(join(outDir, `server-${env}.json`), JSON.stringify({ url: `https://script.google.com/macros/s/${deploymentId}/exec`, build: servedBuild }));
+console.log(`${env} server deployed${servedBuild === sha ? '' : ` (unchanged since ${servedBuild})`}`);

@@ -595,6 +595,12 @@ No names, addresses or secrets in this file (the repository is public).
   reported as a failure (the owner's server was deployed as usual). Now a 401 / 403 page counts as "waiting for the owner's setup"
   and the report names the page. After the owner's `setup` the deploy reported "answers from this build", and the owner sent the
   family its code.
+- Pipeline: the test server reached Apps Script's limit of 200 versions per script (every deploy makes one; test is deployed
+  for every `dev` AND `main` push), so the `main` run stopped at the test server (production untouched). The owner deleted old
+  versions by hand (Apps Script has no API for that). From now on a server whose bundle is the same as the one already running
+  (most commits change only the app or the docs) is not deployed again: the deployment's description carries the build and a
+  hash of the bundle without its build id (`scripts/deploy-skip.ts`); the live test and the family check then expect the build
+  that is running. `FORCE_DEPLOY=1` deploys anyway.
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
