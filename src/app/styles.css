@@ -529,3 +529,5 @@ input, textarea, select {
 .parts .k { font-size: 12px; font-weight: 700; }
 .parts .r { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
 .parts .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.q .qsub { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 12px; }
+.q .qsub + .parts { margin-top: 6px; }

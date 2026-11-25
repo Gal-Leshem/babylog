@@ -1,8 +1,8 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { type Insights as InsightsData, LONG_STRETCH_MIN, insights } from '../../shared/insights';
-import { type MoreAnswers, type Trend, moreAnswers } from '../../shared/questions-data';
-import { formatLocal } from '../../shared/tz';
+import { FEED_PART_HOURS, type MoreAnswers, type Trend, moreAnswers } from '../../shared/questions-data';
+import { formatLocal, localHour as localHourOf } from '../../shared/tz';
 
 /** a wall-clock time as HH:MM ("00:48", never "0:48", which reads like a duration) */
 const hhmm = (t: number) => formatLocal(t).slice(11, 16);
@@ -24,6 +24,34 @@ const clockOf = (m: number) => {
 const range = (lo: number, hi: number) => (lo === hi ? `סביב ${hm(lo)}` : `בין ${hm(lo)} ל-${hm(hi)}`);
 /** the six 4-hour parts of the day for the next-feed estimate (FEED_PART_HOURS) */
 const PART_NAMES = ['אחרי חצות', 'לפנות בוקר', 'בבוקר', 'בצהריים', 'אחר הצהריים', 'בערב'];
+const partSpan = (k: number) => `${String(k * FEED_PART_HOURS).padStart(2, '0')}:00 עד ${String(((k + 1) * FEED_PART_HOURS) % 24).padStart(2, '0')}:00`;
+
+/** (owner) the usual gap in each part of the day, the part we are in now framed, and the longest and shortest parts. */
+function partsGrid(parts: NonNullable<MoreAnswers['feedParts']>, cur: number): JSX.Element {
+  const known = parts.map((p, k) => ({ k, median: p.median })).filter((p): p is { k: number; median: number } => p.median !== null);
+  const longest = known.length > 1 ? known.reduce((x, y) => (y.median > x.median ? y : x)) : null;
+  const shortest = known.length > 1 ? known.reduce((x, y) => (y.median < x.median ? y : x)) : null;
+  return (
+    <>
+      <div class="qsub">לפי חלקי היום</div>
+      <div class="parts" data-testid="q-gaps-parts">
+        {parts.map((p, k) => (
+          <div key={k} class={k === cur ? 'cur' : ''} data-testid={`q-part-${k}`}>
+            <div class="k">{PART_NAMES[k]}</div>
+            <div class="r">{partSpan(k)}</div>
+            <div class="v">{p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`}</div>
+          </div>
+        ))}
+      </div>
+      {longest && shortest && longest.median - shortest.median >= 30 && (
+        <div class="qs" data-testid="q-gaps-range">
+          הרווחים הארוכים ביותר: {PART_NAMES[longest.k]} ({hm(longest.median)}); הקצרים ביותר: {PART_NAMES[shortest.k]} ({hm(shortest.median)})
+        </div>
+      )}
+    </>
+  );
+}
+
 const WEEKDAY_LETTER = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUTCDay()]!;
 /** A card's "מה זה אומר?" parts, closed by the common "אם משהו מדאיג" unless it has its own. */
@@ -36,7 +64,7 @@ const many = (n: number) => (n === 1 ? 'אחד' : n === 2 ? 'שניים' : Strin
 // Plain functions returning JSX (no components defined inside components).
 
 /** The answer of a question that has enough data (also "no clear pattern" for the after-a-feed questions). */
-function answerFirst(q: Question, r: InsightsData): JSX.Element {
+function answerFirst(q: Question, r: InsightsData, m: MoreAnswers, now: number): JSX.Element {
   if (q.id === 'gaps' && r.feedGaps) {
     const g = r.feedGaps;
     const cell = (icon: string, label: string, s: NonNullable<typeof g.day>, id: string) => (
@@ -63,6 +91,7 @@ function answerFirst(q: Question, r: InsightsData): JSX.Element {
             <div class="qs">רוב הרווחים {range(g.all.low, g.all.high)}</div>
           </>
         )}
+        {m.feedParts && partsGrid(m.feedParts, Math.floor(localHourOf(now) / FEED_PART_HOURS))}
         <div class="qbasis">לפי {g.all.n} רווחים, מתחילת האכלה לתחילת הבאה</div>
       </>
     );
@@ -162,45 +191,22 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
       );
     }
     case 'nextFeed': {
-      // (owner) by part of the day: the usual gap of the part the last feed fell in, and every part side by side
+      // (owner) only the estimate and the part of the day it comes from; the parts side by side live in "כל כמה זמן מאכילים?"
       const n = m.nextFeed!;
-      const span = (k: number) => `${String(n.parts[k]!.from).padStart(2, '0')}:00 עד ${String(n.parts[k]!.to % 24).padStart(2, '0')}:00`;
-      const known = n.parts.map((p, k) => ({ k, median: p.median })).filter((p): p is { k: number; median: number } => p.median !== null);
-      const longest = known.length > 1 ? known.reduce((x, y) => (y.median > x.median ? y : x)) : null;
-      const shortest = known.length > 1 ? known.reduce((x, y) => (y.median < x.median ? y : x)) : null;
       const basis =
         n.basis === 'part'
-          ? `${PART_NAMES[n.part]} (${span(n.part)}) מאכילים בדרך כלל כל ${hm(n.gapMin)}`
+          ? `${PART_NAMES[n.part]} (${partSpan(n.part)}) מאכילים בדרך כלל כל ${hm(n.gapMin)}`
           : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} מאכילים כל ${hm(n.gapMin)} (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
+      if (n.last === null) return <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>;
       return (
         <>
-          {n.last === null ? (
-            <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>
-          ) : (
-            <>
-              <div class="qa">
-                בסביבות <bdi>{hhmm(n.at)}</bdi>
-              </div>
-              <div class="qs">
-                ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {basis}
-              </div>
-              {n.at < now && <div class="qs">השעה הזו כבר עברה</div>}
-            </>
-          )}
-          <div class="parts" data-testid="q-nextFeed-parts">
-            {n.parts.map((p, k) => (
-              <div key={k} class={k === n.part ? 'cur' : ''} data-testid={`q-part-${k}`}>
-                <div class="k">{PART_NAMES[k]}</div>
-                <div class="r">{span(k)}</div>
-                <div class="v">{p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`}</div>
-              </div>
-            ))}
+          <div class="qa">
+            בסביבות <bdi>{hhmm(n.at)}</bdi>
           </div>
-          {longest && shortest && longest.median - shortest.median >= 30 && (
-            <div class="qs" data-testid="q-nextFeed-range">
-              הרווחים הארוכים ביותר: {PART_NAMES[longest.k]} ({hm(longest.median)}); הקצרים ביותר: {PART_NAMES[shortest.k]} ({hm(shortest.median)})
-            </div>
-          )}
+          <div class="qs">
+            ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {basis}
+          </div>
+          {n.at < now && <div class="qs">השעה הזו כבר עברה</div>}
           <div class="qbasis">הערכה לפי הקצב שלכם בלבד, לא המלצה</div>
         </>
       );
@@ -364,7 +370,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
 }
 
 const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop']);
-const answer = (q: Question, a: AllData, now: number) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins) : answerMore(q, a.more, now));
+const answer = (q: Question, a: AllData, now: number) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins, a.more, now) : answerMore(q, a.more, now));
 
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
 function waiting(q: Question, a: AllData): JSX.Element {

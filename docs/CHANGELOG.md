@@ -600,7 +600,11 @@ No names, addresses or secrets in this file (the repository is public).
   deployed it; before the owner's one-time `setup` Google answered with a plain HTTP 403 page, which the check did not know and
   reported as a failure (the owner's server was deployed as usual). Now a 401 / 403 page counts as "waiting for the owner's setup"
   and the report names the page. After the owner's `setup` the deploy reported "answers from this build", and the owner sent the
-  family its code.
+  family its code.- Feed gaps and the next feed **(owner screenshot: the two cards mixed things)**: the usual gap by part of the day (the six
+  parts, the part we are in framed, the longest and shortest parts) is now part of "כל כמה זמן מאכילים?", under day / night;
+  "מתי ההנקה הבאה צפויה?" shows only the estimate and the part of the day it comes from, and comes before it. Browser test
+  (parts in the feed-gap card, none in the next-feed card, the order).
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

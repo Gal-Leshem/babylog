@@ -64,10 +64,11 @@ export interface MoreAnswers {
     at: number;
     /** which usual gap was used: the part's own, day or night (19:00 to 07:00), or all */
     basis: 'part' | 'day' | 'night' | 'all';
-    /** index of the last feed's part in `parts` */
+    /** index of the last feed's part in `feedParts` */
     part: number;
-    parts: { from: number; to: number; median: number | null; n: number }[];
   } | null;
+  /** (owner) the usual gap in each 4-hour part of the day, shown with "כל כמה זמן מאכילים?" (null median: too few gaps) */
+  feedParts: { from: number; to: number; median: number | null; n: number }[] | null;
   sleepDay: { usual: Spread; yesterday: number; trend: Trend } | null;
   /** minutes after midnight of the evening's day (may pass 1440) */
   nightStart: { median: number; low: number; high: number; nights: number } | null;
@@ -160,6 +161,7 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
   // next feed: the usual gap after the last feed in the same part of the day, from this family's pace only
   const gapsReady = feedGaps(evs, w.lo, w.hi, mergeWindowMin).all.length >= MIN_GAPS;
   let nextFeed: MoreAnswers['nextFeed'] = null;
+  let feedParts: MoreAnswers['feedParts'] = null;
   if (gapsReady) {
     const g = feedGapInsight(evs, w.lo, w.hi, mergeWindowMin)!;
     const startsIn = feedStarts.filter((t) => t >= w.lo && t < w.hi);
@@ -177,7 +179,8 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
     const own = parts[part]!.median;
     const half = (night ? g.night : g.day)?.median ?? null;
     const [gapMin, basis]: [number, 'part' | 'day' | 'night' | 'all'] = own !== null ? [own, 'part'] : half !== null ? [half, night ? 'night' : 'day'] : [g.all.median, 'all'];
-    nextFeed = { last: recent, gapMin, at: recent === null ? 0 : recent + gapMin * MIN, basis, part, parts };
+    nextFeed = { last: recent, gapMin, at: recent === null ? 0 : recent + gapMin * MIN, basis, part };
+    feedParts = parts;
   }
 
   // sleep per day (the 7 full days that have any sleep logged), and yesterday against them
@@ -256,6 +259,7 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
     sides: presses.length >= MIN_SIDES ? { left, right } : null,
     cluster,
     nextFeed,
+    feedParts,
     sleepDay,
     nightStart: ns ? { median: ns.median, low: ns.low, high: ns.high, nights: starts.length } : null,
     nightTrend,
