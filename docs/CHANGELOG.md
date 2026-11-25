@@ -600,7 +600,14 @@ No names, addresses or secrets in this file (the repository is public).
   deployed it; before the owner's one-time `setup` Google answered with a plain HTTP 403 page, which the check did not know and
   reported as a failure (the owner's server was deployed as usual). Now a 401 / 403 page counts as "waiting for the owner's setup"
   and the report names the page. After the owner's `setup` the deploy reported "answers from this build", and the owner sent the
-  family its code.- Feed gaps and the next feed **(owner screenshot: the two cards mixed things)**: the usual gap by part of the day (the six
+  family its code.
+- Pipeline: the test server reached Apps Script's limit of 200 versions per script (every deploy makes one; test is deployed
+  for every `dev` AND `main` push), so the `main` run stopped at the test server (production untouched). The owner deleted old
+  versions by hand (Apps Script has no API for that). From now on a server whose bundle is the same as the one already running
+  (most commits change only the app or the docs) is not deployed again: the deployment's description carries the build and a
+  hash of the bundle without its build id (`scripts/deploy-skip.ts`); the live test and the family check then expect the build
+  that is running. `FORCE_DEPLOY=1` deploys anyway.
+- Feed gaps and the next feed **(owner screenshot: the two cards mixed things)**: the usual gap by part of the day (the six
   parts, the part we are in framed, the longest and shortest parts) is now part of "כל כמה זמן מאכילים?", under day / night;
   "מתי ההנקה הבאה צפויה?" shows only the estimate and the part of the day it comes from, and comes before it. Browser test
   (parts in the feed-gap card, none in the next-feed card, the order).

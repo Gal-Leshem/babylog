@@ -53,13 +53,13 @@ async function ping(url: string): Promise<Answer> {
 }
 
 /** Waits until the server answers from this build (right after a deploy Google can still answer from the previous version). */
-async function check(url: string): Promise<string> {
+async function check(url: string, expected: string): Promise<string> {
   const until = Date.now() + WAIT_MS;
   let last: Answer = { kind: 'other', detail: 'no answer' };
   while (Date.now() < until) {
     last = await ping(url);
     if (last.kind === 'signin') return `deployed, waiting for the owner's setup (${last.detail})`;
-    if (last.kind === 'build' && last.build === build) return 'deployed, answers from this build';
+    if (last.kind === 'build' && last.build === expected) return expected === build ? 'deployed, answers from this build' : `unchanged, answers from build ${expected}`;
     await new Promise((r) => setTimeout(r, 5_000));
   }
   throw new Error(last.kind === 'build' ? `still answers from build ${last.build}` : last.kind === 'other' ? last.detail : 'sign-in page');
@@ -80,8 +80,8 @@ async function main(): Promise<void> {
       execFileSync('npx', ['tsx', 'scripts/deploy-server.ts', 'family', id], {
         stdio: 'inherit',
       });
-      const { url } = JSON.parse(readFileSync(join(outDir, `server-${env}.json`), 'utf8')) as { url: string };
-      console.log(`FAMILY ${id}: ${await check(url)}`);
+      const deployed = JSON.parse(readFileSync(join(outDir, `server-${env}.json`), 'utf8')) as { url: string; build?: string };
+      console.log(`FAMILY ${id}: ${await check(deployed.url, deployed.build ?? build)}`);
     } catch (e) {
       failed += 1;
       console.log(`FAMILY ${id}: FAILED (${e instanceof Error ? e.message.split('\n')[0] : String(e)})`);

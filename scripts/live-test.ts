@@ -9,7 +9,8 @@ import { formatLocal } from '../src/shared/tz';
  * state before the owner has approved the script once. Any other failure is a failure.
  */
 const file = join(process.env.RUNNER_TEMP ?? tmpdir(), 'server-test.json');
-const url = process.env.LIVE_URL ?? (JSON.parse(readFileSync(file, 'utf8')) as { url: string }).url;
+const deployed = process.env.LIVE_URL ? null : (JSON.parse(readFileSync(file, 'utf8')) as { url: string; build?: string });
+const url = process.env.LIVE_URL ?? deployed!.url;
 const key = process.env.LIVE_KEY ?? process.env.FIXED_KEY ?? '';
 if (!key) throw new Error('no key for the live test');
 
@@ -104,7 +105,8 @@ check('ping ok', first.json.ok === true, JSON.stringify(first.json));
 
 // Right after a deploy Google can still answer from the previous version for a while (seen: a check of a new feature failed
 // on the first deploy of a commit and passed on the second). Wait until three answers in a row come from this commit's build.
-const expected = (process.env.GITHUB_SHA ?? '').slice(0, 7);
+// an unchanged server is not deployed again: then it answers from the build that deployed it (deploy-server.ts)
+const expected = deployed?.build ?? (process.env.GITHUB_SHA ?? '').slice(0, 7);
 if (expected && first.json.build !== undefined) {
   const t0 = Date.now();
   let inARow = 0;
