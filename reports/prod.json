@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "6aa63d9",
+  "sha": "6e9072c",
   "ref": "main",
-  "at": "2026-11-25T11:59:13.786Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45608607455",
+  "at": "2026-11-25T13:23:53.692Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45622257379",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -13,15 +13,15 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (production, 66 KB)",
-      "Pushed 2 files at 11:59:09 AM.",
+      "Pushed 2 files at 1:23:50 PM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 84)",
+      "redeployed existing web app deployment (version 85)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=84 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=85 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "prod server deployed",
-      "took 11s"
+      "took 9s"
     ],
     "install": [
       "+ npm ci",
@@ -43,7 +43,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 6s"
     ]
   }
 }
