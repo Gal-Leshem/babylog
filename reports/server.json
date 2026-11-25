@@ -1,10 +1,10 @@
 {
   "job": "server",
   "status": "failure",
-  "sha": "ef3d3bc",
-  "ref": "dev",
-  "at": "2026-11-25T14:05:44.714Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45630249514",
+  "sha": "8ae0c34",
+  "ref": "main",
+  "at": "2026-11-25T14:06:10.872Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45630262945",
   "logs": {
     "deploy-test": [
       "+ npx tsx scripts/deploy-server.ts test",
@@ -13,14 +13,14 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (test, 66 KB)",
-      "Pushed 2 files at 2:05:42 PM.",
+      "Pushed 2 files at 2:06:09 PM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
       "node:internal/errors:983",
       "  const err = new Error(message);",
       "              ^",
       "",
-      "Error: Command failed: node_modules/.bin/clasp -A /home/runner/work/_temp/clasp/.clasprc.json --json create-deployment --deploymentId [deployment] --description babylog ef3d3bc",
+      "Error: Command failed: node_modules/.bin/clasp -A /home/runner/work/_temp/clasp/.clasprc.json --json create-deployment --deploymentId [deployment] --description babylog 8ae0c34",
       "Cannot create more versions: Script has reached the limit of 200 versions. To create more, delete a version from the project history page.",
       "",
       "    at genericNodeError (node:internal/errors:983:15)",
@@ -40,7 +40,7 @@
       "    '',",
       "    'Cannot create more versions: Script has reached the limit of 200 versions. To create more, delete a version from the project history page.\\n'",
       "  ],",
-      "  pid: 2440,",
+      "  pid: 2617,",
       "  stdout: '',",
       "  stderr: 'Cannot create more versions: Script has reached the limit of 200 versions. To create more, delete a version from the project history page.\\n'",
       "}",
@@ -54,7 +54,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -68,7 +68,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 6s"
+      "took 8s"
     ]
   }
 }
