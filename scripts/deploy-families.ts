@@ -18,7 +18,7 @@ const build = (process.env.GITHUB_SHA ?? 'local').slice(0, 7);
 const outDir = process.env.RUNNER_TEMP ?? tmpdir();
 const WAIT_MS = Number(process.env.FAMILY_WAIT_MS ?? 90_000);
 
-export type Answer = { kind: 'build'; build: string } | { kind: 'signin' } | { kind: 'other'; detail: string };
+export type Answer = { kind: 'build'; build: string } | { kind: 'signin'; detail: string } | { kind: 'other'; detail: string };
 
 /** What a server's answer to an anonymous ping says: our JSON with its build, Google's sign-in / approval page, or something else. */
 export function classify(status: number, raw: string): Answer {
@@ -27,9 +27,12 @@ export function classify(status: number, raw: string): Answer {
     if (typeof j.build === 'string') return { kind: 'build', build: j.build };
     return { kind: 'other', detail: `HTTP ${status}, JSON without build` };
   } catch {
-    // the same test as the live test's: the page Google shows until the owner has approved the script once
-    if (/accounts\.google\.com|authorization|sign in|ServiceLogin|Google Accounts|script\.google\.com\/macros\/(?:d|s)/i.test(raw)) return { kind: 'signin' };
-    return { kind: 'other', detail: `HTTP ${status}, not JSON` };
+    const title = /<title>([^<]{0,80})/i.exec(raw)?.[1]?.trim();
+    const detail = `HTTP ${status}${title ? `, page "${title}"` : ', not JSON'}`;
+    // the page Google shows until the owner has approved the new script once: a sign-in / authorization page (the live test's
+    // test), or a plain 401 / 403 page (seen for the first family: HTTP 403 right after the script was created)
+    if (status === 401 || status === 403 || /accounts\.google\.com|authorization|sign in|ServiceLogin|Google Accounts|script\.google\.com\/macros\/(?:d|s)/i.test(raw)) return { kind: 'signin', detail };
+    return { kind: 'other', detail };
   }
 }
 
@@ -55,7 +58,7 @@ async function check(url: string): Promise<string> {
   let last: Answer = { kind: 'other', detail: 'no answer' };
   while (Date.now() < until) {
     last = await ping(url);
-    if (last.kind === 'signin') return "deployed, waiting for the owner's setup";
+    if (last.kind === 'signin') return `deployed, waiting for the owner's setup (${last.detail})`;
     if (last.kind === 'build' && last.build === build) return 'deployed, answers from this build';
     await new Promise((r) => setTimeout(r, 5_000));
   }

@@ -35,7 +35,9 @@ describe('the families list (families.json)', () => {
 describe('checking a family server after its deploy', () => {
   it("reads the build from our answer, recognises Google's approval page, and calls anything else a problem", () => {
     expect(classify(200, '{"ok":false,"error":"unauthorized","ms":3,"build":"abc1234"}')).toEqual({ kind: 'build', build: 'abc1234' });
-    expect(classify(200, '<!DOCTYPE html><html><title>Sign in</title><a href="https://accounts.google.com/ServiceLogin">')).toEqual({ kind: 'signin' });
+    expect(classify(200, '<!DOCTYPE html><html><title>Sign in</title><a href="https://accounts.google.com/ServiceLogin">')).toEqual({ kind: 'signin', detail: 'HTTP 200, page "Sign in"' });
+    // the first real family: Google answered HTTP 403 (not JSON) until the owner ran setup once
+    expect(classify(403, '<html><head><title>Error 403</title></head><body>Forbidden</body></html>')).toEqual({ kind: 'signin', detail: 'HTTP 403, page "Error 403"' });
     expect(classify(500, '<html>Internal error</html>').kind).toBe('other');
     expect(classify(200, '{"ok":true}').kind).toBe('other');
   });
