@@ -589,6 +589,12 @@ No names, addresses or secrets in this file (the repository is public).
   screen had learnt from its list that the phone only sends got the owner's "נשלח (#1)" and a moment of the list. The server's
   answer to a send on a family server now says `sendOnly` too, and the screen takes it from there. The test failed three times
   out of three without the fix and passes with it.
+- Removed **(owner)**: "כמה זמן אחרי האכלה מחליפים חיתול?" (pee is found only when changing, so it showed the parents'
+  habit rather than the baby; "כמה זמן אחרי האכלה מגיע קקי?" stays). 13 questions now. So that a phone still on the
+  previous version does not lose a day, the server now skips usage counters and question states it does not know instead of
+  refusing the whole day, and the phone leaves them out too. Bug found by the new test on the way: the phone did not read
+  the questions' saved states back after the app was reopened, so a day's states were sent only if the app had not been
+  reloaded since; fixed (the test failed before the fix).
 
 - Other families: the first family **(owner)**. The pipeline created its sheet and script ("BabyLog" and a random id) and
   deployed it; before the owner's one-time `setup` Google answered with a plain HTTP 403 page, which the check did not know and

@@ -15,7 +15,7 @@ export interface AllData {
  * may turn any question on or off by hand (per phone, `prefs.questions`); one turned on without enough data shows how much is
  * still missing. The words here are neutral (no "ישן" / "ישנה"): anything about the baby comes from words.ts.
  */
-export type QuestionId = 'feedsToday' | 'gaps' | 'nextFeed' | 'sides' | 'cluster' | 'night' | 'nightTrend' | 'sleepDay' | 'nightStart' | 'lastPoop' | 'diapersToday' | 'poop' | 'diaper' | 'unusual';
+export type QuestionId = 'feedsToday' | 'gaps' | 'nextFeed' | 'sides' | 'cluster' | 'night' | 'nightTrend' | 'sleepDay' | 'nightStart' | 'lastPoop' | 'diapersToday' | 'poop' | 'unusual';
 export type Category = 'feed' | 'sleep' | 'diaper' | 'general';
 // the usage measurement knows every question by the same id (a question missing there does not compile)
 const sameIds: [QuestionId] extends [UsageQuestion] ? ([UsageQuestion] extends [QuestionId] ? true : never) : never = true;
@@ -96,22 +96,6 @@ const FIRST: Question[] = [
     about: () => [
       { title: 'מה זה', text: 'האם קקי מגיע בדרך כלל זמן קצר אחרי תחילת האכלה, ותוך כמה זמן. נספרים רק חיתולים עם קקי (קקי, או פיפי + קקי).' },
       { title: 'למה כדאי לדעת', text: 'אצל תינוקות רבים בשבועות הראשונים האכילה מעוררת את המעיים (רפלקס גסטרו-קולי, באנגלית \u2068Gastrocolic reflex\u2069), ולכן קקי מגיע לעיתים קרובות בזמן ההאכלה או מיד אחריה. עם הזמן זה נחלש. כשיודעים את זה אצלכם, אפשר לתכנן את החלפת החיתול לסוף ההאכלה.' },
-    ],
-  },
-  {
-    id: 'diaper',
-    cat: 'diaper',
-    q: 'כמה זמן אחרי האכלה מחליפים חיתול?',
-    desc: 'האם מחליפים חיתול בדרך כלל זמן קצר אחרי האכלה',
-    prog: (a) => a.ins.progress.diaperAfterFeed,
-    wait: (p) => `התשובה תופיע אחרי ${p.need} האכלות ב-7 הימים האחרונים. ${soFar(p)}`,
-    how: () => [
-      'לכל האכלה ב-7 הימים המלאים האחרונים נבדק אם הוחלף חיתול (כל סוג) תוך שעה מתחילתה, וכמה זמן אחריה.',
-      'תשובה מוצגת רק כשזה קורה בבירור יותר ממה שהיה קורה במקרה. אחרת התשובה היא "אין קשר ברור".',
-    ],
-    about: () => [
-      { title: 'מה זה', text: 'האם מחליפים חיתול (כל סוג) בדרך כלל זמן קצר אחרי תחילת האכלה. פיפי מתגלה רק כשמחליפים, ולכן התשובה משקפת בעיקר את ההרגלים שלכם.' },
-      { title: 'למה כדאי לדעת', text: 'אם אצלכם מחליפים בדרך כלל אחרי האכלה, אפשר להכין חיתול ליד מקום ההאכלה מראש.' },
     ],
   },
 ];
@@ -285,7 +269,7 @@ const MORE: Question[] = [
   },
 ];
 
-const ORDER: QuestionId[] = ['feedsToday', 'gaps', 'nextFeed', 'sides', 'cluster', 'night', 'nightTrend', 'sleepDay', 'nightStart', 'lastPoop', 'diapersToday', 'poop', 'diaper', 'unusual'];
+const ORDER: QuestionId[] = ['feedsToday', 'gaps', 'nextFeed', 'sides', 'cluster', 'night', 'nightTrend', 'sleepDay', 'nightStart', 'lastPoop', 'diapersToday', 'poop', 'unusual'];
 /** Every question, in the order they are shown inside their topic. */
 export const QUESTIONS: Question[] = ORDER.map((id) => [...FIRST, ...MORE].find((q) => q.id === id)!);
 

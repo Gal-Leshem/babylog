@@ -46,12 +46,12 @@ test('insights: the usual feed gaps, poop and diaper after a feed, and long nigh
   await expect(page.getByTestId('day-summary')).toBeVisible(); // the day table stays the default
   await page.getByTestId('view-insights').click();
   // (owner, F16) questions with short answers; a regular week is enough data for all of them, so all show without any choice
-  await expect(page.getByTestId('q-count')).toHaveText('14 שאלות מוצגות');
+  await expect(page.getByTestId('q-count')).toHaveText('13 שאלות מוצגות');
   await expect(page.getByTestId('q-gaps')).toContainText('כל כמה זמן מאכילים?');
   await expect(page.getByTestId('q-gaps-day')).toContainText('2:30');
   await expect(page.getByTestId('q-gaps-night')).toContainText('3:15');
   await expect(page.getByTestId('q-poop')).toContainText('כ-20 דק׳ אחרי תחילת האכלה');
-  await expect(page.getByTestId('q-diaper')).toContainText('כ-15 דק׳ אחרי תחילת האכלה');
+  await expect(page.getByTestId('q-diaper')).toHaveCount(0); // (owner) removed: it showed the parents' habit, not the baby
   await expect(page.getByTestId('q-night')).toContainText('מה הרצף הארוך בלילה?');
   await expect(page.getByTestId('q-night')).toContainText('3:40 בדרך כלל');
   await expect(page.getByTestId('q-night')).toContainText('מתחיל בדרך כלל בסביבות 22:00');
@@ -186,11 +186,11 @@ test('questions: hide one with "⋯" (undo brings it back), and bring it back in
   await page.clock.setFixedTime(NOW);
   await install(page);
   await openInsights(page);
-  await expect(page.locator('.q')).toHaveCount(14);
+  await expect(page.locator('.q')).toHaveCount(13);
   await page.getByTestId('q-poop-menu').click();
   await page.getByTestId('q-hide').click();
   await expect(page.getByTestId('q-poop')).toHaveCount(0);
-  await expect(page.getByTestId('q-count')).toHaveText('13 שאלות מוצגות');
+  await expect(page.getByTestId('q-count')).toHaveText('12 שאלות מוצגות');
   await expect(page.getByTestId('toast-text')).toContainText('השאלה הוסתרה');
   await page.getByTestId('toast-undo').click();
   await expect(page.getByTestId('q-poop')).toBeVisible();
@@ -216,7 +216,7 @@ test('questions: with no data none shows; one turned on by hand says how much is
   await openInsights(page);
   await expect(page.getByTestId('ins-empty')).toBeVisible();
   await page.getByTestId('q-pick').click();
-  for (const id of ['gaps', 'night', 'poop', 'diaper']) await expect(page.getByTestId(`pick-${id}-switch`)).toHaveAttribute('aria-checked', 'false');
+  for (const id of ['gaps', 'night', 'poop']) await expect(page.getByTestId(`pick-${id}-switch`)).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByTestId('pick-gaps')).toContainText('תופיע לבד כשיהיו מספיק נתונים');
   await page.getByTestId('pick-gaps-switch').click();
   await expect(page.getByTestId('pick-gaps')).toContainText('הרווח הרגיל בין האכלות');
@@ -261,7 +261,7 @@ test('questions: "איך זה מחושב?" explains and says it is not medical; 
   await expect(page.getByTestId('q-pop')).toBeVisible();
   await page.getByTestId('q-shield').click({ position: { x: 10, y: 10 } });
   await expect(page.getByTestId('q-pop')).toHaveCount(0);
-  await expect(page.locator('.q')).toHaveCount(14);
+  await expect(page.locator('.q')).toHaveCount(13);
 });
 
 test('questions: "הציעו שאלה" opens the feedback as an idea with a first line, and goes back to the questions', async ({ page, request }) => {
@@ -370,7 +370,7 @@ test('questions: every card has "מה זה אומר?" with what it is, why it is
   await install(page);
   await openInsights(page);
   const ids = await page.locator('.q[data-q]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.q!));
-  expect(ids).toHaveLength(14);
+  expect(ids).toHaveLength(13);
   for (const id of ids) {
     await page.getByTestId(`q-${id}-about`).click();
     const titles = await page.getByTestId('q-about-part').locator('h3').allTextContents();

@@ -611,7 +611,9 @@ function saveUsage(o: Obj, store: Store, now: number): ApiResponse {
     if (!isObj(d) || !isDateString(str(d.date)) || !isObj(d.counts)) return fail('bad_request', 'a day needs a date and counts');
     const counts: Record<string, number> = {};
     for (const [k, v] of Object.entries(d.counts)) {
-      if (!(k in USAGE_LABELS)) return fail('bad_request', `unknown counter ${k.slice(0, 40)}`);
+      // a name this server does not know (an app version that still counts something removed or renamed since) is skipped,
+      // so the rest of the day is kept
+      if (!(k in USAGE_LABELS)) continue;
       if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 100_000) return fail('bad_request', 'counts must be whole numbers');
       counts[k] = v;
     }
@@ -621,7 +623,8 @@ function saveUsage(o: Obj, store: Store, now: number): ApiResponse {
       if (!isObj(d.states)) return fail('bad_request', 'states must be an object');
       states = {};
       for (const [k, v] of Object.entries(d.states)) {
-        if (!(k in USAGE_QUESTIONS) || typeof v !== 'string' || !(v in QUESTION_STATES)) return fail('bad_request', `bad question state ${k.slice(0, 40)}`);
+        if (!(k in USAGE_QUESTIONS)) continue; // a question removed since (an older app version): skipped, not refused
+        if (typeof v !== 'string' || !(v in QUESTION_STATES)) return fail('bad_request', `bad question state ${k.slice(0, 40)}`);
         states[k] = v as QuestionStateName;
       }
     }

@@ -35,7 +35,6 @@ const LABELS = {
   'seen.lastPoop': 'נצפתה: הקקי האחרון',
   'seen.diapersToday': 'נצפתה: פיפי וקקי היום',
   'seen.poop': 'נצפתה: קקי אחרי האכלה',
-  'seen.diaper': 'נצפתה: חיתול אחרי האכלה',
   'seen.unusual': 'נצפתה: היום חריג',
   'history.day': 'היסטוריה: יום-יום',
   'history.24h': 'היסטוריה: 24 שעות',
@@ -84,7 +83,6 @@ export const USAGE_QUESTIONS = {
   lastPoop: 'הקקי האחרון',
   diapersToday: 'פיפי וקקי היום',
   poop: 'קקי אחרי האכלה',
-  diaper: 'חיתול אחרי האכלה',
   unusual: 'היום חריג',
 } as const;
 export type UsageQuestion = keyof typeof USAGE_QUESTIONS;

@@ -779,10 +779,12 @@ describe('usage counts (owner, F15)', () => {
       '2026-11-13 Parent 2 {"log.wet":2}',
     ]);
   });
-  it("keeps each insight question's state for the day, and refuses unknown questions or states", () => {
+  it("keeps each insight question's state for the day; skips questions it does not know, refuses unknown states", () => {
     ok(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: { open: 1 }, states: { gaps: 'shown', night: 'off', sides: 'waiting', nextFeed: 'on' } }] }));
     expect(store.usageAll()[0]!.states).toEqual({ gaps: 'shown', night: 'off', sides: 'waiting', nextFeed: 'on' });
-    expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: {}, states: { nosuch: 'shown' } }] })).toMatchObject({ ok: false, error: 'bad_request' });
+    // a question removed since (an older app still sends it): skipped, the rest of the day is kept
+    ok(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-12', counts: { open: 2, 'seen.nosuch': 1 }, states: { nosuch: 'shown', gaps: 'on' } }] }));
+    expect(store.usageAll().find((r) => r.date === '2026-11-12')).toMatchObject({ counts: { open: 2 }, states: { gaps: 'on' } });
     expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days: [{ date: '2026-11-13', counts: {}, states: { gaps: 'maybe' } }] })).toMatchObject({ ok: false, error: 'bad_request' });
   });
 
@@ -794,9 +796,8 @@ describe('usage counts (owner, F15)', () => {
     expect(locks).toBe(0);
     expect(store.revision()).toBe(rev);
   });
-  it('refuses unknown counters, bad numbers, bad dates, too many days, and is never part of a sync', () => {
+  it('skips unknown counters; refuses bad numbers, bad dates, too many days, and is never part of a sync', () => {
     const bad = (days: unknown) => expect(call({ action: 'usage', user: 'Parent 1', install: 'p1', days })).toMatchObject({ ok: false, error: 'bad_request' });
-    bad([day('2026-11-13', { nosuch: 1 })]);
     bad([day('2026-11-13', { open: -1 })]);
     bad([day('2026-11-13', { open: 1.5 })]);
     bad([day('13/11/2026', { open: 1 })]);
