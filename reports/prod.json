@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "2821383",
+  "sha": "92efe5a",
   "ref": "main",
-  "at": "2026-11-25T13:34:45.077Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45624127402",
+  "at": "2026-11-25T13:59:09.827Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45628177847",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -13,15 +13,15 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (production, 66 KB)",
-      "Pushed 2 files at 1:34:41 PM.",
+      "Pushed 2 files at 1:59:05 PM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 86)",
+      "redeployed existing web app deployment (version 87)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "deployment version=86 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "prod server deployed",
-      "took 11s"
+      "took 12s"
     ],
     "install": [
       "+ npm ci",
