@@ -66,6 +66,14 @@ describe('usage on the phone', () => {
     expect(JSON.parse(s.kv.get(USAGE_KEY)!).states).toEqual({}); // sent: forgotten (today has no counts yet, so no state kept for it)
   });
 
+  it('a question removed since (its state kept from the previous version) is left out of the day sent', () => {
+    const s = setup();
+    s.kv.set(USAGE_KEY, JSON.stringify({ install: 'old', days: { '2026-11-13': { open: 1 } }, states: { '2026-11-13': { gaps: 'shown', diaper: 'off' } } }));
+    s.at('2026-11-14 08:00');
+    s.u().leave(s.send, 'Parent 1', 'v3');
+    expect(s.sent).toEqual([{ action: 'usage', user: 'Parent 1', install: 'old', version: 'v3', days: [{ date: '2026-11-13', counts: { open: 1 }, states: { gaps: 'shown' } }] }]);
+  });
+
   it('a send the browser refused is kept for next time; without a parent chosen nothing is sent; at most 14 days are kept', () => {
     const s = setup();
     const a = s.u();

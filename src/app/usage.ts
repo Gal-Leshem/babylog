@@ -1,6 +1,6 @@
 import type { ApiRequest } from '../shared/protocol';
 import { localDate } from '../shared/tz';
-import { type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, type UsageName } from '../shared/usage';
+import { type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, USAGE_QUESTIONS, type UsageName } from '../shared/usage';
 
 /**
  * (owner, F15) Usage counts of this phone, per day (numbers only). Costs nothing while the app is used: `count` adds one in
@@ -40,7 +40,12 @@ export class Usage {
     } catch {
       s = null;
     }
-    this.saved = { install: typeof s?.install === 'string' && s.install ? s.install : this.newId(), days: s?.days && typeof s.days === 'object' ? s.days : {} };
+    this.saved = {
+      install: typeof s?.install === 'string' && s.install ? s.install : this.newId(),
+      days: s?.days && typeof s.days === 'object' ? s.days : {},
+      // (bug caught by a test) the questions' states are read back too, or a reopened app sent the day without them
+      ...(s?.states && typeof s.states === 'object' ? { states: s.states } : {}),
+    };
     if (!s?.install) this.dirty = true;
     return this.saved;
   }
@@ -78,7 +83,8 @@ export class Usage {
     if (user && past.length) {
       // a counter this version no longer knows (renamed) would make the server refuse the whole day: leave it out
       const known = (c: Record<string, number>) => Object.fromEntries(Object.entries(c).filter(([k]) => k in USAGE_LABELS));
-      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: known(s.days[date]!), ...(s.states?.[date] ? { states: s.states[date] } : {}) })) });
+      const knownStates = (st: Record<string, QuestionStateName>) => Object.fromEntries(Object.entries(st).filter(([k]) => k in USAGE_QUESTIONS));
+      const ok = send({ action: 'usage', user, install: s.install, version, days: past.map((date) => ({ date, counts: known(s.days[date]!), ...(s.states?.[date] ? { states: knownStates(s.states[date]) } : {}) })) });
       if (ok) {
         for (const d of past) {
           delete s.days[d];

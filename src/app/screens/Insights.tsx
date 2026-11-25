@@ -88,13 +88,13 @@ function answerFirst(q: Question, r: InsightsData): JSX.Element {
       </>
     );
   }
-  if (q.id === 'poop' || q.id === 'diaper') {
-    const a = q.id === 'poop' ? r.poopAfterFeed : r.diaperAfterFeed;
+  if (q.id === 'poop') {
+    const a = r.poopAfterFeed;
     if (!a)
       return (
         <>
           <div class="qa">אין קשר ברור</div>
-          <div class="qs">{q.id === 'poop' ? 'קקי לא מגיע אחרי האכלה יותר מאשר בשעות אחרות' : 'חיתול לא מוחלף אחרי האכלה יותר מאשר בשעות אחרות'}</div>
+          <div class="qs">קקי לא מגיע אחרי האכלה יותר מאשר בשעות אחרות</div>
         </>
       );
     return (
@@ -102,7 +102,7 @@ function answerFirst(q: Question, r: InsightsData): JSX.Element {
         <div class="qa">
           כ-{a.lagMin} דק׳ <small>אחרי תחילת האכלה</small>
         </div>
-        <div class="qs">{q.id === 'poop' ? `${a.hits} מתוך ${a.total} הפעמים היו תוך שעה מתחילת האכלה` : `ב-${a.hits} מתוך ${a.total} האכלות הוחלף חיתול תוך שעה`}</div>
+        <div class="qs">{`${a.hits} מתוך ${a.total} הפעמים היו תוך שעה מתחילת האכלה`}</div>
       </>
     );
   }
@@ -363,7 +363,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
   }
 }
 
-const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop', 'diaper']);
+const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop']);
 const answer = (q: Question, a: AllData, now: number) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins) : answerMore(q, a.more, now));
 
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
