@@ -88,7 +88,7 @@ export const USAGE_QUESTIONS = {
   unusual: 'היום חריג',
 } as const;
 export type UsageQuestion = keyof typeof USAGE_QUESTIONS;
-export const QUESTION_STATES = { shown: 'מוצגת', on: 'הודלקה ביד', off: 'כובתה ביד', waiting: 'ממתינה לנתונים' } as const;
+export const QUESTION_STATES = { shown: 'מוצגת', on: 'הודלקה ידנית', off: 'כובתה ידנית', waiting: 'ממתינה לנתונים' } as const;
 export type QuestionStateName = keyof typeof QUESTION_STATES;
 export const questionColumn = (id: string): string => `שאלה: ${USAGE_QUESTIONS[id as UsageQuestion] ?? id}`;
 

@@ -8,11 +8,11 @@ import { formatLocal } from '../../shared/tz';
 const hhmm = (t: number) => formatLocal(t).slice(11, 16);
 import { addDays } from '../../shared/tz';
 import { hm } from '../labels';
-import { type AllData, CATEGORIES, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
+import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
 import type { UsageName } from '../../shared/usage';
-import { babyWords } from '../words';
+import { type BabyWords, babyWords } from '../words';
 
 const shortDate = (d: string) => `${Number(d.slice(8, 10))}.${Number(d.slice(5, 7))}`;
 /** minutes after midnight (may pass 24:00) -> 'HH:MM' */
@@ -22,8 +22,15 @@ const clockOf = (m: number) => {
 };
 /** ranges in words: a dash between numbers reads backwards in right-to-left text */
 const range = (lo: number, hi: number) => (lo === hi ? `סביב ${hm(lo)}` : `בין ${hm(lo)} ל-${hm(hi)}`);
+/** the six 4-hour parts of the day for the next-feed estimate (FEED_PART_HOURS) */
+const PART_NAMES = ['אחרי חצות', 'לפנות בוקר', 'בבוקר', 'בצהריים', 'אחר הצהריים', 'בערב'];
 const WEEKDAY_LETTER = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUTCDay()]!;
+/** A card's "מה זה אומר?" parts, closed by the common "אם משהו מדאיג" unless it has its own. */
+const aboutOf = (q: Question, w: BabyWords) => {
+  const parts = q.about?.(w) ?? [];
+  return parts.some((p) => p.title === IF_WORRIED.title) ? parts : [...parts, IF_WORRIED];
+};
 const many = (n: number) => (n === 1 ? 'אחד' : n === 2 ? 'שניים' : String(n));
 
 // Plain functions returning JSX (no components defined inside components).
@@ -155,17 +162,45 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
       );
     }
     case 'nextFeed': {
+      // (owner) by part of the day: the usual gap of the part the last feed fell in, and every part side by side
       const n = m.nextFeed!;
-      if (n.last === null) return <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>;
+      const span = (k: number) => `${String(n.parts[k]!.from).padStart(2, '0')}:00 עד ${String(n.parts[k]!.to % 24).padStart(2, '0')}:00`;
+      const known = n.parts.map((p, k) => ({ k, median: p.median })).filter((p): p is { k: number; median: number } => p.median !== null);
+      const longest = known.length > 1 ? known.reduce((x, y) => (y.median > x.median ? y : x)) : null;
+      const shortest = known.length > 1 ? known.reduce((x, y) => (y.median < x.median ? y : x)) : null;
+      const basis =
+        n.basis === 'part'
+          ? `${PART_NAMES[n.part]} (${span(n.part)}) מאכילים בדרך כלל כל ${hm(n.gapMin)}`
+          : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} מאכילים כל ${hm(n.gapMin)} (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
       return (
         <>
-          <div class="qa">
-            בסביבות <bdi>{hhmm(n.at)}</bdi>
+          {n.last === null ? (
+            <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>
+          ) : (
+            <>
+              <div class="qa">
+                בסביבות <bdi>{hhmm(n.at)}</bdi>
+              </div>
+              <div class="qs">
+                ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {basis}
+              </div>
+              {n.at < now && <div class="qs">השעה הזו כבר עברה</div>}
+            </>
+          )}
+          <div class="parts" data-testid="q-nextFeed-parts">
+            {n.parts.map((p, k) => (
+              <div key={k} class={k === n.part ? 'cur' : ''} data-testid={`q-part-${k}`}>
+                <div class="k">{PART_NAMES[k]}</div>
+                <div class="r">{span(k)}</div>
+                <div class="v">{p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`}</div>
+              </div>
+            ))}
           </div>
-          <div class="qs">
-            ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {n.night ? 'בלילה' : 'ביום'} מאכילים בדרך כלל כל {hm(n.gapMin)}
-          </div>
-          {n.at < now && <div class="qs">השעה הזו כבר עברה</div>}
+          {longest && shortest && longest.median - shortest.median >= 30 && (
+            <div class="qs" data-testid="q-nextFeed-range">
+              הרווחים הארוכים ביותר: {PART_NAMES[longest.k]} ({hm(longest.median)}); הקצרים ביותר: {PART_NAMES[shortest.k]} ({hm(shortest.median)})
+            </div>
+          )}
           <div class="qbasis">הערכה לפי הקצב שלכם בלבד, לא המלצה</div>
         </>
       );
@@ -554,7 +589,7 @@ export function Insights() {
                 </>
               )}
             </p>
-            {howQ.about?.(babyWords(settings.babySex)).map((x) => (
+            {aboutOf(howQ, babyWords(settings.babySex)).map((x) => (
               <div key={x.title} data-testid="q-about-part">
                 <h3>{x.title}</h3>
                 <p>{x.text}</p>

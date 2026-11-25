@@ -570,6 +570,17 @@ No names, addresses or secrets in this file (the repository is public).
   the nursing place, sharing tasks with the other parent), "אם משהו מדאיג" (lactation consultant, doctor, טיפת חלב), then the
   method and the non-medical note. The baby's noun follows the boy / girl choice (`words.ts`: התינוק / התינוקת). Tests: unit
   (which days, the hours, two close feeds are not a run), browser (the words, the dots, the sheet's parts).
+- Questions, more detail **(owner)**: (1) usage states read "הודלקה ידנית" / "כובתה ידנית" (was "ביד"). (2) Every card has
+  "מה זה אומר?" (like cluster feeding): "מה זה", "למה כדאי לדעת" and "אם משהו מדאיג" (its own where it matters, else a
+  common line: a doctor or טיפת חלב), then the method and the non-medical note. Written from reputable public sources on
+  infant feeding, poop after feeds (the gastrocolic reflex) and infant sleep, as description only: no norms, no numbers from
+  elsewhere, no instructions; anything that sounds like advice stays out (owner's question about the grey area: see the
+  session report). (3) "מתי ההנקה הבאה צפויה?" by part of the day **(owner: more precise than day / night)**: six parts of 4
+  hours from midnight (אחרי חצות, לפנות בוקר, בבוקר, בצהריים, אחר הצהריים, בערב), each with its own usual gap (by the hour the
+  earlier feed started; a part needs 5 gaps of its own, else day / night, else all); the estimate uses the part of the last
+  feed and says which; the card shows all six parts with the current one framed, and the longest and shortest parts when they
+  differ by 30 minutes or more. Tests: unit (the parts, the estimate, the fallback), browser (every card's three parts and
+  the note; the six parts and the estimate as calculated); proven to fail with the part-of-day choice removed.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

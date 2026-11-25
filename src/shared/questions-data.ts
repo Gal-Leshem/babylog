@@ -24,6 +24,9 @@ export const NIGHT_START_MIN_LEN = 120;
  */
 export const CLUSTER_GAP_MIN = 75;
 export const CLUSTER_MIN_FEEDS = 3;
+/** Parts of the day for the next-feed estimate: 4 hours each, from midnight; a part needs this many gaps of its own. */
+export const FEED_PART_HOURS = 4;
+export const MIN_PART_GAPS = 5;
 
 const median = (xs: readonly number[]) => quantile([...xs].sort((a, b) => a - b), 0.5);
 /** A clear difference: at least `abs` and at least `rel` of the usual value. */
@@ -50,7 +53,21 @@ export interface MoreAnswers {
    */
   cluster: { byDay: { date: string; run: boolean }[]; days: number; from: number; to: number; usualGap: number } | null;
   /** last feed's start, the usual gap used (minutes, day or night) and the estimate; null last = no feed in the last 12 hours */
-  nextFeed: { last: number | null; gapMin: number; at: number; night: boolean } | null;
+  /**
+   * (owner: by part of the day, not only day / night) the usual gap in each 4-hour part of the day (by the hour the earlier
+   * feed started; null when that part has too few gaps), and the estimate from the last feed: the usual gap of its part, or of
+   * day / night, or of the whole day when the part has too few
+   */
+  nextFeed: {
+    last: number | null;
+    gapMin: number;
+    at: number;
+    /** which usual gap was used: the part's own, day or night (19:00 to 07:00), or all */
+    basis: 'part' | 'day' | 'night' | 'all';
+    /** index of the last feed's part in `parts` */
+    part: number;
+    parts: { from: number; to: number; median: number | null; n: number }[];
+  } | null;
   sleepDay: { usual: Spread; yesterday: number; trend: Trend } | null;
   /** minutes after midnight of the evening's day (may pass 1440) */
   nightStart: { median: number; low: number; high: number; nights: number } | null;
@@ -140,16 +157,27 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
         }
       : null;
 
-  // next feed: the usual gap (day or night) after the last feed, from this family's pace only
+  // next feed: the usual gap after the last feed in the same part of the day, from this family's pace only
   const gapsReady = feedGaps(evs, w.lo, w.hi, mergeWindowMin).all.length >= MIN_GAPS;
   let nextFeed: MoreAnswers['nextFeed'] = null;
   if (gapsReady) {
     const g = feedGapInsight(evs, w.lo, w.hi, mergeWindowMin)!;
+    const startsIn = feedStarts.filter((t) => t >= w.lo && t < w.hi);
+    const byPart: number[][] = Array.from({ length: 24 / FEED_PART_HOURS }, () => []);
+    for (let i = 1; i < startsIn.length; i++) {
+      const gap = (startsIn[i]! - startsIn[i - 1]!) / MIN;
+      if (gap > 6 * 60) continue; // most likely a feed that was not logged
+      byPart[Math.floor(localHour(startsIn[i - 1]!) / FEED_PART_HOURS)]!.push(gap);
+    }
+    const parts = byPart.map((gaps, k) => ({ from: k * FEED_PART_HOURS, to: (k + 1) * FEED_PART_HOURS, median: gaps.length >= MIN_PART_GAPS ? spread(gaps).median : null, n: gaps.length }));
     const last = [...feedStarts].filter((t) => t <= nowEpoch).pop();
     const recent = last !== undefined && nowEpoch - last <= 12 * 60 * MIN ? last : null;
-    const night = recent !== null && isNightHour(localHour(recent));
-    const gapMin = (night ? g.night : g.day)?.median ?? g.all.median;
-    nextFeed = { last: recent, gapMin, at: recent === null ? 0 : recent + gapMin * MIN, night };
+    const part = Math.floor(localHour(recent ?? nowEpoch) / FEED_PART_HOURS);
+    const night = isNightHour(localHour(recent ?? nowEpoch));
+    const own = parts[part]!.median;
+    const half = (night ? g.night : g.day)?.median ?? null;
+    const [gapMin, basis]: [number, 'part' | 'day' | 'night' | 'all'] = own !== null ? [own, 'part'] : half !== null ? [half, night ? 'night' : 'day'] : [g.all.median, 'all'];
+    nextFeed = { last: recent, gapMin, at: recent === null ? 0 : recent + gapMin * MIN, basis, part, parts };
   }
 
   // sleep per day (the 7 full days that have any sleep logged), and yesterday against them

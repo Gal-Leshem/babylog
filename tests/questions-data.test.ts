@@ -55,10 +55,15 @@ describe('the newer questions (F16 stage B)', () => {
     expect(r.sides).toEqual({ left: 35, right: 35 });
     expect(r.cluster).toMatchObject({ days: 0 }); // every 2 to 3 hours: regular, no run of close feeds
     expect(r.cluster!.byDay).toHaveLength(7);
-    // the last feed was today 12:00 (day): the usual daytime gap after it
-    expect(r.nextFeed!.last).toBe(T('2026-11-15 12:00'));
-    expect(r.nextFeed!.night).toBe(false);
-    expect(r.nextFeed!.at).toBe(T('2026-11-15 12:00') + r.nextFeed!.gapMin * MIN);
+    // (owner) by part of the day: 00-04 and 04-08 and 08-12 every 3 hours, 12-16 three then two hours, 16-20 two hours,
+    // 20-24 two hours then one (23:00 to midnight)
+    expect(r.nextFeed!.parts.map((p) => p.median)).toEqual([180, 180, 180, 150, 120, 120]); // 20-24: seven of 2:00, six of 1:00 (the last 23:00 to midnight is today)
+    // the last feed was today 12:00: the usual gap of 12:00 to 16:00 after it
+    expect(r.nextFeed).toMatchObject({ last: T('2026-11-15 12:00'), part: 3, basis: 'part', gapMin: 150, at: T('2026-11-15 14:30') });
+    // a part with too few gaps of its own falls back to day / night
+    const thin = moreAnswers(week().filter((e) => !(e.type === 'feed' && e.start >= '2026-11-08' && e.start < '2026-11-15' && /1[2-5]:00$/.test(e.start) && e.start < '2026-11-13')), NOW, 20);
+    expect(thin.nextFeed!.parts[3]!.n).toBeLessThan(5);
+    expect(thin.nextFeed).toMatchObject({ part: 3, basis: 'day' });
   });
 
   // (owner) cluster feeding in words a parent can use: on which days and at what hours there were runs of close feeds

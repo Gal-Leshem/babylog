@@ -454,9 +454,9 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     const h2 = rows[0]!.map(String);
     const last = rows[rows.length - 1]!;
     expect(last[h2.indexOf('שאלה: כל כמה זמן מאכילים')]).toBe('מוצגת');
-    expect(last[h2.indexOf('שאלה: הרצף הארוך בלילה')]).toBe('כובתה ביד');
+    expect(last[h2.indexOf('שאלה: הרצף הארוך בלילה')]).toBe('כובתה ידנית');
     expect(last[h2.indexOf('שאלה: ימין ושמאל')]).toBe('ממתינה לנתונים');
-    expect(last[h2.indexOf('שאלה: ההנקה הבאה')]).toBe('הודלקה ביד');
+    expect(last[h2.indexOf('שאלה: ההנקה הבאה')]).toBe('הודלקה ידנית');
     expect(last[h2.indexOf('נצפתה: כל כמה זמן מאכילים')]).toBe(2);
   });
 

@@ -362,3 +362,36 @@ test('questions: cluster feeding says when and how often, and "מה זה אומ�
   await expect(sheet).toContainText('איך זה מחושב');
   await expect(page.getByTestId('q-how-disclaimer')).toBeVisible();
 });
+
+// (owner) every card explains what it is and why it is worth knowing, and closes with where to turn if something worries you
+test('questions: every card has "מה זה אומר?" with what it is, why it is worth knowing, if something worries you, and the note', async ({ page, request }) => {
+  await seed(request, week());
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  const ids = await page.locator('.q[data-q]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.q!));
+  expect(ids).toHaveLength(14);
+  for (const id of ids) {
+    await page.getByTestId(`q-${id}-about`).click();
+    const titles = await page.getByTestId('q-about-part').locator('h3').allTextContents();
+    expect(titles, id).toEqual(['מה זה', 'למה כדאי לדעת', 'אם משהו מדאיג']);
+    await expect(page.getByTestId('q-how-disclaimer'), id).toContainText('לא ייעוץ רפואי');
+    await page.getByTestId('q-how-close').click();
+  }
+});
+
+// (owner) the next feed by part of the day: the usual gap of the part the last feed fell in, and all six parts side by side
+test('questions: the next feed uses the usual gap of its part of the day, and shows the six parts', async ({ page, request }) => {
+  const data = week();
+  await seed(request, data);
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  const m = moreAnswers(data.map((e, i) => ev({ id: `x${i}`, type: e.type!, ...e })), NOW.getTime(), 20);
+  const n = m.nextFeed!;
+  await expect(page.getByTestId('q-nextFeed-parts').locator('> div')).toHaveCount(6);
+  await expect(page.getByTestId(`q-part-${n.part}`)).toHaveClass(/\bcur\b/);
+  for (const [k, p] of n.parts.entries()) await expect(page.getByTestId(`q-part-${k}`)).toContainText(p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`מאכילים בדרך כלל כל ${hm(n.gapMin)}`);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות ${formatLocal(n.at).slice(11, 16)}`);
+});
