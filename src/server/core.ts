@@ -257,7 +257,10 @@ export function handle(raw: unknown, deps: Deps): ApiResponse {
     if (deps.checkKey(key)) {
       if (deps.familyServer && FEEDBACK_READ.has(action)) return { ok: false, error: 'send_only' };
       const r = dispatch(raw, deps);
-      return deps.familyServer ? withoutSheetUrl(r) : r;
+      if (!deps.familyServer) return r;
+      // a send can be answered before the screen learnt from its list that this phone only sends: the answer says so too
+      const out = withoutSheetUrl(r);
+      return action === 'feedback' && out.ok ? { ...out, sendOnly: true } : out;
     }
     // the owner's admin key on a family's server: the feedback and nothing else
     if (deps.familyServer && deps.checkAdmin?.(key) && ADMIN_ACTIONS.has(action)) return dispatch(raw, deps);

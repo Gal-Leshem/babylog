@@ -255,12 +255,14 @@ export function Feedback({ onBack, start, backLabel = 'חזרה להגדרות' 
       });
       if (r.ok && r.item) {
         const item = r.item;
-        setItems((xs) => [item, ...(xs ?? []).filter((x) => x.id !== item.id)]);
+        const only = sendOnly || r.sendOnly === true;
+        if (r.sendOnly) setSendOnly(true);
+        if (!only) setItems((xs) => [item, ...(xs ?? []).filter((x) => x.id !== item.id)]);
         // only what was sent goes: something typed while it was on its way stays (the slow-server run caught this)
         setText((t) => (t.trim() === body ? '' : t));
         sendId.current = uid();
         count('feedback.sent');
-        setMsg(sendOnly ? 'נשלח, תודה' : `נשלח (#${item.no})`);
+        setMsg(only ? 'נשלח, תודה' : `נשלח (#${item.no})`);
       } else if (!r.ok) setMsg(refused(r.error, r.detail, 'לא נשלח'));
     } catch (e) {
       setMsg(problem(e, 'לא נשלח, הטקסט נשמר כאן'));

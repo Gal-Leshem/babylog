@@ -124,6 +124,8 @@ export interface ApiOk {
   results?: ApiResponse[];
   /** `feedback`: the item as stored (with its number); `feedbackList` / `feedbackClear`: all items, oldest first. */
   item?: FeedbackItem;
+  /** `feedback` on a family's server: this phone may only send (it may answer before the list's `send_only` arrives). */
+  sendOnly?: true;
   feedback?: FeedbackItem[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
   unchanged?: true;
