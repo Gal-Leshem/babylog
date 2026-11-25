@@ -596,6 +596,11 @@ No names, addresses or secrets in this file (the repository is public).
   the questions' saved states back after the app was reopened, so a day's states were sent only if the app had not been
   reloaded since; fixed (the test failed before the fix).
 
+- Other families: the first family **(owner)**. The pipeline created its sheet and script ("BabyLog" and a random id) and
+  deployed it; before the owner's one-time `setup` Google answered with a plain HTTP 403 page, which the check did not know and
+  reported as a failure (the owner's server was deployed as usual). Now a 401 / 403 page counts as "waiting for the owner's setup"
+  and the report names the page. After the owner's `setup` the deploy reported "answers from this build", and the owner sent the
+  family its code.
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

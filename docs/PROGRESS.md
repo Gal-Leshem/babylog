@@ -45,10 +45,11 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
    ask for a screenshot if it happens again.
-5. **Other families** (owner, new): plan in `docs/MULTI_FAMILY_PLAN.md`, current proposal in its section 0 (one server per family,
-   the owner's server untouched). Stages 1 to 3 built (pipeline job `families`, `--family` builds, send-only feedback +
-   admin codes, privacy page). Next: the owner's own test family, then a real one (`INSTALL.he.md` "משפחה נוספת": add an id,
-   push, the owner runs `setup` once, sends the family code privately and adds the admin code on his phone).
+5. **Other families** (owner): live. One server per family (`MULTI_FAMILY_PLAN.md` section 0); the first family is in
+   `families.json` (November 2026): created by the pipeline, the owner ran `setup`, the deploy reports "answers from this build",
+   and the owner sent the family its code. Next: hear how it goes for them; their feedback reaches the owner's phone through the
+   admin code ("משפחות נוספות"). Adding another: `INSTALL.he.md` "משפחה נוספת". Before the owner's `setup`, Google answers a
+   new family server with a plain HTTP 403: the deploy reports it as "waiting for the owner's setup".
 6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
 7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") and the date of birth built. Open with the owner:
    F15 usage measurement option A built; F16 questions built (stages A and B, 14 questions; privacy page wording approved and live); F17 visit journal (the owner will send his notes from
