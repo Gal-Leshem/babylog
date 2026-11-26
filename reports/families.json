@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "878f5de",
+  "sha": "0720f5e",
   "ref": "main",
-  "at": "2026-11-26T11:20:05.581Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45808710110",
+  "at": "2026-11-26T13:01:49.960Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45824207854",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -12,18 +12,18 @@
       "using existing family-r6swjd5e script",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "server bundle ready (family, 67 KB)",
-      "Pushed 2 files at 11:20:00 AM.",
+      "server bundle ready (family, 69 KB)",
+      "Pushed 2 files at 1:01:45 PM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 7)",
+      "redeployed existing web app deployment (version 8)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=6 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "deployment version=8 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "family-r6swjd5e server deployed",
       "FAMILY r6swjd5e: deployed, answers from this build",
       "all 1 family servers deployed",
-      "took 13s"
+      "took 10s"
     ],
     "install": [
       "+ npm ci",
