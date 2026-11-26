@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "0720f5e",
+  "sha": "fc1f342",
   "ref": "main",
-  "at": "2026-11-26T13:01:43.901Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45824207854",
+  "at": "2026-11-26T13:07:15.816Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45825000979",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
       "dist/assets/index-CpSup5oQ.css   27.68 kB │ gzip:  5.84 kB",
-      "dist/assets/index-0HVUQpXg.js   193.27 kB │ gzip: 61.27 kB",
+      "dist/assets/index-lL1QhZl6.js   193.35 kB │ gzip: 61.27 kB",
       "",
       "✓ built in 104ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (217.63 KiB)",
+      "precache  10 entries (217.71 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 0s"
+      "took 1s"
     ],
     "install": [
       "+ npm ci",
@@ -69,19 +69,19 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 0s"
+      "took 1s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 0720f5e to gh-pages",
-      "took 2s"
+      "published fc1f342 to gh-pages",
+      "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 878f5de, waiting for 0720f5e",
-      "attempt 2: serves 878f5de, waiting for 0720f5e",
-      "attempt 3: serves 878f5de, waiting for 0720f5e",
-      "site is live and serves 0720f5e",
+      "attempt 1: serves 0720f5e, waiting for fc1f342",
+      "attempt 2: serves 0720f5e, waiting for fc1f342",
+      "attempt 3: serves 0720f5e, waiting for fc1f342",
+      "site is live and serves fc1f342",
       "took 30s"
     ]
   }
