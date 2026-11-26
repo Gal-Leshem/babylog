@@ -106,6 +106,11 @@ export interface EngineOptions {
   random?: () => number;
   /** A clock for measuring durations (not the app's time). */
   stopwatch?: () => number;
+  /**
+   * Told about every request this phone makes to the server (`writes`: entries it carries), for the usage counts that show how
+   * much of the shared daily quota each family uses (owner). Must cost nothing: it only adds to counts in memory.
+   */
+  onRequest?: (writes: number) => void;
 }
 
 const STATE_KEY = 'bl.state.v1';
@@ -197,6 +202,7 @@ export class Engine {
   /** When the app was last opened, returned to, or used to log something (drives the polling pace). */
   private lastActive = -Infinity;
   private readonly beacon: (ep: Endpoint, req: ApiRequest) => boolean;
+  private readonly onRequest: (writes: number) => void;
   private retryTimer: unknown = null;
   private retryStep = 0;
 
@@ -208,6 +214,7 @@ export class Engine {
     this.setTimer = opts.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimer = opts.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
     this.beacon = opts.beacon ?? sendAway;
+    this.onRequest = opts.onRequest ?? (() => undefined);
     this.random = opts.random ?? Math.random;
     this.stopwatch = opts.stopwatch ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     const savedLog = this.storage.get<SyncLogEntry[]>(LOG_KEY);
@@ -384,13 +391,16 @@ export class Engine {
   async ask(req: ApiRequest): Promise<ApiResponse> {
     const ep = this.endpoint();
     if (!ep) return { ok: false, error: 'unauthorized' };
+    this.onRequest(0);
     return callApi(ep, req, this.fetchImpl);
   }
 
   /** Hands one request to the browser to deliver on its own (no answer read); false when there is no server or it was not taken. */
   sendAway(req: ApiRequest): boolean {
     const ep = this.endpoint();
-    return ep ? this.beacon(ep, req) : false;
+    if (!ep) return false;
+    this.onRequest(0);
+    return this.beacon(ep, req);
   }
 
   private endpoint(): Endpoint | null {
@@ -475,6 +485,7 @@ export class Engine {
     const ops = this.wireOps(batch);
     // a request that carries entries is marked keepalive: the browser should finish it even if the phone is locked right after
     const meta: { bytes?: number } = {};
+    this.onRequest(ops.length);
     const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(ops.length ? { ops } : {}), debug: true }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000, batch.length > 0, meta);
     if (seq !== this.syncSeq) return false; // declared dead meanwhile: a newer sync owns the state (anything sent is sent again; ids make that safe)
     if (!res.ok) {
@@ -578,6 +589,7 @@ export class Engine {
     if (this.stopwatch() - this.lastBeaconAt < 2_000) return 0; // "hidden" and "page closing" arrive together: once is enough
     this.lastBeaconAt = this.stopwatch();
     const ops = this.wireOps(batch);
+    this.onRequest(ops.length);
     const ok = this.beacon(ep, { action: 'sync', ...this.defaultRange(), ...(this.p.rev ? { rev: this.p.rev } : {}), ops });
     return ok ? batch.length : 0;
   }
@@ -608,6 +620,7 @@ export class Engine {
     while (this.p.queue.length) {
       const op = this.p.queue[0]!;
       this.inFlight.add(op.opId);
+      this.onRequest(1);
       const res = await callApi(ep, op.req, this.fetchImpl);
       if (seq !== this.syncSeq) return false;
       this.inFlight.delete(op.opId);
@@ -631,6 +644,7 @@ export class Engine {
       this.emit();
     }
     if (mode === 'rev' && sent === 0 && this.p.rev) {
+      this.onRequest(0);
       const poll = await callApi(ep, { action: 'poll' }, this.fetchImpl, 8_000);
       if (seq !== this.syncSeq) return false;
       if (!poll.ok && poll.error === 'unauthorized') {
@@ -644,6 +658,7 @@ export class Engine {
     }
     const range = this.defaultRange();
     const queued = this.p.queue.length;
+    this.onRequest(0);
     const res = await callApi(ep, { action: 'list', from: range.from, to: range.to }, this.fetchImpl);
     if (seq !== this.syncSeq) return false;
     if (!res.ok) {
@@ -689,6 +704,7 @@ export class Engine {
     if (!ep) return false;
     const startEpoch = this.epoch;
     try {
+      this.onRequest(0);
       const res = await callApi(ep, { action: 'list', from: range.from, to: range.to }, this.fetchImpl);
       if (!res.ok) {
         this.setStatus(res.error === 'unauthorized' ? 'auth' : 'error');

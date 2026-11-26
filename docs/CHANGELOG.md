@@ -652,6 +652,14 @@ No names, addresses or secrets in this file (the repository is public).
 - App **(owner approved)**: a timer check that fell during an exchange that has just succeeded is dropped (one request less
   after every slow exchange); taps made meanwhile and every other kind of request still run right after. Engine test (failed
   on the old code: two requests).
+- New app versions **(owner approved; agreed with the features session, whose files these are)**: a version that takes over
+  while the app is on screen no longer reloads the page there (that aborted the return's check and cost about 2 s on every
+  opening after a deploy); it is applied when the app is hidden, after the usage counts are kept, or at once on the next
+  return if that moment did not run. The start after it counts as a return, not an opening. Browser tests (no reload on screen,
+  reload when hidden, counted as a return; both parts failed on the old code) and unit tests.
+- Request counts **(owner: how many families the setup holds)**: the phone counts every request to the server and the entries
+  it carries (`sync.requests`, `sync.ops`; in memory, sent with the daily usage beacon into the "שימוש" tab). The totals per
+  family and a warning near the shared daily quota come from the families session. Engine test (failed without the count).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

@@ -314,6 +314,14 @@ Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no t
   - 2 built: a timer check that waited behind an exchange that has just succeeded is dropped (`Engine.timerCheck`); taps made
     meanwhile, returns, the network coming back, the medicines window and "סנכרן עכשיו" still run right after.
   - 3 and 4: messages sent to the features session (the reload in `main.tsx` / `update.ts`, the counter names in
-    `USAGE_LABELS`) and to the families session (the totals and the warning in "משפחות נוספות", an admin read of the counts);
-    nothing in their files until they answer.
+    `USAGE_LABELS`) and to the families session (the totals and the warning in "משפחות נוספות", an admin read of the counts).
+    The features session agreed to both (keep the usage counts before a reload; a start after an update reload counts as a
+    return; the theme reload unchanged). Built:
+    - 3: a new version that takes over while the app is on screen waits until the app is hidden (usage counts kept first) or,
+      if that moment did not run, the next return (`applyWhenAway`); the start after it counts as a return.
+    - 4a: the phone counts every request to the server and the entries it carries (`sync.requests`, `sync.ops`, through
+      `Engine` option `onRequest`; beacons included), sent with the daily usage beacon into each sheet's "שימוש" tab.
+    - 4b (families session): totals per family and a warning in "משפחות נוספות"; the families session asks the owner about the
+      admin read first. It also asked whether the per-request properties read could move to the script cache (proposal 5):
+      passed to the owner.
   - Owner's question: fewer checks while the app is merely open. Proposal in the session report (waiting for a decision).

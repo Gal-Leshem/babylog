@@ -42,9 +42,10 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    when the first is slow; a read copy outside Google or leaving Apps Script (a third party would hold the data).
    The sync log: Settings > מתקדם > "יומן סנכרון" > "העתקה" (last 60 exchanges; copy soon after a slow opening).
    Performance session (26 Nov): log 3 read (`REFACTOR_PLAN.md` section 8); built: one Events tab lookup per request and the
-   untimed part shown in the log, no wasted check after a slow exchange. Coordinating with the other sessions: no reload in the
-   middle of an opening (features), request counts and a quota warning for the families (features + families). Open with the
-   owner: fewer checks while the app is merely open.
+   untimed part shown in the log, no wasted check after a slow exchange, no reload in the middle of an opening (new versions
+   wait until the app is hidden), request counts per phone (`sync.requests`, `sync.ops`, with the features session's consent).
+   Families session: totals and a quota warning in "משפחות נוספות" (asking the owner). Open with the owner: fewer checks while
+   the app is merely open; the script cache for the per-request read (proposal 5, raised by the families session).
 3. **Feedback** in the app (Settings > מתקדם > "🐞 משוב"; the sheet's "משוב" tab; numbers never reused). Manual: the owner pastes
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:

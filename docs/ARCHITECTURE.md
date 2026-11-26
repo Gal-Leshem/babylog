@@ -93,7 +93,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   reset (clearing empties the rows' contents and keeps the titles); the uuid `id` makes a retry harmless. Not log data: the
   revision does not move.
 - Usage counts (owner, F15; `src/app/usage.ts`, `src/shared/usage.ts`): `count(name)` adds one in memory (never a request or a
-  storage write); when the app is hidden or closed the counts are stored, and whole past days are handed to the browser once as
+  storage write); `sync.requests` / `sync.ops` count every request to the server and the entries it carries (`Engine` option
+  `onRequest`), to see each family's share of the daily Google quota that all servers share; when the app is hidden or closed the counts are stored, and whole past days are handed to the browser once as
   one `usage` beacon (user = the parent chosen on the phone, a random phone id, the version). The server writes the "שימוש"
   tab without the lock and without a revision (each phone writes only its own rows; a day sent again replaces its row). Kept on
   the phone: at most 14 days. Unknown counter names are refused: add a name and its Hebrew title in `USAGE_LABELS` first. Each day also carries the state of every insight question (`states`: shown / on / off / waiting, `USAGE_QUESTIONS`, written in words in a column per question) and `seen.<id>` counts (a card came into view).
@@ -244,8 +245,10 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
   bars (oldest on the right; then today so far, apart and lighter, labelled "היום"; owner), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
-- **App update:** a new version reloads the page only when nothing can be lost (`update.ts`: the app is in the background, or
-  no sheet / form is open and no field has the cursor).
+- **App update:** a new version never reloads the page while the app is on screen (owner's sync log 3: that aborted the
+  return's check, about 2 s per opening after a deploy): it is applied when the app is hidden (usage counts kept first) or, if
+  that moment did not run, at once on the next return (`applyWhenAway` in `update.ts`); the start after it counts as a return
+  in the usage counts. (The theme reload in `statusbar.ts` keeps `reloadWhenSafe`: no form open and no field in use.)
 - **Sync:** see "Sync engine" above (one `sync` request; a check every 5 or 15 s, a full list every 5 minutes, a check on resume).
 
 ## Server deployment details
