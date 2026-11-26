@@ -448,8 +448,12 @@ test('opening the app says "מתעדכן…" until its first check is back', asy
 test('opening after a quiet while says "מתעדכן…" with the time of the last update', async ({ page, request }) => {
   await page.clock.install({ time: new Date('2026-11-14T10:00:00Z') }); // 12:00 in Israel
   await install(page);
-  await control(request, 'delay=1500');
+  // (CI) no check may succeed after the jump below: it would rightly make the last update fresh again
+  await control(request, 'offline=1');
+  await page.waitForTimeout(1_000); // a check already on its way is over; the next ones are refused
   await page.clock.setSystemTime(new Date('2026-11-14T10:20:00Z')); // twenty minutes later
+  await control(request, 'offline=0');
+  await control(request, 'delay=1500'); // (a check started now is cut short by the reload)
   await page.reload();
   await expect(page.getByTestId('sync-text')).toHaveText(/^מתעדכן… · עודכן לאחרונה 12:0\d$/);
   await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 5_000 });
@@ -463,8 +467,11 @@ for (const night of [false, true]) {
     await install(page);
     const top = () => page.getByTestId('tile-feed').evaluate((e) => e.getBoundingClientRect().top);
     const before = await top();
-    await control(request, 'delay=3000');
+    await control(request, 'offline=1'); // (CI) no check may succeed after the jump below
+    await page.waitForTimeout(1_000);
     await page.clock.setSystemTime(new Date(night ? '2026-11-14T22:10:00Z' : '2026-11-14T11:10:00Z'));
+    await control(request, 'offline=0');
+    await control(request, 'delay=3000');
     await page.reload();
     const text = page.getByTestId('sync-text');
     await expect(text).toHaveText(/^מתעדכן… · עודכן לאחרונה \d\d:\d\d$/);

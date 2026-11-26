@@ -712,6 +712,10 @@ No names, addresses or secrets in this file (the repository is public).
   because `close()` waits for open connections and the browser can hold one it opened in advance with no request yet. The mock
   server now also ends every open connection when it closes (`scripts/mock-server.ts`); 780 runs of the family tests without a
   failure afterwards. Not an app bug.
+- CI, my test: "opening after a quiet while" failed on `main` (the features session's ship, which contained it): a check that
+  finished just after the test moved the clock forward rightly made the last update fresh, so the plain "מתעדכן…" was correct.
+  The test (and the 360 x 560 one, and the touch test) now let the server refuse requests while the clock is moved, so no check
+  can succeed in between. Stable over repeated runs, also against the slow server.
 - Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
   by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
   live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the
