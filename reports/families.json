@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "dc57892",
+  "sha": "2a25426",
   "ref": "main",
-  "at": "2026-11-26T15:57:18.685Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45853151094",
+  "at": "2026-11-26T16:14:46.590Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45855945360",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -13,17 +13,14 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (family, 74 KB)",
-      "Pushed 2 files at 3:57:14 PM.",
-      "└─ apps-script/dist/appsscript.json",
-      "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 12)",
+      "server unchanged since dc57892: no new version (version 12 stays)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=11 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "family-r6swjd5e server deployed",
-      "FAMILY r6swjd5e: deployed, answers from this build",
+      "deployment version=12 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "family-r6swjd5e server deployed (unchanged since dc57892)",
+      "FAMILY r6swjd5e: unchanged, answers from build dc57892",
       "all 1 family servers deployed",
-      "took 10s"
+      "took 6s"
     ],
     "install": [
       "+ npm ci",
@@ -45,7 +42,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 6s"
+      "took 5s"
     ]
   }
 }
