@@ -115,19 +115,16 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   report by its own commit on `ci-status` (`git log origin/ci-status --format='%h %s' | grep "report: server <sha>"`, then
   `git show <that>:reports/server.json`) and wait for the `dev` test AND server reports before pushing to `main`.
 
-## Sessions in parallel (owner, November 2026)
-The owner may run up to three sessions at once, each with its own topic: **other families** (`MULTI_FAMILY_PLAN.md`), **small
-fixes and features**, and **performance** (the owner pastes the sync log; `REFACTOR_PLAN.md` is its history). All push to the
-same `dev` and `main` and share one pipeline, so:
-- Ownership:
-  - families session: `families.json`, `scripts/families.ts`, `scripts/deploy-families.ts`, the `families` job, the family-server
-    parts (`--family`, `familyServer` / `checkAdmin` in `core.ts`, `ADMIN_KEY` in `gas.ts`, "משפחות נוספות" in `Feedback.tsx`,
-    `src/app/families.ts`), `MULTI_FAMILY_PLAN.md`.
-  - performance session: the sync path and its measurement: `src/app/engine.ts` (sync, polling, queue, beacon), `src/app/api.ts`,
-    `src/server/journal.ts`, the request / properties / sheet-reading parts of `src/server/gas.ts` and the `sync` / `list` paths of
-    `src/server/core.ts`, `SyncLog.tsx`, the `TIMING` part of `scripts/live-test.ts`, `REFACTOR_PLAN.md`.
-  - features session: everything else in the app (screens, insights, medicines, wording, styles).
-  A session that needs another one's files tells the owner first.
+## Working model (owner, 26 November 2026)
+One conversation runs the development: it loads the domain skill of each area (`.claude/skills/`: `features`, `performance`,
+`families`), hands bounded work to agents (`.claude/agents/`), and closes every task with the `close-task` skill (changelog, skills
+corrected and taught what the task found, this file current). See `CLAUDE.md`. Until then three sessions ran in parallel, one per
+area; their knowledge was moved into the skills.
+
+## Sessions in parallel (only when a separate session runs beside the main conversation)
+A large piece of work may still get a session of its own. Then both push to the same `dev` and `main` and share one pipeline, so:
+- Ownership: the "Owns" section of each domain skill (`npx tsx scripts/skills-check.ts` maps changed files to skills). A session
+  that needs another area's files tells the owner first.
   - Coordination note (features session, owner approved, 26 Nov 2026): F18 bottles adds the event type `bottle`; its amounts
     live in the detail (`formula:120:30`), so there is NO new column and no change to the event row read / write or to
     `protocol.ts`; only the event validation in `core.ts` and the Settings rows in `gas.ts` changed. Feeding "episodes" (stage 2:
@@ -154,6 +151,7 @@ same `dev` and `main` and share one pipeline, so:
 ```
 You are continuing BabyLog, a shared baby-tracking PWA for two parents (Hebrew, RTL). It is live and in daily use on two iPhones. The repository is attached.
 
+CLAUDE.md (loaded by itself) says how the work is run: one conversation, domain skills in .claude/skills, agents in .claude/agents, and the close-task skill at the end of every task.
 First read, in this order: docs/PROGRESS.md (handoff: status, the open topic, how to resume, environment, owner-only steps, rules), docs/BACKLOG.md, docs/CHANGELOG.md (every change so far and why), docs/ARCHITECTURE.md (design as built, UI rules, deployment, tests), docs/MULTI_FAMILY_PLAN.md (opening the app to other families: the plan and its open decisions), and docs/REFACTOR_PLAN.md (the sync refactor and its measurements). Then follow "How to resume" in PROGRESS.md: git identity and fetch refspec, npm ci, unit and browser tests, pipeline status (a commit's own reports on the ci-status branch).
 
 Then tell me briefly in Hebrew whether everything is green (or what is not), and what is open, in a few lines.
@@ -168,7 +166,7 @@ Not approved: force-push or rewriting history; changing repository settings, sec
 Hard rules:
 - The repository is public. Never write names, e-mail addresses, device models, the baby's name, keys, script or deployment ids, or the live server address into code, docs, commit messages or logs (screenshots I send may show real names: never copy them anywhere).
 - Every change: small step -> a regression test that fails without the fix (break the fix once to prove it, and check that the broken build still compiles) -> unit and browser tests locally (one Playwright run at a time; also with MOCK_DELAY=250 for anything timing-related, and at heights 852/700/560 for layout) -> push to dev -> run `bash scripts/ship.sh <sha7>` in the background (it waits for BOTH dev reports to be green before main, then for main, production and the live site, and stops at the first failure) -> confirm the live site serves the commit, the main server report says "LIVE TEST PASSED" and the prod report says "prod server deployed".
-- After each change update docs/CHANGELOG.md and docs/PROGRESS.md, docs/ARCHITECTURE.md when the design changes, docs/BACKLOG.md when plans change.
+- After each change update docs/CHANGELOG.md and docs/PROGRESS.md, docs/ARCHITECTURE.md when the design changes, docs/BACKLOG.md when plans change, and the skills the change touched: run the close-task skill (CLAUDE.md).
 - Keep the UI rules in ARCHITECTURE.md: Home is a fixed, non-scrolling screen; no components defined inside components; no vh/dvh; buttons at least 56px; wording פיפי / קקי / פיפי + קקי; words about the baby come from src/app/words.ts (boy / girl); no in-app calendar; mixed Hebrew/Latin text isolated with <bdi>; ranges written in words, not "a–b"; at night nothing bright at the top (iOS tints the status bar from the page).
 - The app gives no medical advice: medicine numbers are only what the parents enter.
 - The look stays as it is (own icons and a visual polish were declined); do not propose them again unless I ask.

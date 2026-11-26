@@ -767,6 +767,24 @@ No names, addresses or secrets in this file (the repository is public).
   total against 50,000, in warning colour above 75% or when one family is above 3 x the median (three servers or more). The
   numbers appear from the day after the phones have the counting version. Tests: core, the built family bundle, the estimate,
   and a browser test with the owner's server and a family's (the admin-only rule failed when taken out).
+## Working model: one conversation with skills and agents (owner, 26 November 2026)
+- **(owner)** The three parallel sessions (features, performance, families) become one conversation that runs the work and
+  calls on their knowledge as skills. Reason: most of the friction was between the sessions (asking each other for files,
+  ships that failed CI for another session, merges between session branches); one conversation sees every change before it ships.
+- `CLAUDE.md`: how the work is run, the routine, the rules for every task and the lessons that apply to every area.
+- Domain skills in `.claude/skills/` (`features`, `performance`, `families`): what each area owns, its rules that must not
+  break, the owner's decisions in force, the traps met there, how to verify, what is open. First written from the docs; each
+  session adds what only it knows before it closes.
+- `close-task` skill: every task ends by writing its changelog entry, correcting and teaching the skills it touched, checking
+  what agents reported before keeping it, and bringing `PROGRESS.md` up to date, so nothing lives only in a conversation.
+- Agents in `.claude/agents/`: `perf-analyst` (a sync log or TIMING table against the baseline), `change-reviewer` (a diff
+  against every skill it touches) and `ci-investigator` (a failed run or flaky test); each answers in a fixed format with a
+  "Learned" part for the skills.
+- Guides cannot go stale silently: `scripts/skills-check.ts` (and `tests/skills.test.ts` in `npm test`, so CI too) fails when a
+  guide names a file that does not exist, and lists which skills own the files a task changed. Tests: the real guides, and the
+  parser (paths, ownership, shared files, the fallback skill); the dead-path test failed with a renamed file.
+- `PROGRESS.md`: "Working model" replaces the ownership list of the parallel sessions (now the "Owns" sections of the skills).
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
