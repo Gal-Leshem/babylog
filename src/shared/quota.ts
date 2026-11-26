@@ -11,8 +11,12 @@ export const WARN_SHARE = 0.75;
 /** One family is "far above the others" at this many times the median (only with three servers or more). */
 export const HEAVY_FACTOR = 3;
 
-/** About how many property calls a day of requests cost: one per request, three more per operation, two per phone's usage beacon. */
-export const propsEstimate = (t: Pick<UsageTotal, 'requests' | 'ops' | 'phones'>): number => t.requests + 3 * t.ops + 2 * t.phones;
+/**
+ * About how many property calls a day of requests cost (the performance session, checked against the server and the live
+ * test's TIMING): one per request (the usage beacon is itself a counted request), and a request that carries entries two
+ * more (read under the lock, one write of REV + journal) however many it carries; counting two per entry is a close upper bound.
+ */
+export const propsEstimate = (t: Pick<UsageTotal, 'requests' | 'ops' | 'phones'>): number => t.requests + 2 * t.ops;
 
 export interface Load {
   label: string;
