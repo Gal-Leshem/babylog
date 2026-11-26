@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "6550fa0",
+  "sha": "78315cc",
   "ref": "main",
-  "at": "2026-11-26T10:13:29.938Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45798411159",
+  "at": "2026-11-26T10:59:42.628Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45805638992",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -12,15 +12,18 @@
       "using existing family-r6swjd5e script",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "server bundle ready (family, 66 KB)",
-      "server unchanged since a210866: no new version (version 5 stays)",
+      "server bundle ready (family, 67 KB)",
+      "Pushed 2 files at 10:59:38 AM.",
+      "└─ apps-script/dist/appsscript.json",
+      "└─ apps-script/dist/Code.js",
+      "redeployed existing web app deployment (version 6)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=5 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "family-r6swjd5e server deployed (unchanged since a210866)",
-      "FAMILY r6swjd5e: unchanged, answers from build a210866",
+      "deployment version=6 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "family-r6swjd5e server deployed",
+      "FAMILY r6swjd5e: deployed, answers from this build",
       "all 1 family servers deployed",
-      "took 6s"
+      "took 10s"
     ],
     "install": [
       "+ npm ci",
@@ -28,7 +31,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 7s",
+      "added 657 packages, and audited 658 packages in 6s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -42,7 +45,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 6s"
     ]
   }
 }
