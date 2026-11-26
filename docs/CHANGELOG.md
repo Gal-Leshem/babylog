@@ -667,6 +667,11 @@ No names, addresses or secrets in this file (the repository is public).
   hour open untouched: about 126 requests instead of 256. Tests: engine (the pace, the touch check, a tap carrying it even when
   the touch's timer fires late; each proven to fail when broken) and browser (a touch after a quiet minute checks, one right
   after a check does not; failed without the touch listener). The full list every 5 minutes is unchanged.
+- Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
+  by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
+  live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the
+  built bundle in the fake Google runtime (times every step, leaves nothing behind, refuses a wrong key, moves no data; failed
+  when the removal was broken). Same bundle on every family server; no change for the phones.
 - Request counts **(owner: how many families the setup holds)**: the phone counts every request to the server and the entries
   it carries (`sync.requests`, `sync.ops`; in memory, sent with the daily usage beacon into the "שימוש" tab). The totals per
   family and a warning near the shared daily quota come from the families session. Engine test (failed without the count).

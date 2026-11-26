@@ -235,6 +235,14 @@ check('cleanup removed this run from the list', !(after.json?.events ?? []).some
 const removed = await call({ action: 'settings', set: { medicines: [{ id: med.id, remove: true }] } });
 check('cleanup removed the test medicine', removed.json?.ok === true && !(removed.json?.settings?.medicines ?? []).some((m: R) => m.id === med.id), JSON.stringify(removed.json));
 
+// (owner, performance session) Stage 0 of the script-cache proposal, measurement only: a properties read next to script-cache
+// reads and writes. Informational: a failure here is printed, never a failure of the live test (nothing in the app uses it).
+for (let i = 0; i < 4; i++) {
+  as('cache probe');
+  const p = await call({ action: 'cacheProbe' });
+  if (!(p.json?.ok === true && p.json?.found === 3)) console.log(`INFO  cache probe did not work: ${JSON.stringify(p.json ?? p.status)}`);
+}
+
 // The timing table: "total" is the whole trip as a client sees it, "server" the part spent in our code.
 console.log('TIMING  call | total ms | server ms | where the server time went (ms, and #calls)');
 for (const x of timings) {

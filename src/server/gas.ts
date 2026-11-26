@@ -451,6 +451,33 @@ function deps(): Deps {
   };
 }
 
+/**
+ * (owner, performance session) Stage 0 of the script-cache proposal (`REFACTOR_PLAN.md` section 8): measurement only. Times one
+ * properties read next to script-cache reads and writes of values shaped like the ones a check would need (key, revision, an
+ * 8 KB journal), on keys of its own, and removes them again. Nothing in the app calls it; the live test prints the numbers.
+ */
+function cacheProbe(): Record<string, unknown> {
+  const cache = timed('cacheOpen', () => CacheService.getScriptCache());
+  const values: Record<string, string> = { 'probe:key': 'k'.repeat(43), 'probe:rev': '12345', 'probe:journal': 'א'.repeat(4000) };
+  const keys = Object.keys(values);
+  timed('propsRead', () => props().getProperties());
+  const miss = timed('cacheMiss', () => cache.getAll(keys));
+  timed('cachePut', () => cache.putAll(values, 60));
+  const hit = timed('cacheHit', () => cache.getAll(keys));
+  timed('cacheHit', () => cache.getAll(keys));
+  timed('cacheRemove', () => cache.removeAll(keys));
+  return { ok: true, missed: Object.keys(miss).length === 0, found: Object.keys(hit).length };
+}
+
+/** The probe never breaks a request: whatever the cache does, the answer says so. */
+function safeProbe(): Record<string, unknown> {
+  try {
+    return cacheProbe();
+  } catch (e) {
+    return { ok: false, error: 'server_error', detail: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 function json(o: unknown): GoogleAppsScript.Content.TextOutput {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -465,7 +492,9 @@ export function doPost(e: GoogleAppsScript.Events.DoPost): GoogleAppsScript.Cont
   const t0 = Date.now();
   spent = {};
   snapshot = null;
-  const answer = handle(body, deps());
+  const d = deps();
+  const probe = typeof body === 'object' && body !== null && (body as { action?: unknown }).action === 'cacheProbe';
+  const answer = probe ? (d.checkKey(String((body as { key?: unknown }).key ?? '')) ? safeProbe() : { ok: false, error: 'unauthorized' }) : handle(body, d);
   const debug = typeof body === 'object' && body !== null && (body as { debug?: unknown }).debug === true;
   // `ms`: our own time, so a phone can tell it from the time the trip itself takes
   return json({ ...answer, ms: Date.now() - t0, build: __BUILD__, ...(debug ? { t: spent } : {}) });

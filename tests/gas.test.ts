@@ -357,6 +357,18 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       expect(b.rt.sheets.get('Events')!.filter((r) => r[0] === 'b1')).toHaveLength(1);
     });
 
+    // owner (performance session): stage 0 of the script-cache proposal, measurement only (REFACTOR_PLAN section 8)
+    it('the cache probe times a properties read and cache reads and writes, leaves nothing behind, and needs the key', () => {
+      const { post, key, rt } = start();
+      const revBefore = rt.props.get('REV');
+      const r = post({ key, action: 'cacheProbe', debug: true });
+      expect(r).toMatchObject({ ok: true, missed: true, found: 3 });
+      for (const k of ['propsRead', 'cacheMiss', 'cachePut', 'cacheHit', 'cacheRemove']) expect(r.t[`${k}#`], k).toBeGreaterThan(0);
+      expect(rt.cache.size, 'its own keys are removed again').toBe(0);
+      expect(rt.props.get('REV'), 'no data moves').toBe(revBefore);
+      expect(post({ key: 'wrong-key-123456', action: 'cacheProbe' })).toEqual(expect.objectContaining({ ok: false, error: 'unauthorized' }));
+    });
+
     it('a first-attempt tap, a retry and an edit of a recent entry do not search the whole sheet', () => {
       const { post, key, count } = start();
       const first = post({ key, action: 'sync', ...range });

@@ -7,6 +7,7 @@ type Cell = string | number | boolean | Date;
 export function createGasRuntime(opts: { url?: string | null; whileWaitingForLock?: () => void } = {}) {
   const sheets = new Map<string, Cell[][]>();
   const props = new Map<string, string>();
+  const cache = new Map<string, string>();
   const logs: string[] = [];
   let locks = 0;
   /** How many calls reached each Google service (the slow part of every request). */
@@ -129,6 +130,14 @@ export function createGasRuntime(opts: { url?: string | null; whileWaitingForLoc
       }),
     },
     // `whileWaitingForLock`: what another request does while this one waits (it writes, then lets go)
+    // a script cache: what the measurement probe touches (a real cache may also forget anything at any time)
+    CacheService: {
+      getScriptCache: () => ({
+        getAll: (keys: string[]) => Object.fromEntries(keys.filter((k) => cache.has(k)).map((k) => [k, cache.get(k)!])),
+        putAll: (o: Record<string, string>) => void Object.entries(o).forEach(([k, v]) => cache.set(k, v)),
+        removeAll: (keys: string[]) => void keys.forEach((k) => cache.delete(k)),
+      }),
+    },
     LockService: { getScriptLock: () => ({ waitLock: () => (opts.whileWaitingForLock?.(), void locks++), releaseLock: () => void locks-- }) },
     ContentService: { createTextOutput: out, MimeType: { JSON: 'json' } },
     Utilities: {
@@ -148,6 +157,7 @@ export function createGasRuntime(opts: { url?: string | null; whileWaitingForLoc
     },
     sheets,
     props,
+    cache,
     logs,
     openLocks: () => locks,
     calls,

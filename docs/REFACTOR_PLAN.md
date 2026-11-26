@@ -365,3 +365,10 @@ Raised by the families session; the owner asked for an orderly proposal (gain, s
   reaches every family server.
 - **Recommendation:** stage 0 now (cheap); stage 1 when the first days of real request counts show the need (more than about 10
   families planned, or a family above about 2,000 calls a day).
+- **Decision (owner, 26 November 2026):** as recommended: stage 0 built; stage 1 to be recommended again after the next sync log
+  and the first request counts. Stage 0: the server answers `cacheProbe` (server key only; `gas.ts`, not part of the API in
+  `protocol.ts`, unused by the app) by timing one properties read, a cache read that misses, a write of three values shaped like
+  a check's (key, revision, an 8 KB journal), two reads that hit, and their removal; the live test calls it four times and the
+  `TIMING` table shows `propsRead`, `cacheMiss`, `cachePut`, `cacheHit`, `cacheRemove`. The cache needs no permission beyond
+  today's (Google's reference lists none, as for properties and the lock); a failure is answered, never thrown, and the live test
+  only prints it.
