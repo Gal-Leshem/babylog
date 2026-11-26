@@ -84,8 +84,10 @@ test('nursing and both bottle kinds: "בקבוק" opens the window; the kind pic
   await expect(page.getByTestId('tile-feed-sub')).toHaveText('אין עדיין'); // the next side comes from nursing only: none yet
   await page.getByTestId('btn-bottle').click();
   await expect(page.getByTestId('bottle-kind-expressed')).toHaveAttribute('aria-checked', 'true');
-  await page.getByTestId('bottle-ml-120').click();
-  await expect(page.getByTestId('bottle-ml-value')).toHaveText('120 מ״ל');
+  // (owner) only the default and − / +: no quick amounts
+  await expect(page.locator('[data-testid="bottle-window"] .chip')).toHaveCount(0);
+  await page.getByTestId('bottle-ml-plus').click();
+  await expect(page.getByTestId('bottle-ml-value')).toHaveText('70 מ״ל');
   await page.getByTestId('bottle-cancel').click();
   await expect.poll(async () => (await bottles(request)).length).toBe(1);
 });

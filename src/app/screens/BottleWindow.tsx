@@ -4,9 +4,6 @@ import { logBottle } from '../actions';
 import { setBottleKind, useEngine, usePrefs } from '../state';
 import { amountStepper } from './Amount';
 
-/** quick amounts in the window (owner approved the mockup) */
-const QUICK_ML = [60, 90, 120, 150];
-
 const NAMES: Record<BottleKind, string> = { formula: 'תמ״ל', expressed: 'חלב שאוב' };
 
 /**
@@ -41,13 +38,6 @@ export function BottleWindow({ onClose }: { onClose: () => void }) {
         </div>
         <label class="fl">כמות</label>
         {amountStepper({ value: ml, min: BOTTLE_STEP_ML, max: BOTTLE_MAX_ML, testId: 'bottle-ml', label: 'כמות', onChange: setMl })}
-        <div class="chips small qml">
-          {QUICK_ML.map((v) => (
-            <button type="button" key={v} class={`chip ${v === ml ? 'on' : ''}`} data-testid={`bottle-ml-${v}`} onClick={() => setMl(v)}>
-              {v}
-            </button>
-          ))}
-        </div>
         <p class="muted" data-testid="bottle-default">
           ברירת המחדל ל{NAMES[kind]}: {defaultMl(feeding, kind)} מ״ל · אפשר לשנות בהגדרות
         </p>

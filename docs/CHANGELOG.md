@@ -682,6 +682,9 @@ No names, addresses or secrets in this file (the repository is public).
   their bars on a narrow phone). Tests: server (failed on the old answer) and browser (bars, numbers fit at 360 wide, failed
   with the ml card at half width; no bottle bars without bottles).
 
+- Bottle window **(owner, from the phone)**: the quick amounts 60 / 90 / 120 / 150 are gone; the amount starts from the kind's
+  default with − / + 10 only. Browser test (failed with the chips).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five
