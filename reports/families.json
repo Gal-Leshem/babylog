@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "86af7c5",
+  "sha": "8aeb8b6",
   "ref": "main",
-  "at": "2026-11-26T13:18:16.481Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45826884809",
+  "at": "2026-11-26T13:24:01.128Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45827685293",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -20,7 +20,7 @@
       "family-r6swjd5e server deployed (unchanged since 0720f5e)",
       "FAMILY r6swjd5e: unchanged, answers from build 0720f5e",
       "all 1 family servers deployed",
-      "took 5s"
+      "took 6s"
     ],
     "install": [
       "+ npm ci",
@@ -28,7 +28,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 6s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -42,7 +42,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 6s"
     ]
   }
 }
