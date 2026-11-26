@@ -67,7 +67,7 @@ export interface MoreAnswers {
     /** index of the last feed's part in `feedParts` */
     part: number;
   } | null;
-  /** (owner) the usual gap in each 4-hour part of the day, shown with "כל כמה זמן מאכילים?" (null median: too few gaps) */
+  /** (owner) the usual gap in each 4-hour part of the day, shown with "כל כמה שעות מאכילים?" (null median: too few gaps) */
   feedParts: { from: number; to: number; median: number | null; n: number }[] | null;
   sleepDay: { usual: Spread; yesterday: number; trend: Trend } | null;
   /** minutes after midnight of the evening's day (may pass 1440) */

@@ -531,3 +531,4 @@ input, textarea, select {
 .parts .v { font-size: 14px; font-weight: 700; margin-top: 2px; }
 .q .qsub { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 12px; }
 .q .qsub + .parts { margin-top: 6px; }
+.pair .v small, .parts .v small { font-size: 12px; font-weight: 600; color: var(--muted); }

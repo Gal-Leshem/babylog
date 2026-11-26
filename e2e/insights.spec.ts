@@ -48,7 +48,10 @@ test('insights: the usual feed gaps, poop and diaper after a feed, and long nigh
   await page.getByTestId('view-insights').click();
   // (owner, F16) questions with short answers; a regular week is enough data for all of them, so all show without any choice
   await expect(page.getByTestId('q-count')).toHaveText('13 שאלות מוצגות');
-  await expect(page.getByTestId('q-gaps')).toContainText('כל כמה זמן מאכילים?');
+  await expect(page.getByTestId('q-gaps')).toContainText('כל כמה שעות מאכילים?');
+  // (owner) every gap says its unit, so "2:30" cannot be read as minutes
+  await expect(page.getByTestId('q-gaps-day')).toContainText('2:30 שעות');
+  await expect(page.getByTestId('q-gaps-day')).toContainText(/רוב הרווחים (בין \d:\d\d ל-\d:\d\d|סביב \d:\d\d)/);
   await expect(page.getByTestId('q-gaps-day')).toContainText('2:30');
   await expect(page.getByTestId('q-gaps-night')).toContainText('3:15');
   await expect(page.getByTestId('q-poop')).toContainText('כ-20 דק׳ אחרי תחילת האכלה');
@@ -390,7 +393,7 @@ test('questions: every card has "מה זה אומר?" with what it is, why it is
   }
 });
 
-// (owner) the usual gap by part of the day is part of "כל כמה זמן מאכילים?" (the part we are in framed); the next-feed card shows only
+// (owner) the usual gap by part of the day is part of "כל כמה שעות מאכילים?" (the part we are in framed); the next-feed card shows only
 // the estimate and the part of the day it comes from, and comes first
 test('questions: the parts of the day are in the feed-gap card, the next feed only shows its estimate and part, and comes first', async ({ page, request }) => {
   const data = week();
@@ -403,7 +406,7 @@ test('questions: the parts of the day are in the feed-gap card, the next feed on
   const gaps = page.getByTestId('q-gaps');
   await expect(gaps.getByTestId('q-gaps-parts').locator('> div')).toHaveCount(6);
   await expect(gaps.getByTestId('q-part-2')).toHaveClass(/\bcur\b/); // 10:00: "בבוקר", 08:00 to 12:00
-  for (const [k, p] of m.feedParts!.entries()) await expect(gaps.getByTestId(`q-part-${k}`)).toContainText(p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`);
+  for (const [k, p] of m.feedParts!.entries()) await expect(gaps.getByTestId(`q-part-${k}`)).toContainText(p.median === null ? 'אין מספיק' : p.median < 60 ? `כל ${Math.round(p.median)} דק׳` : `כל ${hm(p.median)} שעות`);
   const next = page.getByTestId('q-nextFeed');
   await expect(next.locator('.parts')).toHaveCount(0);
   await expect(next).toContainText(`בסביבות ${formatLocal(n.at).slice(11, 16)}`);

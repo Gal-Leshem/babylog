@@ -41,13 +41,21 @@ function partsGrid(parts: NonNullable<MoreAnswers['feedParts']>, cur: number): J
           <div key={k} class={k === cur ? 'cur' : ''} data-testid={`q-part-${k}`}>
             <div class="k">{PART_NAMES[k]}</div>
             <div class="r">{partSpan(k)}</div>
-            <div class="v">{p.median === null ? 'אין מספיק' : `כל ${hm(p.median)}`}</div>
+            <div class="v">
+              {p.median === null ? (
+                'אין מספיק'
+              ) : (
+                <>
+                  כל {p.median < 60 ? Math.round(p.median) : hm(p.median)} <small>{p.median < 60 ? 'דק׳' : 'שעות'}</small>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
       {longest && shortest && longest.median - shortest.median >= 30 && (
         <div class="qs" data-testid="q-gaps-range">
-          הרווחים הארוכים ביותר: {PART_NAMES[longest.k]} ({hm(longest.median)}); הקצרים ביותר: {PART_NAMES[shortest.k]} ({hm(shortest.median)})
+          הרווחים הארוכים ביותר: {PART_NAMES[longest.k]} ({withUnit(longest.median)}); הקצרים ביותר: {PART_NAMES[shortest.k]} ({withUnit(shortest.median)})
         </div>
       )}
     </>
@@ -61,6 +69,10 @@ const aboutOf = (q: Question, w: BabyWords) => {
   const parts = q.about?.(w) ?? [];
   return parts.some((p) => p.title === IF_WORRIED.title) ? parts : [...parts, IF_WORRIED];
 };
+/** (owner) a gap with its unit, so "2:50" cannot be read as minutes: "2:50 שעות", or "45 דק׳" under an hour */
+const withUnit = (min: number) => (min < 60 ? `${Math.round(min)} דק׳` : `${hm(min)} שעות`);
+/** a range of gaps in words, with the unit once at the end: "בין 2:45 ל-3:10 שעות" */
+const gapRange = (lo: number, hi: number) => (lo === hi ? `סביב ${withUnit(lo)}` : hi < 60 ? `בין ${Math.round(lo)} ל-${Math.round(hi)} דק׳` : lo < 60 ? `בין ${withUnit(lo)} ל-${withUnit(hi)}` : `בין ${hm(lo)} ל-${hm(hi)} שעות`);
 const many = (n: number) => (n === 1 ? 'אחד' : n === 2 ? 'שניים' : String(n));
 
 // Plain functions returning JSX (no components defined inside components).
@@ -74,7 +86,10 @@ function answerFirst(q: Question, r: InsightsData, m: MoreAnswers, now: number):
         <div class="k">
           <span class="emo">{icon}</span> {label}
         </div>
-        <div class="v">{hm(s.median)}</div>
+        <div class="v">
+          {hm(s.median)} <small>{s.median < 60 ? 'דק׳' : 'שעות'}</small>
+        </div>
+        {/* the unit is on the big number right above */}
         <div class="r">רוב הרווחים {range(s.low, s.high)}</div>
       </div>
     );
@@ -88,9 +103,9 @@ function answerFirst(q: Question, r: InsightsData, m: MoreAnswers, now: number):
         ) : (
           <>
             <div class="qa">
-              {hm(g.all.median)} <small>בדרך כלל</small>
+              {withUnit(g.all.median)} <small>בדרך כלל</small>
             </div>
-            <div class="qs">רוב הרווחים {range(g.all.low, g.all.high)}</div>
+            <div class="qs">רוב הרווחים {gapRange(g.all.low, g.all.high)}</div>
           </>
         )}
         {m.feedParts && partsGrid(m.feedParts, Math.floor(localHourOf(now) / FEED_PART_HOURS))}
@@ -193,7 +208,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
       );
     }
     case 'nextFeed': {
-      // (owner) only the estimate and the part of the day it comes from; the parts side by side live in "כל כמה זמן מאכילים?"
+      // (owner) only the estimate and the part of the day it comes from; the parts side by side live in "כל כמה שעות מאכילים?"
       const n = m.nextFeed!;
       // (owner) about the baby, and the gap in words: "בבוקר (08:00 עד 12:00) התינוק אוכל בדרך כלל כל שעה ו-50 דקות"
       const basis =
@@ -250,7 +265,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
         return (
           <>
             <div class="qa small">ההאכלות סדירות</div>
-            <div class="qs">ב-7 הימים האחרונים לא היו שעות של הנקות צפופות{c.usualGap ? `; בדרך כלל מאכילים כל ${hm(c.usualGap)}` : ''}.</div>
+            <div class="qs">ב-7 הימים האחרונים לא היו שעות של הנקות צפופות{c.usualGap ? `; בדרך כלל מאכילים כל ${withUnit(c.usualGap)}` : ''}.</div>
             {dots}
           </>
         );
