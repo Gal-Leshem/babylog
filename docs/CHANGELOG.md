@@ -784,6 +784,10 @@ No names, addresses or secrets in this file (the repository is public).
   guide names a file that does not exist, and lists which skills own the files a task changed. Tests: the real guides, and the
   parser (paths, ownership, shared files, the fallback skill); the dead-path test failed with a renamed file.
 - `PROGRESS.md`: "Working model" replaces the ownership list of the parallel sessions (now the "Owns" sections of the skills).
+- Handoff: each of the three sessions added what only it knew to its skill (traps, decisions in force, the files it really
+  owns, how adding a family goes end to end and where it fails, what the next sync log must show) and corrected it: the skill
+  written from the docs said questions are on by default, while a question shows by itself only once it has enough data.
+  `perf-analyst` now also checks a log for version reloads, the untimed part of a tap and the pace. Guides only: on `dev`.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

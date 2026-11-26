@@ -64,3 +64,5 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   wait on `dev`; they reach `main` with the next ship.
 - A test failing only in CI under another task's push was an old race in the test each time -> reproduce with `--repeat-each`
   under load and force the suspected timing before changing app code.
+- A skill written from the docs alone said questions are on by default; the session that built them knew they wait for enough
+  data -> a guide is checked against the code or by whoever worked in the area before it is trusted, and corrected at once.
