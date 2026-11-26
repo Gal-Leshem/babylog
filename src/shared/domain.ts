@@ -148,6 +148,8 @@ export interface DailySummary {
     nursing: number;
     bottles: number;
     bottleMl: number;
+    /** (owner) the ml eaten per bottle kind */
+    bottleMlByKind: { expressed: number; formula: number };
   };
   diapers: { wet: number; poop: number; both: number };
   sleep: { totalMin: number; longestMin: number };
@@ -200,6 +202,10 @@ export function dailySummary(
       nursing: groups.filter((g) => g.events.some((e) => e.type === 'feed')).length,
       bottles: dayBottles.length,
       bottleMl: dayBottles.reduce((n, b) => n + eaten(b), 0),
+      bottleMlByKind: {
+        expressed: dayBottles.filter((b) => b.kind === 'expressed').reduce((n, b) => n + eaten(b), 0),
+        formula: dayBottles.filter((b) => b.kind === 'formula').reduce((n, b) => n + eaten(b), 0),
+      },
     },
     diapers: {
       wet: dayDiapers.filter((e) => e.detail === 'wet').length,

@@ -132,7 +132,7 @@ describe('daily summary', () => {
       ev({ type: 'bottle', detail: 'formula:90', start: '2026-11-14 09:00', deleted: true }),
     ];
     const s = dailySummary(day, '2026-11-14', now, 20).feeds;
-    expect(s).toMatchObject({ count: 3, nursing: 2, bottles: 2, bottleMl: 150, left: 1, right: 1, gapMin: 180 });
+    expect(s).toMatchObject({ count: 3, nursing: 2, bottles: 2, bottleMl: 150, bottleMlByKind: { expressed: 60, formula: 90 }, left: 1, right: 1, gapMin: 180 });
     expect(nextSide(day)).toBe('left'); // the next side comes from nursing only
   });
 

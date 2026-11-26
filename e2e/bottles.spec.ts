@@ -305,6 +305,11 @@ test('the week in Summary: daily bars for the ml from bottles (no count of bottl
   await expect(page.getByTestId('cnt-bottleMl')).toBeVisible();
   await expect(page.getByTestId('cnt-bottles')).toHaveCount(0); // (owner) the ml per day is enough
   await expect(page.getByTestId('cnt-bottleMl').locator('.bn').first()).toHaveText(String(4 * 60 + 4 * 120));
+  // (owner) formula and expressed milk both given: each bar in two parts (formula on top) and a key; the number is the total
+  const first = page.getByTestId('cnt-bottleMl').getByTestId('bar-split').first();
+  await expect(first.locator('i.p1')).toHaveAttribute('data-ml', String(4 * 120));
+  await expect(first.locator('i.p2')).toHaveAttribute('data-ml', String(4 * 60));
+  await expect(page.getByTestId('cnt-bottleMl-key')).toHaveText(/תמ״ל\s*חלב שאוב/);
   const overflow = await page.getByTestId('cnt-bottleMl').evaluate((card) =>
     [...card.querySelectorAll('.bar')].some((bar) => {
       const n = bar.querySelector('.bn') as HTMLElement;
@@ -321,4 +326,16 @@ test('the week without bottles: no bottle bars', async ({ page, request }) => {
   await page.getByTestId('view-day').click();
   await expect(page.getByTestId('cnt-feeds')).toBeVisible();
   await expect(page.getByTestId('cnt-bottleMl')).toHaveCount(0);
+});
+
+test('the week with one bottle kind: whole bars, no key', async ({ page, request }) => {
+  await feeding(request, { breast: false, formula: true });
+  await seed(request, mixedWeek().filter((e) => e.detail?.startsWith('formula')));
+  await page.clock.setFixedTime(QNOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-day').click();
+  await expect(page.getByTestId('cnt-bottleMl')).toBeVisible();
+  await expect(page.getByTestId('bar-split')).toHaveCount(0);
+  await expect(page.getByTestId('cnt-bottleMl-key')).toHaveCount(0);
 });

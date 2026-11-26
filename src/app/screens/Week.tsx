@@ -17,6 +17,11 @@ const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUT
 /** pee: ring, poop: filled dot, pee + poop: ring with a dot inside */
 const DOT_CLASS = { pee: 'w', poop: 'p', both: 'b' } as const;
 const pct = (f: number) => `${(f * 100).toFixed(2)}%`;
+/** A bar in two parts (per day: [first, second]) with their names for the key under the card. */
+interface Split {
+  parts: [number, number][];
+  names: [string, string];
+}
 
 /** One day from 06:00 to 06:00; time runs right to left like the text. */
 function timelineRow(r: TimelineRow, today: string): JSX.Element {
@@ -44,7 +49,7 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
  * Small bars, oldest on the right (time runs right to left), with the number above and the weekday below: the seven full
  * days and then today so far (owner), set a little apart, labelled "היום" and drawn lighter (the day is not over).
  */
-function countCard(id: string, title: string, days: string[], values: number[], today: string, wide = false): JSX.Element {
+function countCard(id: string, title: string, days: string[], values: number[], today: string, wide = false, split?: Split): JSX.Element {
   const max = Math.max(1, ...values);
   return (
     <div class={`cnt ${wide ? 'wide' : ''}`} data-testid={`cnt-${id}`} key={id}>
@@ -54,12 +59,30 @@ function countCard(id: string, title: string, days: string[], values: number[], 
           <div class={`bar ${days[i] === today ? 'today' : ''}`} key={days[i]}>
             <span class="bn">{v}</span>
             <div class="bt">
-              <div class="bv" style={{ height: `${Math.round((v / max) * 100)}%` }} />
+              {split ? (
+                // (owner) two parts in one bar: the first kind on top, the second below; the number above is the total
+                <div class="bv mx" style={{ height: `${Math.round((v / max) * 100)}%` }} data-testid="bar-split">
+                  <i class="p1" style={{ flex: split.parts[i]![0] }} data-ml={split.parts[i]![0]} />
+                  <i class="p2" style={{ flex: split.parts[i]![1] }} data-ml={split.parts[i]![1]} />
+                </div>
+              ) : (
+                <div class="bv" style={{ height: `${Math.round((v / max) * 100)}%` }} />
+              )}
             </div>
             <span class="bd">{days[i] === today ? 'היום' : weekdayOf(days[i]!)}</span>
           </div>
         ))}
       </div>
+      {split && (
+        <div class="mleg" data-testid={`cnt-${id}-key`}>
+          <span>
+            <i class="p1" /> {split.names[0]}
+          </span>
+          <span>
+            <i class="p2" /> {split.names[1]}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -81,6 +104,8 @@ export function Week() {
   const today = localDate(now);
   // the family's bottle settings, or bottles given this week (before they were turned off)
   const withBottles = bottleKindsOn(feedingOf(settings)).length > 0 || sums.some((s) => s.feeds.bottles > 0);
+  // (owner) formula and expressed milk both given this week: each bar in two parts, with a key
+  const bothKinds = sums.some((s) => s.feeds.bottleMlByKind.formula > 0) && sums.some((s) => s.feeds.bottleMlByKind.expressed > 0);
   const tlRef = useRef<HTMLDivElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
 
@@ -140,12 +165,12 @@ export function Week() {
       <h3>ספירות יומיות</h3>
       <div class="cnts" ref={barsRef}>
         {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
-        {/* (owner, F18) with bottles: the ml eaten from them per day (a count of bottles is not needed); three-digit numbers:
-            the whole width, so each fits over its bar */}
-        {withBottles && countCard('bottleMl', 'מ״ל בבקבוקים', countDays, sums.map((s) => s.feeds.bottleMl), today, true)}
         {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}
         {countCard('poop', 'קקי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.poop + s.diapers.both), today)}
         {countCard('sleep', 'שינה (שעות)', countDays, sums.map((s) => Math.round(s.sleep.totalMin / 60)), today)}
+        {/* (owner, F18) with bottles: the ml eaten from them per day (a count of bottles is not needed); three-digit numbers:
+            the whole width, so each fits over its bar; last, so the small cards pair up */}
+        {withBottles && countCard('bottleMl', 'מ״ל בבקבוקים', countDays, sums.map((s) => s.feeds.bottleMl), today, true, bothKinds ? { parts: sums.map((s) => [s.feeds.bottleMlByKind.formula, s.feeds.bottleMlByKind.expressed]), names: ['תמ״ל', 'חלב שאוב'] } : undefined)}
       </div>
       <p class="muted" data-testid="week-note">
         7 הימים המלאים האחרונים, מ-{shortDate(w.from)} עד {shortDate(w.to)}, והיום עד עכשיו בצד.

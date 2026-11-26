@@ -691,6 +691,11 @@ No names, addresses or secrets in this file (the repository is public).
   The week in Summary: no count of bottles (owner: the ml per day is enough). Tests: unit (the month day) and browser (the
   lines, girl wording, none on other days or without a date of birth; failed without them).
 
+- The week's ml card **(owner)**: when formula and expressed milk were both given that week, each bar is in two parts (formula
+  on top, expressed milk below, the number above is the day's total) with a key under the card; one kind: whole bars as before.
+  The ml card moved to the end, so the small cards pair up. Tests: unit (ml per kind) and browser (the parts and the key; none
+  with one kind; failed without the split).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five

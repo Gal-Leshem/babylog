@@ -566,3 +566,12 @@ button.prow .t small { display: block; }
 /* (owner) the day the baby turns a whole number of months: quiet, in the list's own colours */
 .recent .mday { padding: 8px 4px; font-size: 14px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .sage { margin: 6px 2px 0; text-align: center; }
+/* (owner, F18) a bar in two parts (formula on top, expressed milk below) and its key */
+.bar .bv.mx { display: flex; flex-direction: column; background: none; opacity: 1; }
+.bar .bv.mx i { display: block; width: 100%; min-height: 0; }
+.bar .bv.mx i.p1, .mleg i.p1 { background: var(--accent); opacity: 0.6; }
+.bar .bv.mx i.p2, .mleg i.p2 { background: var(--accent); opacity: 0.25; }
+.bar .bv.mx i.p1 { border-radius: 3px 3px 0 0; }
+.bar.today .bv.mx { opacity: 0.6; box-shadow: none; }
+.mleg { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.mleg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; }
