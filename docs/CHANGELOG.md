@@ -737,6 +737,11 @@ No names, addresses or secrets in this file (the repository is public).
   the usual pace and the words go at once. Same conditions as the other words in the mark (one line, nothing moves at 360 x 560,
   the muted colour at night). Browser tests day and night (failed without the words, and without the immediate update on a
   touch); screenshots day, night and 360 x 560.
+- CI: "while an entry is being sent there is only a small dot" failed on `main` for the features session's commit. Cause (an old
+  race in the test, made visible by CI timing): the test made every request take 12 s, and a regular check that slipped in just
+  before the tap gave up after its own 10 s limit, so the app rightly said "no connection" and the tap went out about 25 s later.
+  The mock server can now slow only requests that carry entries (`opsDelay`), and the test uses it. Proven with a check forced
+  just before the tap: fails with the old delay, passes with the new one. Not an app bug.
 - Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
   by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
   live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the

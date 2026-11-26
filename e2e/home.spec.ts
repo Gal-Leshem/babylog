@@ -425,8 +425,10 @@ for (const [width, height] of [[393, 852], [393, 700], [393, 560], [360, 560]] a
 
 test('while an entry is being sent there is only a small dot; words appear only when it takes long', async ({ page, request }) => {
   await install(page);
-  // the answer takes 12 s; the words come at 8 s: a 4 s window to see them (was 1.5 s: flaky under a full parallel run)
-  await control(request, 'delay=12000');
+  // the answer takes 12 s; the words come at 8 s: a 4 s window to see them (was 1.5 s: flaky under a full parallel run).
+  // Only the tap is slow: with every request slow, a regular check that slipped in just before the tap gave up after its 10 s
+  // ("no connection") and the tap went out much later (seen once in CI).
+  await control(request, 'opsDelay=12000');
   await page.getByTestId('btn-wet').click();
   const mark = page.getByTestId('banner-sync');
   await expect(mark).toHaveAttribute('data-state', 'sending');

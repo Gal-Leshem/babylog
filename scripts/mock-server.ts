@@ -2,6 +2,12 @@ import { createServer } from 'node:http';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
 
+/** A request that writes: a `sync` with operations, or one of the single write actions. */
+const carriesEntries = (p: unknown): boolean => {
+  const o = p as { action?: string; ops?: unknown[] } | null;
+  return Boolean(o && ((o.action === 'sync' && o.ops?.length) || ['log', 'asleep', 'awake', 'update', 'delete', 'restore'].includes(String(o.action))));
+};
+
 /** Local stand-in for the Apps Script server: same core, memory storage. Used by e2e tests and dev. */
 export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin-key') {
   let store = new MemoryStore();
@@ -24,6 +30,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
   const kinds: string[] = [];
   const baseDelay = Number(process.env.MOCK_DELAY ?? 0);
   let delayMs = baseDelay;
+  let opsDelayMs: number | null = null;
   let offline = false;
   /** Behave like a server from before `sync` (API 0.3.0). */
   let old = false;
@@ -37,6 +44,9 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
       const q = new URL(req.url, 'http://x').searchParams;
       if (q.has('offline')) offline = q.get('offline') === '1';
       if (q.has('delay')) delayMs = Number(q.get('delay'));
+      // only requests that carry entries are slow (a test of a slow tap must not slow the regular checks too: a check gives up
+      // after 10 s, so with 12 s on every request a check that slipped in before the tap ended as "no connection")
+      if (q.has('opsDelay')) opsDelayMs = Number(q.get('opsDelay'));
       if (q.has('old')) old = q.get('old') === '1';
       if (q.has('family')) family = q.get('family') === '1';
       if (q.has('forget')) kinds.length = 0;
@@ -50,6 +60,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
         old = false;
         family = false;
         delayMs = baseDelay;
+        opsDelayMs = null;
       }
       return void res.writeHead(200).end('ok');
     }
@@ -93,7 +104,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
         const a = answer as { unchanged?: boolean; events?: unknown; changes?: unknown };
         kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}${a.changes ? '+changes' : ''}` : (p?.action ?? '?'));
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ ...answer, ms: Date.now() - t0 }));
-      }, delayMs);
+      }, opsDelayMs !== null && carriesEntries(parsed) ? opsDelayMs : delayMs);
     });
   });
   return {
