@@ -325,3 +325,40 @@ Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no t
       admin read first. It also asked whether the per-request properties read could move to the script cache (proposal 5):
       passed to the owner.
   - Owner's question: fewer checks while the app is merely open. Proposal in the session report (waiting for a decision).
+
+### Proposal: the script cache for the per-request read (examined 26 November 2026, at the owner's request; not built)
+Raised by the families session; the owner asked for an orderly proposal (gain, speed, risks) before anything is built.
+- **Facts (Google's pages, read 26 November 2026):** `CacheService.getScriptCache()` is common to all users of one script (so
+  each family's server keeps its own; isolation unchanged); values up to 100 KB a key, keys up to 250 characters, at most
+  1,000 items; expiry up to 6 hours (default 10 minutes), "only a suggestion: cached data may be removed before this time";
+  "you must be prepared to get back null from all reads"; no quota and no rate limit listed (all quotas "subject to change");
+  not stated: whether the cache survives a new version, whether a put is seen at once by other executions, whether `putAll`
+  is atomic.
+- **What would move:** only what a check needs before the lock: `API_KEY` (and `ADMIN_KEY` on family servers), `REV` and
+  `JOURNAL` (under 8 KB). Everything decided under the lock keeps reading the properties fresh (as today), so writes are exactly
+  as safe as today. The settings copy stays a property (read only for a full list).
+- **Gain:** checks are about 90% of the requests (log 3: 54 of 60) and would cost no properties call while the cache is warm;
+  a tap would cost 2 calls instead of 3. A family would go from about 900 to 1,700 properties calls a day to about 150 to 300:
+  roughly 5 to 7 times more families before the 75% line on that quota (the next limit, unknown, would then decide).
+  Speed: not a speed change; a cache read may be some tens of milliseconds faster or slower than a properties read (CI:
+  properties 6 to 60 ms; the phone's trip is about 1.1 s). To be measured first.
+- **Design and risks:**
+  - A miss (expired, evicted, after `setup` or `rotateKey`) falls back to the properties, which is today's cost. Any error from
+    the cache is caught: a request never fails because of it.
+  - Stale revision (the cache behind the properties) would mean "nothing new" while there is news, never lost or wrong data.
+    A write removes the cached revision before writing the properties and puts the new one after, so a failed put leaves no
+    entry (readers then use the properties). The only other way is a reader that read the properties just before a write and
+    stores them just after it (a window of milliseconds): such reader refills are kept only 60 s, so the delay is at most 60 s,
+    and the phone's full list every 5 minutes bounds it anyway.
+  - Keys are cached under a format prefix (`c1:`), so a new version never reads values written in an older format (whether the
+    cache survives a deploy is not stated).
+  - `rotateKey` and `setup` clear the cached keys (a rotated key must stop working at once).
+  - 100 KB and 1,000 items: far away (4 small values).
+- **Stages:** (0) measure only: the live test times a cache read and write next to a properties read on the real test server
+  (one deploy, no behaviour change); (1) build: `gas.ts` only, with a fake cache that can evict and fail in the Google runtime
+  tests (a check costs 0 properties calls when warm and 1 after eviction; a stale entry cannot outlive 60 s; a failed put leaves
+  no entry; a rotated key is refused at once; writes still read under the lock), the live test, then the sync log and the
+  phones' request counts to confirm; the families session's estimate formula changes with it. No API change; the same bundle
+  reaches every family server.
+- **Recommendation:** stage 0 now (cheap); stage 1 when the first days of real request counts show the need (more than about 10
+  families planned, or a family above about 2,000 calls a day).
