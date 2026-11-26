@@ -186,6 +186,11 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   - Questions: review all (feeds today count every feeding; sides and cluster only with breastfeeding on) and add bottle
     questions (bottles and ml today vs a usual day; bottle size over the week; share of feeds with a bottle).
   - Out of scope: pumping (the owner decides later), stash, discard timers, volume targets, a mixed bottle type, solids (later).
+  **Second round (owner):** the edit form has "כמה נשאר" (leftover; the app computes what was drunk; default: all of it); every
+  new bottle starts from the default of its type (never the previous bottle); the toast after a bottle (one tap or the window)
+  offers -20 / -10 / +10 / +20 ml; proposed: when the last bottles of a type keep the same amount that differs from the
+  default, offer to update the default; "מתוכן X עם בקבוק" only when breastfeeding and bottles are both on (sensitive: some
+  mothers cannot nurse); be careful with bottle volume in "היום חריג" for combined feeding (open).
   Next: mockups (Home at 852 / 700 / 560 for each combination, the bottle window, the toast, Settings, the summary row).
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
