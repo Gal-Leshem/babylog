@@ -372,3 +372,8 @@ Raised by the families session; the owner asked for an orderly proposal (gain, s
   `TIMING` table shows `propsRead`, `cacheMiss`, `cachePut`, `cacheHit`, `cacheRemove`. The cache needs no permission beyond
   today's (Google's reference lists none, as for properties and the lock); a failure is answered, never thrown, and the live test
   only prints it.
+- **First stage-0 numbers (26 November 2026, commit b06082a, the real test server, 8 probes from the `dev` and `main` runs):**
+  a properties read 8 to 103 ms (about 40 typical); a cache read that hits 5 to 65 ms (about 35); one that misses 7 to 71 ms;
+  writing the three values 42 to 148 ms; removing them 19 to 76 ms. So a cache read costs about what a properties read costs:
+  no change in speed for a check either way; a write would add about 0.1 s (the cache put) to a tap's server time. The cache
+  worked on the first call, with today's permissions. More runs (every deploy) will widen the sample.
