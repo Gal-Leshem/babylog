@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { byTimeDesc, eventTime } from '../../shared/domain';
 import { formatLocal, localDate } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
+import { bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { FILTERS, dayName, eventIcon, eventLabel, eventTimeText, isBackfilled, sleepDurationText } from '../labels';
 import { count, engine, setHistoryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
@@ -54,7 +55,9 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
     void engine.ensureRange(date, date).finally(() => setLoading(false));
   }, [date, view]);
 
-  const kind = (e: BabyEvent) => filter === 'all' || e.type === filter || (filter === 'vitamin_d' && e.type === 'medicine');
+  // (F18) "האכלה" holds nursing and bottles
+  const kind = (e: BabyEvent) => filter === 'all' || e.type === filter || (filter === 'vitamin_d' && e.type === 'medicine') || (filter === 'feed' && e.type === 'bottle');
+  const bottles = bottleKindsOn(feedingOf(settings)).length > 0;
   const inView = (e: BabyEvent) => {
     if (view === 'day') return localDate(eventTime(e)) === date;
     const t = eventTime(e);
@@ -98,7 +101,7 @@ export function History({ onEdit }: { onEdit: (e: BabyEvent) => void }) {
       <div class="chips small" role="tablist" aria-label="סינון">
         {FILTERS.map((f) => (
           <button type="button" key={f.id} class={`chip ${filter === f.id ? 'on' : ''}`} data-testid={`filter-${f.id}`} onClick={() => (count('history.filter'), setFilter(f.id))}>
-            {f.label}
+            {f.id === 'feed' && bottles ? 'האכלה' : f.label}
           </button>
         ))}
       </div>

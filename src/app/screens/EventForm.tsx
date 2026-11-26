@@ -4,7 +4,9 @@ import { localDate, parseLocal } from '../../shared/tz';
 import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared/types';
 import { deleteEvent, deleteWake } from '../actions';
 import { VITAMIN_D_ID } from '../../shared/medicines';
-import { KINDS, KIND_ICON, KIND_LABEL, type Kind, dayName, errorText, fromKind, kindOf, nowLocal, timeOf } from '../labels';
+import { KINDS, KIND_ICON, KIND_LABEL, type Kind, bottleAmountText, bottleKindOf, dayName, errorText, eventLabel, fromKind, kindOf, kindOfBottle, nowLocal, timeOf } from '../labels';
+import { BOTTLE_MAX_ML, BOTTLE_STEP_ML, bottleDetail, bottleKindsOn, defaultMl, feedingOf, parseBottle } from '../../shared/bottle';
+import { amountStepper } from './Amount';
 import { count, engine, showToast, useEngine } from '../state';
 import { DateField } from './DateField';
 import { babyWords } from '../words';
@@ -48,7 +50,24 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   const nowStr = nowLocal();
   const initStart = event?.start || nowStr;
   // what is being recorded: one of the kinds, or a medicine ("med:<id>"; vitamin D is "med:vitamin_d")
-  const [sel, setSel] = useState<string>(() => (event?.type === 'vitamin_d' ? `med:${VITAMIN_D_ID}` : event?.type === 'medicine' ? `med:${event.detail}` : event ? kindOf(event) : 'feed_left'));
+  const feeding = feedingOf(settings);
+  const [sel, setSelState] = useState<string>(() =>
+    event?.type === 'vitamin_d' ? `med:${VITAMIN_D_ID}` : event?.type === 'medicine' ? `med:${event.detail}` : event ? kindOf(event) : feeding.breast ? 'feed_left' : kindOfBottle(bottleKindsOn(feeding)[0] ?? 'formula'),
+  );
+  // (owner, F18) a bottle: how much was given and how much was left in it (both with − / +; the leftover starts at 0)
+  const was = event?.type === 'bottle' ? parseBottle(event.detail) : null;
+  const [given, setGiven] = useState(() => was?.given ?? defaultMl(feeding, bottleKindOf(sel as Kind) ?? 'formula'));
+  const [left, setLeft] = useState(was?.left ?? 0);
+  const setSel = (next: string) => {
+    const b = bottleKindOf(next as Kind);
+    // every bottle starts from the default of its kind (the entry's own amount when it is that kind already)
+    if (b && b !== bottleKindOf(sel as Kind)) {
+      const g = was?.kind === b ? was.given : defaultMl(feeding, b);
+      setGiven(g);
+      setLeft(was?.kind === b ? was.left : 0);
+    }
+    setSelState(next);
+  };
   const medId = sel.startsWith('med:') ? sel.slice(4) : null;
   const kind: Kind = medId === null ? (sel as Kind) : medId === VITAMIN_D_ID ? 'vitamin_d' : 'medicine';
   // active medicines, plus the one this entry belongs to even if it was archived since
@@ -77,6 +96,12 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
 
   const today = localDate(Date.now());
   const isSleep = kind === 'sleep';
+  // (F18) the kinds of feeding the family uses (an entry of a kind turned off since still shows its own)
+  const offered = (k: Kind) => {
+    if (k === 'feed_left' || k === 'feed_right') return feeding.breast || event?.type === 'feed';
+    const b = bottleKindOf(k);
+    return b ? feeding[b] : true;
+  };
 
   const setBack = (m: Moment, mins: number) => {
     const t = nowLocal(Date.now() - mins * 60_000);
@@ -159,8 +184,10 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
       }
     }
     const { type, detail: kindDetail } = fromKind(kind);
-    const detail = kind === 'medicine' ? medId! : kindDetail;
-    const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : KIND_LABEL[kind];
+    const bk = bottleKindOf(kind);
+    const bottle = bk ? { kind: bk, given, left: Math.min(left, given) } : null;
+    const detail = kind === 'medicine' ? medId! : bottle ? bottleDetail(bottle) : kindDetail;
+    const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : bottle ? `${KIND_LABEL[kind]} · ${bottleAmountText(bottle)}` : KIND_LABEL[kind];
     const me = engine.getConfig()?.me ?? '?';
     const res =
       mode === 'add'
@@ -186,7 +213,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
   };
   const describe = (c: EventCore): string => {
     if (c.type === 'sleep') return `${w.fellAsleep} ${c.start ? when(c.start.slice(0, 10), timeOf(c.start)) : 'לא ידוע'} · ${c.end ? `${w.wokeUp} ${when(c.end.slice(0, 10), timeOf(c.end))}` : w.stillAsleep}`;
-    const name = c.type === 'medicine' ? (settings.medicines.find((m) => m.id === c.detail)?.name ?? KIND_LABEL.medicine) : KIND_LABEL[kindOf({ ...event!, ...c })];
+    const name = c.type === 'medicine' ? (settings.medicines.find((m) => m.id === c.detail)?.name ?? KIND_LABEL.medicine) : eventLabel({ ...event!, ...c });
     return `${name} ${when(c.start.slice(0, 10), timeOf(c.start))}${c.note ? ` · ${c.note}` : ''}`;
   };
 
@@ -196,7 +223,7 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
         <h2>{mode === 'add' ? 'הוספה בדיעבד' : 'עריכת אירוע'}</h2>
 
         <div class="chips" role="radiogroup" aria-label="סוג">
-          {KINDS.filter((k) => k !== 'vitamin_d').map((k) => (
+          {KINDS.filter((k) => k !== 'vitamin_d' && (offered(k) || k === sel)).map((k) => (
             <button type="button" key={k} class={`chip ${k === sel ? 'on' : ''}`} data-testid={`kind-${k}`} onClick={() => setSel(k)}>
               <span class="emo">{KIND_ICON[k]}</span> {KIND_LABEL[k]}
             </button>
@@ -208,6 +235,18 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
             </button>
           ))}
         </div>
+
+        {bottleKindOf(kind) && (
+          <>
+            <label class="fl">הוכן</label>
+            {amountStepper({ value: given, min: BOTTLE_STEP_ML, max: BOTTLE_MAX_ML, testId: 'given', label: 'הוכן', onChange: (g) => (setGiven(g), setLeft(Math.min(left, g))) })}
+            <label class="fl">כמה נשאר בבקבוק?</label>
+            {amountStepper({ value: Math.min(left, given), min: 0, max: given, testId: 'left', label: 'כמה נשאר בבקבוק?', onChange: setLeft })}
+            <p class="calc" data-testid="eaten">
+              נאכל: {given - Math.min(left, given)} מ״ל
+            </p>
+          </>
+        )}
 
         {!isSleep && timeEditor('start', 'מתי')}
 

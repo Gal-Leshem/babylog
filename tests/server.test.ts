@@ -824,6 +824,28 @@ describe("the baby's date of birth (owner)", () => {
   });
 });
 
+describe('bottles (F18, owner)', () => {
+  it('a bottle is logged with its kind and amounts in the detail; a bad one is refused', () => {
+    for (const detail of ['formula:90', 'expressed:120:30', 'formula:120:120']) {
+      expect(call({ action: 'log', id: id(), type: 'bottle', detail, start: '2026-11-14 11:00', user: 'Parent 1', source: 'app' })).toMatchObject({ ok: true });
+    }
+    for (const detail of ['', 'formula', 'formula:0', 'milk:90', 'formula:90:100', 'formula:600', 'formula:90:', 'formula:9.5', 'formula:90:10:1']) {
+      expect(call({ action: 'log', id: id(), type: 'bottle', detail, start: '2026-11-14 11:00', user: 'Parent 1', source: 'app' })).toMatchObject({ ok: false, error: 'invalid_event' });
+    }
+  });
+
+  it('the feeding settings are stored whole and checked; older sheets have none (breastfeeding only)', () => {
+    expect(ok(call({ action: 'settings' })).settings!.feeding).toBeUndefined();
+    const f = { breast: true, expressed: false, formula: true, expressedMl: 60, formulaMl: 120 };
+    expect(ok(call({ action: 'settings', set: { feeding: f } })).settings!.feeding).toEqual(f);
+    expect(ok(call({ action: 'settings', set: { babySex: 'girl' } })).settings!.feeding).toEqual(f);
+    for (const bad of [null, 5, { ...f, breast: 'yes' }, { ...f, formulaMl: 0 }, { ...f, expressedMl: 501 }, { ...f, formulaMl: 90.5 }, { breast: false, expressed: false, formula: false, expressedMl: 60, formulaMl: 90 }, { breast: true }]) {
+      expect(call({ action: 'settings', set: { feeding: bad } })).toMatchObject({ ok: false, error: 'bad_request' });
+    }
+    expect(store.getSettings().feeding).toEqual(f);
+  });
+});
+
 // Owner: Siri on the other parent's phone speaks Hebrew. A request with lang 'he' gets Hebrew sentences, in the baby's wording.
 describe('Siri sentences in Hebrew', () => {
   const siri = (req: Record<string, unknown>) => ok(call({ user: 'Parent 2', source: 'siri', lang: 'he', ...req }));

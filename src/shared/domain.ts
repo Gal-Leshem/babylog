@@ -51,6 +51,13 @@ export function lastFeed(events: readonly BabyEvent[]): BabyEvent | undefined {
   return best;
 }
 
+/** (F18) The most recent bottle. */
+export function lastBottle(events: readonly BabyEvent[]): BabyEvent | undefined {
+  let best: BabyEvent | undefined;
+  for (const e of live(events)) if (e.type === 'bottle' && e.start && (!best || eventTime(e) >= eventTime(best))) best = e;
+  return best;
+}
+
 /** The recommended side for the next feeding: opposite of the most recent press. */
 export function nextSide(events: readonly BabyEvent[]): 'left' | 'right' | null {
   const f = lastFeed(events);

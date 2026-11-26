@@ -1,10 +1,14 @@
+import type { Feeding } from './bottle';
 import type { Medicine } from './medicines';
 
-/** `medicine`: a dose of a medicine defined in Settings (detail = the medicine's id); vitamin D keeps its own type. */
-export type EventType = 'feed' | 'diaper' | 'sleep' | 'vitamin_d' | 'medicine';
+/**
+ * `medicine`: a dose of a medicine defined in Settings (detail = the medicine's id); vitamin D keeps its own type.
+ * `bottle`: expressed milk or formula, with its amounts in the detail (`bottle.ts`).
+ */
+export type EventType = 'feed' | 'diaper' | 'sleep' | 'vitamin_d' | 'medicine' | 'bottle';
 export type Source = 'app' | 'siri';
 
-export const EVENT_TYPES: readonly EventType[] = ['feed', 'diaper', 'sleep', 'vitamin_d', 'medicine'];
+export const EVENT_TYPES: readonly EventType[] = ['feed', 'diaper', 'sleep', 'vitamin_d', 'medicine', 'bottle'];
 export const FEED_DETAILS = ['left', 'right'] as const;
 export const DIAPER_DETAILS = ['wet', 'poop', 'both'] as const;
 
@@ -61,6 +65,8 @@ export interface Settings {
   /** (owner) the baby's date of birth, 'YYYY-MM-DD', set in Settings; missing until the parents set it. */
   babyBirth?: string;
   mergeWindowMin: number;
+  /** (owner, F18) the kinds of feeding the family uses and the default amount per bottle kind; missing = breastfeeding only */
+  feeding?: Feeding;
   /** The two parents' display names, as chosen in the app (kept only in the private sheet). */
   parents: [string, string];
   /** Medicines besides vitamin D, active and archived (kept in the sheet's "Medicines" tab). */

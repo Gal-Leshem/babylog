@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'preact/hooks';
-import { byTimeDesc, clock, elapsedHM, forgottenWake, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
+import { bottleKindsOn, feedingOf } from '../../shared/bottle';
+import { byTimeDesc, clock, elapsedHM, eventTime, forgottenWake, lastBottle, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
 import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
-import { logMedicine, quickLog, toggleSleep } from '../actions';
-import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from '../labels';
+import { logBottle, logMedicine, quickLog, toggleSleep } from '../actions';
+import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, kindOfBottle, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 import { overlay } from '../overlay';
@@ -63,7 +64,7 @@ function medsTile(meds: readonly Medicine[], events: readonly BabyEvent[], now: 
   };
 }
 
-export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e: BabyEvent, focus?: 'start' | 'end') => void; onAddLate: () => void; onOpenMeds: () => void; onFixWake: (sleep: BabyEvent) => void }) {
+export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }: { onEdit: (e: BabyEvent, focus?: 'start' | 'end') => void; onAddLate: () => void; onOpenMeds: () => void; onOpenBottle: () => void; onFixWake: (sleep: BabyEvent) => void }) {
   const { events, settings, arrived } = useEngine();
   const now = useNow(15_000);
   // After a tap the same button rests for 1.5 s (a double tap must not log twice); the others only for a moment, so
@@ -85,7 +86,12 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
   };
 
   const today = localDate(now);
-  const last = lastFeed(events);
+  const feeding = feedingOf(settings);
+  const bottleKinds = bottleKindsOn(feeding);
+  // (F18) the feed tile shows the last feeding of any kind; the next side comes from nursing only
+  const lastNursing = lastFeed(events);
+  const lastB = lastBottle(events);
+  const last = lastB && (!lastNursing || eventTime(lastB) >= eventTime(lastNursing)) ? lastB : lastNursing;
   const next = nextSide(events);
   const sleep = sleepState(events);
   const meds = settings.medicines.filter((m) => m.status === 'active');
@@ -93,7 +99,8 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
   const w = babyWords(settings.babySex);
   const recent = useMemo(() => recentRows(events, settings.medicines, w), [events, settings.medicines, w]);
 
-  const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${side(last.detail)}` : '—';
+  const feedValue = last ? `לפני ${elapsedHM(now - parseLocal(last.start))} · ${last.type === 'bottle' ? '🍼' : side(last.detail)}` : '—';
+  const feedSub = feeding.breast ? (next ? `הבאה: ${side(next)}` : 'אין עדיין') : lastB ? eventLabel(lastB) : 'אין עדיין';
   const sleepValue =
     sleep.state === 'asleep' ? `${w.asleepFor} ${elapsedHM(now - sleep.since)}` : sleep.since !== null ? `${w.awakeFor} ${elapsedHM(now - sleep.since)}` : '—';
 
@@ -184,6 +191,27 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
     );
   };
 
+  // (owner, F18) the feed row: nursing left and right, and a bottle button for the bottle kinds the family uses
+  const bottleButton = (testId: string, label: string, onClick: () => void) => (
+    <button key={testId} type="button" class={`big ${flash === testId ? 'flash' : ''}`} data-testid={`btn-${testId}`} disabled={locked || held === testId} onClick={onClick}>
+      <span class="inner">
+        <span class="ico">🍼</span>
+        <span class="lbl">{label}</span>
+      </span>
+    </button>
+  );
+  const feedButtons = feeding.breast
+    ? [
+        kindButton('feed_left'),
+        kindButton('feed_right'),
+        ...(bottleKinds.length === 0
+          ? []
+          : bottleKinds.length === 1
+            ? [bottleButton('bottle', 'בקבוק', () => press('bottle', () => logBottle(bottleKinds[0]!)))]
+            : [bottleButton('bottle', 'בקבוק', onOpenBottle)]),
+      ]
+    : bottleKinds.map((k) => bottleButton(`bottle_${k}`, KIND_LABEL[kindOfBottle(k)], () => press(`bottle_${k}`, () => logBottle(k))));
+
   const asleep = sleep.state === 'asleep';
   const openStart = asleep ? openSleep(events)?.start : undefined;
   const forgotten = forgottenWake(events, now);
@@ -195,7 +223,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
         <div class="tile" data-testid="tile-feed">
           <div class="tl">האכלה</div>
           <div class="tv">{feedValue}</div>
-          <div class="ts">{next ? `הבאה: ${side(next)}` : 'אין עדיין'}</div>
+          <div class="ts" data-testid="tile-feed-sub">{feedSub}</div>
         </div>
         {forgotten ? (
           // (owner) open much longer than usual: probably a wake-up that was not logged; a tap opens it on waking up
@@ -226,10 +254,9 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
 
       <div class={`grid ${meds.length ? '' : 'nomeds'}`}>
         {/* feed buttons keep their physical side: left on the left */}
-        <div class="feedrow">
-          {kindButton('feed_left')}
-          {kindButton('feed_right')}
-        </div>
+        {/* (owner, F18) bottles: a third button beside the nursing buttons ("בקבוק"), or, without breastfeeding, a button per
+            bottle kind in their place */}
+        <div class={`feedrow ${feedButtons.length === 3 ? 'three' : feedButtons.length === 1 ? 'one' : ''} ${feeding.breast ? '' : 'stack'}`}>{feedButtons}</div>
         <div class="row2">
           {kindButton('wet')}
           {kindButton('poop')}

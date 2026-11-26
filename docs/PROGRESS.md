@@ -128,11 +128,10 @@ same `dev` and `main` and share one pipeline, so:
     `src/server/core.ts`, `SyncLog.tsx`, the `TIMING` part of `scripts/live-test.ts`, `REFACTOR_PLAN.md`.
   - features session: everything else in the app (screens, insights, medicines, wording, styles).
   A session that needs another one's files tells the owner first.
-  - Coordination note (features session, owner approved, 26 Nov 2026): F18 bottles adds an event type for bottles with an
-    amount in ml, appended as a new last column of the Events sheet (rows from older versions still read), so it touches the
-    event row read / write in `gas.ts`, `protocol.ts` and the event validation in `core.ts`; feeding "episodes" (a bottle within
-    the merge window of a nursing is one feeding) change the feed counts used by the insights. Performance session: please take
-    the column into account in any reading optimisation. A change that touches the server API (`protocol.ts`) or the
+  - Coordination note (features session, owner approved, 26 Nov 2026): F18 bottles adds the event type `bottle`; its amounts
+    live in the detail (`formula:120:30`), so there is NO new column and no change to the event row read / write or to
+    `protocol.ts`; only the event validation in `core.ts` and the Settings rows in `gas.ts` changed. Feeding "episodes" (stage 2:
+    a bottle within the merge window of a nursing is one feeding) will change the feed counts used by the insights. A change that touches the server API (`protocol.ts`) or the
   pipeline, or that could slow the owner's own app, is said in the report to the owner.
 - Before every push: `git fetch origin` and merge `origin/dev` into your work (never force-push, never rebase pushed commits);
   rerun the tests if the merge brought changes. Conflicts in `CHANGELOG.md` / `PROGRESS.md`: keep both sides.

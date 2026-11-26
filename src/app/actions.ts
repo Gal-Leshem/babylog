@@ -1,9 +1,10 @@
+import { type BottleKind, bottleDetail, clampGiven, defaultMl, feedingOf } from '../shared/bottle';
 import { type Medicine, VITAMIN_D_ID } from '../shared/medicines';
 import type { ApiRequest } from '../shared/protocol';
 import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
-import { KIND_LABEL, errorText, fromKind, hm, kindOf, nowLocal, timeOf, type Kind } from './labels';
+import { KIND_LABEL, errorText, fromKind, hm, kindOf, kindOfBottle, nowLocal, timeOf, type Kind } from './labels';
 import { count, engine, showToast } from './state';
 import { babyWords } from './words';
 
@@ -90,6 +91,52 @@ export function quickLog(kind: Kind): void {
     return toastFor((t) => savedText(label, timeOf(t), offline), { action: { label: W().markAwake, note: W().stillMarkedAsleep, run: toggleSleep } }, TAP_TOAST_ASLEEP_MS);
   }
   toastFor((t) => savedText(label, timeOf(t), offline));
+}
+
+/** (owner, F18) How long the toast after a bottle stays, and stays again after each tap on it (short, not excessive). */
+export const BOTTLE_TOAST_MS = 4_000;
+/** (owner) the amount buttons in the toast after a bottle */
+export const TOAST_ML = [-20, -10, 10, 20] as const;
+
+/**
+ * (owner, F18) Logs a bottle now: the kind's default amount (never the previous bottle's), or `ml` when it was picked in the
+ * bottle window. The toast offers − / + for the amount and "היה לפני", and stays while it is used.
+ */
+export function logBottle(kind: BottleKind, ml?: number): void {
+  const feeding = feedingOf(engine.getState().settings);
+  const given = clampGiven(ml ?? defaultMl(feeding, kind));
+  const start = nowLocal();
+  const id = uid();
+  const res = engine.dispatch({ action: 'log', id, type: 'bottle', detail: bottleDetail({ kind, given, left: 0 }), start, user: me(), source: 'app' });
+  if (!res.ok) return fail(res.error, res.detail);
+  count('log.bottle');
+  const label = KIND_LABEL[kindOfBottle(kind)];
+  const offline = engine.getState().status === 'offline';
+  let current = given;
+  let at = start;
+  const text = () => savedText(`${label} · ${current} מ״ל`, timeOf(at), offline);
+  const mv = earlierFor(id, 'start', start, (t) => ((at = t), text()));
+  const changes: { opId: string; before: number }[] = [];
+  const step = (delta: number): { text: string; ml: number } | null => {
+    const next = clampGiven(current + delta);
+    if (next === current) return { text: text(), ml: current };
+    const r = engine.dispatch({ action: 'update', id, patch: { detail: bottleDetail({ kind, given: next, left: 0 }) } });
+    if (!r.ok) {
+      fail(r.error, r.detail);
+      return null;
+    }
+    if (r.opId) changes.push({ opId: r.opId, before: current });
+    current = next;
+    return { text: text(), ml: current };
+  };
+  const undo = () => {
+    for (const c of changes.reverse()) engine.undo(c.opId, { action: 'update', id, patch: { detail: bottleDetail({ kind, given: c.before, left: 0 }) } });
+    changes.length = 0;
+    mv.unmove();
+    undoOp(res.opId, { action: 'delete', id });
+  };
+  const asleep = openSleep(engine.getState().events) ? { action: { label: W().markAwake, note: W().stillMarkedAsleep, run: toggleSleep } } : {};
+  showToast({ text: text(), earlier: mv.earlier, amount: { ml: given, step }, sticky: true, undo, ...asleep }, BOTTLE_TOAST_MS);
 }
 
 /** The sleep button: falls asleep or wakes up depending on the current state. */

@@ -202,7 +202,7 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   the same -10 / +10 buttons as the amount given, from 0 (default) up to the amount given; "נאכל" is computed. Summary: the
   gap between feeds is the median, "רווח רגיל בין האכלות" (done); with bottles the rows are "האכלות" (all), "הנקות",
   "בקבוקים", "מ״ל בבקבוקים"; breastfeeding only keeps today's "הנקות (האכלות)".
-  Build: stage 1 settings, the event type and its amount, the buttons, the window, the toast, the edit form, the lists;
+  Build: stage 1 settings, the event type and its amount, the buttons, the window, the toast, the edit form, the lists (done);
   stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 

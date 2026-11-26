@@ -641,6 +641,22 @@ No names, addresses or secrets in this file (the repository is public).
 - Summary **(owner)**: the gap between feeds is the median of the day's gaps, not the mean (one feed that was not logged
   stretched the mean), and the row is called "רווח רגיל בין האכלות". Unit test (failed on the mean: 2:40 instead of 2:00).
 
+- Bottles, stage 1 **(owner, F18; asked by the second family)**: Settings has a "🍼 האכלה" card (for both phones): nursing,
+  expressed milk and formula as switches (at least one stays on), and the default amount of each bottle kind with − / +.
+  Home: with nursing, a third button "בקבוק" beside the nursing buttons (one bottle kind: one tap logs it; both: a window with
+  the two kinds, the one picked last chosen, the amount from that kind's default with − / + and 60 / 90 / 120 / 150); without
+  nursing, a button per bottle kind in their place. With three in the row the icon stays above the label at every height,
+  smaller on short screens (side by side broke "הנקה שמאל" on a small iPhone installed as an app, not only at 560). The toast
+  after a bottle has −20 / −10 / +10 / +20 and "היה לפני", and stays while it is used; "בטל" takes the amount changes back too;
+  every bottle starts from the default of its kind. The edit form: "הוכן" and "כמה נשאר בבקבוק?" with − / + (left from 0, never
+  more than given) and "נאכל" worked out. Lists show what was eaten ("בקבוק תמ״ל · 90 מ״ל"); the feed tile shows the last feeding
+  of either kind ("· 🍼", short so the tile never grows) and the next side from nursing only; History's "הנקה" filter is
+  "האכלה" with bottles. Data: `type bottle`, detail `formula:120:30` (no new column, no API change). Families that never set
+  the card see no change. Tests: unit (the detail, the server checks, the Settings rows through the built bundle) and 13 browser
+  tests incl. layout at 393 / 375 / 360 wide and 852 / 700 / 667 / 560 high (failed without the stacked layout, with the word
+  in the tile, and with the toast going after a tap). Next (stage 2): one feeding and the next side, Summary, questions, the
+  default-update suggestion.
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five
@@ -682,7 +698,8 @@ No names, addresses or secrets in this file (the repository is public).
   performance session) and send them once a day to their own sheet's "שימוש" tab. New action `usageTotals` (numbers only: per
   day, requests, operations and phones; no names): the owner's admin key on a family's server, or the owner's own key on the
   owner's server; a family's own key gets `send_only`. The owner's feedback screen shows "עומס על השרתים (אתמול)": the owner's
-  server and each family's, an estimate of the calls (requests + 3 x operations + 2 per phone, `src/shared/quota.ts`) and the
+  server and each family's, an estimate of the calls (requests + 2 x operations, `src/shared/quota.ts`; first written as requests + 3 x operations + 2 per
+  phone and corrected the same day with the performance session's check against the server) and the
   total against 50,000, in warning colour above 75% or when one family is above 3 x the median (three servers or more). The
   numbers appear from the day after the phones have the counting version. Tests: core, the built family bundle, the estimate,
   and a browser test with the owner's server and a family's (the admin-only rule failed when taken out).

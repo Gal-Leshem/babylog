@@ -1,4 +1,5 @@
 /// <reference types="google-apps-script" />
+import { BOTTLE_MAX_ML, BOTTLE_MIN_ML, DEFAULT_FEEDING, type Feeding } from '../shared/bottle';
 import { type Medicine, normalizeMedicine } from '../shared/medicines';
 import { API_VERSION, type FeedbackItem, type FeedbackKind, type UsageTotal } from '../shared/protocol';
 import { QUESTION_STATES, USAGE_LABELS, USAGE_QUESTIONS, type UsageDay, questionColumn } from '../shared/usage';
@@ -82,6 +83,18 @@ function timed<T>(kind: string, fn: () => T): T {
     spent[kind] = (spent[kind] ?? 0) + (Date.now() - t0);
     spent[`${kind}#`] = (spent[`${kind}#`] ?? 0) + 1;
   }
+}
+
+/** (F18) The feeding settings from the Settings tab, or nothing when they were never set (or were broken by hand). */
+function feedingFrom(map: Record<string, string>): { feeding?: Feeding } {
+  const on = (v: string | undefined) => (v === 'true' || v === 'TRUE' ? true : v === 'false' || v === 'FALSE' ? false : null);
+  const f = { breast: on(map.feedBreast), expressed: on(map.feedExpressed), formula: on(map.feedFormula) };
+  if (f.breast === null || f.expressed === null || f.formula === null || !(f.breast || f.expressed || f.formula)) return {};
+  const ml = (v: string | undefined, d: number) => {
+    const n = Number(v);
+    return v !== '' && Number.isInteger(n) && n >= BOTTLE_MIN_ML && n <= BOTTLE_MAX_ML ? n : d;
+  };
+  return { feeding: { breast: f.breast, expressed: f.expressed, formula: f.formula, expressedMl: ml(map.mlExpressed, DEFAULT_FEEDING.expressedMl), formulaMl: ml(map.mlFormula, DEFAULT_FEEDING.formulaMl) } };
 }
 
 class SheetStore implements Store {
@@ -213,6 +226,7 @@ class SheetStore implements Store {
       ...(map.babySex === 'girl' || map.babySex === 'boy' ? { babySex: map.babySex } : {}),
       ...(/^\d{4}-\d{2}-\d{2}$/.test(map.babyBirth?.replace(/^'/, '') ?? '') ? { babyBirth: map.babyBirth!.replace(/^'/, '') } : {}),
       mergeWindowMin: Number.isFinite(win) && map.mergeWindowMin !== '' && map.mergeWindowMin !== undefined ? win : DEFAULT_SETTINGS.mergeWindowMin,
+      ...feedingFrom(map),
       parents: [map.parent1 || DEFAULT_SETTINGS.parents[0], map.parent2 || DEFAULT_SETTINGS.parents[1]],
       medicines: this.readMedicines(),
     };
@@ -262,6 +276,12 @@ class SheetStore implements Store {
       ['babySex', s.babySex ?? ''],
       // written as text ("'" keeps the sheet from turning it into a date)
       ['babyBirth', s.babyBirth ? `'${s.babyBirth}` : ''],
+      // (F18) the kinds of feeding and the default amount per bottle kind; empty until the parents change them
+      ['feedBreast', s.feeding ? s.feeding.breast : ''],
+      ['feedExpressed', s.feeding ? s.feeding.expressed : ''],
+      ['feedFormula', s.feeding ? s.feeding.formula : ''],
+      ['mlExpressed', s.feeding ? s.feeding.expressedMl : ''],
+      ['mlFormula', s.feeding ? s.feeding.formulaMl : ''],
     ];
     sh.getRange(1, 1, rows.length, 2).setValues(rows);
     this.writeMedicines(s.medicines);

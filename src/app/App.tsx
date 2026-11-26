@@ -8,11 +8,12 @@ import { Install, storageBlocked } from './screens/Install';
 import { storageWorks } from './storage';
 import { Settings } from './screens/Settings';
 import { MedsWindow } from './screens/MedsWindow';
+import { BottleWindow } from './screens/BottleWindow';
 import { Summary } from './screens/Summary';
 import { isNight } from './theme';
 import { type Nav, followTheme, takeNav } from './statusbar';
-import { EARLIER_MIN } from './actions';
-import { TOAST_DONE_MS, count, engine, hideToast, holdToast, isToastGone, releaseToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
+import { BOTTLE_TOAST_MS, EARLIER_MIN, TOAST_ML } from './actions';
+import { type Toast, TOAST_DONE_MS, count, engine, hideToast, holdToast, isToastGone, releaseToast, updateToast, useEngine, useNow, usePrefs, useToast } from './state';
 
 type Tab = 'home' | 'history' | 'summary' | 'settings';
 const TABS: [Tab, string, string][] = [
@@ -102,6 +103,25 @@ function SyncMark() {
   );
 }
 
+/** One − / + button of the toast after a bottle (a plain function, not a component). */
+function amountButton(t: Toast, delta: number) {
+  return (
+    <button
+      type="button"
+      key={delta}
+      disabled={t.done === 'undo'}
+      data-testid={`toast-ml-${delta > 0 ? 'plus' : 'minus'}-${Math.abs(delta)}`}
+      onClick={() => {
+        count('toast.amount');
+        const r = t.amount?.step(delta);
+        if (r) updateToast(t.id, { text: r.text, amount: { ...t.amount!, ml: r.ml }, done: 'amount' }, BOTTLE_TOAST_MS);
+      }}
+    >
+      {delta > 0 ? `+${delta}` : `−${-delta}`}
+    </button>
+  );
+}
+
 function ToastView() {
   const t = useToast();
   if (!t) return null;
@@ -174,6 +194,14 @@ function ToastView() {
           </button>
         </div>
       )}
+      {t.amount && (
+        // (owner, F18) the amount of the bottle just logged; each tap keeps the toast a little longer
+        <div class="tback tamt" data-testid="toast-amount">
+          {TOAST_ML.filter((d) => d < 0).map((d) => amountButton(t, d))}
+          <b data-testid="toast-ml">{t.amount.ml} מ״ל</b>
+          {TOAST_ML.filter((d) => d > 0).map((d) => amountButton(t, d))}
+        </div>
+      )}
       {t.earlier && (
         // two taps to log something that happened a little while ago: the button, then one of these (owner)
         <div class="tback" data-testid="toast-earlier">
@@ -189,8 +217,9 @@ function ToastView() {
               onClick={() => {
                 count('toast.earlier');
                 const text = t.earlier?.pick(m);
-                // (owner) the new time with the minute lit for a moment, then the toast goes
-                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m }, done: 'earlier' }, TOAST_DONE_MS);
+                // (owner) the new time with the minute lit for a moment, then the toast goes; after a bottle it stays a little
+                // longer, so the amount can still be set
+                if (text) updateToast(t.id, { text, earlier: { ...t.earlier!, chosen: m }, done: 'earlier' }, t.sticky ? BOTTLE_TOAST_MS : TOAST_DONE_MS);
               }}
             >
               {m}
@@ -230,6 +259,11 @@ export function App() {
     if (f) hideToast();
     setFormState(f);
   };
+  const [bottleOpen, setBottleState] = useState(false);
+  const setBottleOpen = (open: boolean) => {
+    if (open) hideToast();
+    setBottleState(open);
+  };
   const setMedsOpen = (open: boolean) => {
     if (open) hideToast();
     setMedsState(open);
@@ -242,7 +276,7 @@ export function App() {
       <Banner />
       {/* One scroll container per tab (no shared scroll offset). Home is a fixed screen: nothing on it can be dragged out of place. */}
       <main class={`main ${tab === 'home' ? 'fixed' : ''}`} key={`${tab}-${n}`}>
-        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => (count('meds.window'), setMedsOpen(true))} onFixWake={(event) => (count('sleep.forgotWake'), setForm({ mode: 'edit', event, focus: 'end', wake: true }))} />}
+        {tab === 'home' && <Home onEdit={(event, focus) => setForm({ mode: 'edit', event, focus })} onAddLate={() => setForm({ mode: 'add' })} onOpenMeds={() => (count('meds.window'), setMedsOpen(true))} onOpenBottle={() => (count('bottle.window'), setBottleOpen(true))} onFixWake={(event) => (count('sleep.forgotWake'), setForm({ mode: 'edit', event, focus: 'end', wake: true }))} />}
         {tab === 'history' && <History onEdit={(event) => setForm({ mode: 'edit', event, focus: historyFocus(event) })} />}
         {tab === 'summary' && <Summary />}
         {tab === 'settings' && <Settings />}
@@ -257,6 +291,7 @@ export function App() {
         ))}
       </nav>
       {medsOpen && <MedsWindow onClose={() => setMedsOpen(false)} />}
+      {bottleOpen && <BottleWindow onClose={() => setBottleOpen(false)} />}
       {form && <EventForm mode={form.mode} event={form.event} focus={form.focus} wake={form.wake} onClose={() => setForm(null)} />}
     </>
   );
