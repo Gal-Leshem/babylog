@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "86af7c5",
+  "sha": "8aeb8b6",
   "ref": "main",
-  "at": "2026-11-26T13:18:10.304Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45826884809",
+  "at": "2026-11-26T13:23:57.384Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45827685293",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-CpSup5oQ.css   27.68 kB │ gzip:  5.84 kB",
-      "dist/assets/index-ClRqRhBX.js   193.99 kB │ gzip: 61.49 kB",
+      "dist/assets/index-D76QIWCV.js   193.98 kB │ gzip: 61.48 kB",
       "",
-      "✓ built in 89ms",
+      "✓ built in 88ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (218.34 KiB)",
+      "precache  10 entries (218.33 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 6s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -73,16 +73,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 86af7c5 to gh-pages",
-      "took 1s"
+      "published 8aeb8b6 to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves fc1f342, waiting for 86af7c5",
-      "attempt 2: serves fc1f342, waiting for 86af7c5",
-      "attempt 3: serves fc1f342, waiting for 86af7c5",
-      "site is live and serves 86af7c5",
-      "took 30s"
+      "attempt 1: serves 86af7c5, waiting for 8aeb8b6",
+      "attempt 2: serves 86af7c5, waiting for 8aeb8b6",
+      "site is live and serves 8aeb8b6",
+      "took 20s"
     ]
   }
 }
