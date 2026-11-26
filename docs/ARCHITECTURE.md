@@ -32,6 +32,13 @@ them one by one by id (so two phones editing different medicines never overwrite
 older app or sent by an older server get an empty list (`withDefaults` in the engine). The "קרא אותי" guide is rewritten when the
 Medicines tab is first created, so an existing sheet explains the new data without running `setup` again.
 
+Bottles (F18): an event of type `bottle` whose detail holds the kind and the amounts, `formula:120` or `expressed:120:30` (given,
+and what was left; `src/shared/bottle.ts`). Keeping them in the detail means no new column and no API change: the sheet, `sync`,
+edits and `prev` carry them like any detail; the server checks the format. The family's kinds of feeding and the default amount per
+bottle kind are `settings.feeding` (rows `feedBreast`, `feedExpressed`, `feedFormula`, `mlExpressed`, `mlFormula` of the Settings
+tab; missing = breastfeeding only, so families that never set them see no change). The next side comes from nursing only; the
+Home feed tile shows the last feeding of either kind. An older app shows a bottle under a wrong name until it updates (no crash).
+
 ## Sync engine
 Operations queue in `localStorage`; the view is `server copy + queue replayed`. Refused operations are dropped with a
 visible message; connection problems retry with back-off.

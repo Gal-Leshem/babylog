@@ -1,10 +1,11 @@
+import { type Bottle, type BottleKind, eaten, parseBottle } from '../shared/bottle';
 import { eventTime } from '../shared/domain';
 import { addDays, formatLocal, parseLocal } from '../shared/tz';
 import { type Medicine, VITAMIN_D_ID } from '../shared/medicines';
 import type { BabyEvent, EventType } from '../shared/types';
 
 /** The seven things a parent can record, as shown on buttons and in the add/edit form. */
-export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep' | 'vitamin_d' | 'medicine';
+export type Kind = 'feed_left' | 'feed_right' | 'wet' | 'poop' | 'both' | 'sleep' | 'vitamin_d' | 'medicine' | 'bottle_expressed' | 'bottle_formula';
 
 export const KIND_LABEL: Record<Kind, string> = {
   feed_left: 'הנקה שמאל',
@@ -15,6 +16,8 @@ export const KIND_LABEL: Record<Kind, string> = {
   sleep: 'שינה',
   vitamin_d: 'ויטמין D',
   medicine: 'תרופה',
+  bottle_expressed: 'בקבוק חלב שאוב',
+  bottle_formula: 'בקבוק תמ״ל',
 };
 
 export const KIND_ICON: Record<Kind, string> = {
@@ -26,14 +29,25 @@ export const KIND_ICON: Record<Kind, string> = {
   sleep: '🌙',
   vitamin_d: '☀️',
   medicine: '💊',
+  bottle_expressed: '🍼',
+  bottle_formula: '🍼',
 };
 
-/** The kinds offered as chips in the add/edit form (a medicine dose is picked by medicine, not offered here yet). */
+/** The kinds offered as chips in the add/edit form (a medicine dose is picked by medicine; bottles only when the family uses them). */
 export const KINDS = (Object.keys(KIND_LABEL) as Kind[]).filter((k) => k !== 'medicine');
+
+export const bottleKindOf = (k: Kind): BottleKind | null => (k === 'bottle_expressed' ? 'expressed' : k === 'bottle_formula' ? 'formula' : null);
+export const kindOfBottle = (b: BottleKind): Kind => (b === 'expressed' ? 'bottle_expressed' : 'bottle_formula');
+
+/** What the baby ate, "90 מ״ל" (short, so a list row stays on one line; the edit form shows given and left). */
+export function bottleAmountText(b: Bottle): string {
+  return `${eaten(b)} מ״ל`;
+}
 
 export function kindOf(e: Pick<BabyEvent, 'type' | 'detail'>): Kind {
   if (e.type === 'feed') return e.detail === 'right' ? 'feed_right' : 'feed_left';
   if (e.type === 'diaper') return e.detail === 'poop' ? 'poop' : e.detail === 'both' ? 'both' : 'wet';
+  if (e.type === 'bottle') return e.detail.startsWith('expressed') ? 'bottle_expressed' : 'bottle_formula';
   return e.type === 'sleep' ? 'sleep' : e.type === 'medicine' ? 'medicine' : 'vitamin_d';
 }
 
@@ -55,14 +69,22 @@ export function fromKind(k: Kind): { type: EventType; detail: string } {
       return { type: 'vitamin_d', detail: '' };
     case 'medicine':
       return { type: 'medicine', detail: '' };
+    // the amount is added by whoever logs it (the default of the kind, or what was picked)
+    case 'bottle_expressed':
+      return { type: 'bottle', detail: 'expressed' };
+    case 'bottle_formula':
+      return { type: 'bottle', detail: 'formula' };
   }
 }
 
 /** The medicine a dose belongs to (vitamin D by its own type), if it is still in the list. */
 const medicineOf = (e: BabyEvent, meds: readonly Medicine[]) =>
   e.type === 'vitamin_d' ? meds.find((m) => m.id === VITAMIN_D_ID) : e.type === 'medicine' ? meds.find((m) => m.id === e.detail) : undefined;
-/** Medicine doses show the medicine's own name and icon. */
-export const eventLabel = (e: BabyEvent, meds: readonly Medicine[] = []): string => medicineOf(e, meds)?.name ?? KIND_LABEL[kindOf(e)];
+/** Medicine doses show the medicine's own name and icon; a bottle shows its amount. */
+export const eventLabel = (e: BabyEvent, meds: readonly Medicine[] = []): string => {
+  const b = e.type === 'bottle' ? parseBottle(e.detail) : null;
+  return b ? `${KIND_LABEL[kindOf(e)]} · ${bottleAmountText(b)}` : (medicineOf(e, meds)?.name ?? KIND_LABEL[kindOf(e)]);
+};
 export const eventIcon = (e: BabyEvent, meds: readonly Medicine[] = []): string => medicineOf(e, meds)?.icon ?? KIND_ICON[kindOf(e)];
 
 export const FILTERS: { id: 'all' | EventType; label: string }[] = [

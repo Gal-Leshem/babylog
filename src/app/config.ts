@@ -26,6 +26,8 @@ export interface Prefs {
    * has enough data. Kept on this phone only (each parent chooses for themselves).
    */
   questions: Record<string, 'on' | 'off'>;
+  /** (owner, F18) the bottle kind picked last in the bottle window on this phone (chosen again next time) */
+  bottleKind?: 'expressed' | 'formula';
 }
 
 export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day', historyView: 'day', questions: {} };

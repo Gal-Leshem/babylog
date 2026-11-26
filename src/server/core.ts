@@ -6,6 +6,7 @@ import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch, type UsageT
 import { type Voice, voiceFor } from '../shared/speech';
 import { QUESTION_STATES, type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, USAGE_QUESTIONS, type UsageDay } from '../shared/usage';
 import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../shared/tz';
+import { BOTTLE_MAX_ML, BOTTLE_MIN_ML, type Feeding, parseBottle } from '../shared/bottle';
 import {
   type BabyEvent,
   DIAPER_DETAILS,
@@ -124,6 +125,7 @@ export function validateEvent(e: BabyEvent, now: number): void {
   if (e.type === 'diaper' && !(DIAPER_DETAILS as readonly string[]).includes(e.detail)) fail('invalid_event', 'diaper needs wet, poop or both');
   if ((e.type === 'sleep' || e.type === 'vitamin_d') && e.detail !== '') fail('invalid_event', 'this type has no detail');
   if (e.type === 'medicine' && (e.detail === '' || e.detail.length > 64)) fail('invalid_event', 'medicine needs the id of a medicine');
+  if (e.type === 'bottle' && !parseBottle(e.detail)) fail('invalid_event', 'bottle needs its kind and amounts');
   if (e.note.length > 200) fail('invalid_event', 'note too long');
   if (e.user.length === 0 || e.user.length > 20) fail('invalid_event', 'user must be 1-20 characters');
 
@@ -216,6 +218,18 @@ function isBirthDate(v: string): boolean {
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
 }
 
+/** The family's feeding settings: all five fields, at least one kind on, default amounts 5-500 ml. */
+function parseFeeding(raw: unknown): Feeding {
+  if (!isObj(raw)) return fail('bad_request', 'feeding must be an object');
+  for (const k of ['breast', 'expressed', 'formula'] as const) if (typeof raw[k] !== 'boolean') fail('bad_request', `feeding.${k} must be true or false`);
+  for (const k of ['expressedMl', 'formulaMl'] as const) {
+    const v = raw[k];
+    if (typeof v !== 'number' || !Number.isInteger(v) || v < BOTTLE_MIN_ML || v > BOTTLE_MAX_ML) fail('bad_request', `feeding.${k} must be ${BOTTLE_MIN_ML}-${BOTTLE_MAX_ML}`);
+  }
+  if (!raw.breast && !raw.expressed && !raw.formula) fail('bad_request', 'feeding needs at least one kind');
+  return { breast: raw.breast as boolean, expressed: raw.expressed as boolean, formula: raw.formula as boolean, expressedMl: raw.expressedMl as number, formulaMl: raw.formulaMl as number };
+}
+
 function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } {
   if (!isObj(raw)) return fail('bad_request', 'set must be an object');
   const out: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicinePatch[] } = {};
@@ -234,6 +248,7 @@ function parseSettings(raw: unknown): Partial<Omit<Settings, 'medicines'>> & { m
     if (typeof v !== 'string' || v.trim() === '' || v.length > 40) fail('bad_request', 'babyName invalid');
     out.babyName = (v as string).trim();
   }
+  if (raw.feeding !== undefined) out.feeding = parseFeeding(raw.feeding);
   if (raw.mergeWindowMin !== undefined) {
     const v = raw.mergeWindowMin;
     if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 180) fail('bad_request', 'mergeWindowMin must be 0-180');

@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { NightMode, NightTint } from '../config';
 import { count, engine, setNightMode, setNightTint, useEngine, usePrefs } from '../state';
 import { Medicines } from './Medicines';
+import { amountStepper } from './Amount';
+import { BOTTLE_MAX_ML, BOTTLE_STEP_ML, bottleKindsOn, defaultMl, feedingOf } from '../../shared/bottle';
 import { DateField } from './DateField';
 import { ageText } from '../labels';
 import { localDate } from '../../shared/tz';
@@ -19,6 +21,13 @@ const NIGHT: [NightMode, string][] = [
 const SEX: ['boy' | 'girl', string][] = [
   ['boy', 'בן'],
   ['girl', 'בת'],
+];
+
+/** (owner, F18) the kinds of feeding a family can turn on */
+const FEEDING: ['breast' | 'expressed' | 'formula', string, string][] = [
+  ['breast', 'הנקה', 'הנקה ימין ושמאל, והצד הבא'],
+  ['expressed', 'בקבוק חלב שאוב', ''],
+  ['formula', 'בקבוק תמ״ל', ''],
 ];
 
 const TINT: [NightTint, string][] = [
@@ -111,6 +120,7 @@ export function Settings() {
     );
   }
 
+  const feeding = feedingOf(st.settings);
   const activeMeds = st.settings.medicines.filter((m) => m.status === 'active');
   const msgAt = (where: 'details' | 'behaviour') => msg && msgWhere === where && <span data-testid="settings-msg">{msg}</span>;
   return (
@@ -171,6 +181,54 @@ export function Settings() {
           </button>
           {msgAt('details')}
         </div>,
+      ])}
+
+      {section('feeding', '🍼', 'האכלה', [
+        <h3 key="h">סוגי האכלה (לשני הטלפונים)</h3>,
+        ...FEEDING.map(([k, label, sub]) => {
+          const on = feeding[k];
+          // at least one kind stays on
+          const last = on && FEEDING.filter(([x]) => feeding[x]).length === 1;
+          return (
+            <button
+              type="button"
+              key={k}
+              class="prow"
+              role="switch"
+              aria-checked={on}
+              data-testid={`feeding-${k}`}
+              disabled={last}
+              onClick={() => engine.dispatch({ action: 'settings', set: { feeding: { ...feeding, [k]: !on } } })}
+            >
+              <span class="t">
+                <b>{label}</b>
+                {sub && <small>{sub}</small>}
+              </span>
+              <span class={`sw ${on ? 'on' : ''}`} />
+            </button>
+          );
+        }),
+        bottleKindsOn(feeding).length > 0 && <h3 key="h2">כמות ברירת מחדל לבקבוק</h3>,
+        ...bottleKindsOn(feeding).map((k) => (
+          <div class="prow" key={`ml-${k}`}>
+            <span class="t">
+              <b>{k === 'formula' ? 'תמ״ל' : 'חלב שאוב'}</b>
+            </span>
+            {amountStepper({
+              value: defaultMl(feeding, k),
+              min: BOTTLE_STEP_ML,
+              max: BOTTLE_MAX_ML,
+              testId: `default-ml-${k}`,
+              label: k === 'formula' ? 'תמ״ל' : 'חלב שאוב',
+              onChange: (ml) => engine.dispatch({ action: 'settings', set: { feeding: { ...feeding, [k === 'formula' ? 'formulaMl' : 'expressedMl']: ml } } }),
+            })}
+          </div>
+        )),
+        bottleKindsOn(feeding).length > 0 && (
+          <p class="muted" key="m">
+            כל בקבוק חדש מתחיל מהכמות הזו, ואפשר לתקן אותה מיד אחרי הרישום. המינונים לפי הנחיית הרופא או האריזה.
+          </p>
+        ),
       ])}
 
       {section('medicines', '💊', 'תרופות', [

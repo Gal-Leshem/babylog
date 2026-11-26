@@ -493,6 +493,28 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(last[h2.indexOf('נצפתה: כל כמה זמן מאכילים')]).toBe(2);
   });
 
+  it('(F18) the feeding settings are rows of the Settings sheet, read back after the stored copy is gone; broken by hand: ignored', () => {
+    const { rt, g, post } = boot();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    expect(post({ key, action: 'settings' }).settings.feeding).toBeUndefined();
+    const f = { breast: false, expressed: true, formula: true, expressedMl: 70, formulaMl: 120 };
+    post({ key, action: 'settings', set: { feeding: f } });
+    const rows = rt.sheets.get('Settings')!;
+    expect(rows.find((r) => r[0] === 'mlFormula')![1]).toBe(120);
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.feeding).toEqual(f);
+    // the owner breaks an amount by hand: the default amount instead; a kind broken by hand: no feeding settings at all
+    rows.find((r) => r[0] === 'mlFormula')![1] = 'lots';
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.feeding).toEqual({ ...f, formulaMl: 90 });
+    rows.find((r) => r[0] === 'feedBreast')![1] = 'maybe';
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.feeding).toBeUndefined();
+    // a bottle is logged through the real bundle
+    expect(post({ key, action: 'log', id: 'b1', type: 'bottle', detail: 'formula:120:30', start: '2026-11-14 11:00', user: 'P', source: 'app' }).ok).toBe(true);
+  });
+
   it("the baby's date of birth is a text row of the Settings sheet; a date typed by hand is read as that day", () => {
     const { rt, g, post } = boot();
     g.setup!();

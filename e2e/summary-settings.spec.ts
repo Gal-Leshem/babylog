@@ -146,11 +146,13 @@ test('settings: shows sync state and offers the sheet link when the server provi
 });
 
 // Owner: settings split into sections, each with its own icon and title, so it is easy to find your way.
-test('settings: four sections with an icon and a title each, in order', async ({ page }) => {
+test('settings: five sections with an icon and a title each, in order', async ({ page }) => {
   await install(page);
   await page.getByTestId('tab-settings').click();
   const heads = page.locator('.sect-h');
-  await expect(heads).toHaveText(['👤אני והמשפחה', '💊תרופות', '🌙תצוגה והתנהגות', '🛠️מתקדם']);
+  // (F18) feeding: the kinds of feeding and the default bottle amounts
+  await expect(heads).toHaveText(['👤אני והמשפחה', '🍼האכלה', '💊תרופות', '🌙תצוגה והתנהגות', '🛠️מתקדם']);
+  await expect(page.getByTestId('sect-feeding').getByTestId('feeding-breast')).toBeVisible();
   await expect(page.getByTestId('sect-family').getByTestId('baby-name')).toBeVisible();
   await expect(page.getByTestId('sect-medicines').getByTestId('open-medicines')).toBeVisible();
   await expect(page.getByTestId('sect-behaviour').getByTestId('night-auto')).toBeVisible();

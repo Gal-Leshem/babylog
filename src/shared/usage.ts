@@ -65,6 +65,10 @@ const LABELS = {
   // one daily Google quota, so these show how much of it each family uses
   'sync.requests': 'בקשות לשרת',
   'sync.ops': 'רישומים שנשלחו לשרת',
+  // (F18) bottles
+  'log.bottle': 'רישום: בקבוק',
+  'bottle.window': 'חלון בקבוק',
+  'toast.amount': 'טוסט: כמות בקבוק',
 } as const;
 
 export type UsageName = keyof typeof LABELS;

@@ -79,6 +79,7 @@ export const setQuestion = (id: string, v: 'on' | 'off' | undefined): void => {
   else delete questions[id];
   setPrefs({ questions });
 };
+export const setBottleKind = (k: 'expressed' | 'formula'): void => setPrefs({ bottleKind: k });
 export const usePrefs = (): Prefs =>
   useSyncExternalStore(
     (fn) => {
@@ -107,7 +108,14 @@ export interface Toast {
    * worked, and then goes. 'undo': taken back (nothing else can be used any more); 'earlier': moved (another minute can still be
    * picked in that moment, counted from the logged time as before).
    */
-  done?: 'undo' | 'earlier';
+  done?: 'undo' | 'earlier' | 'amount';
+  /**
+   * (owner, F18) After a bottle: − / + buttons for the amount just logged (`step` changes it and returns the toast's new text,
+   * null when it could not). Such a toast stays while it is used (`sticky`): a tap gives it a fresh short time, not the
+   * moment of TOAST_DONE_MS, so the amount and "היה לפני" can both be set.
+   */
+  amount?: { ml: number; step: (deltaMl: number) => { text: string; ml: number } | null };
+  sticky?: boolean;
 }
 
 /** How long the toast stays after one of its buttons was used (owner: a moment of feedback, then gone). */

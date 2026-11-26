@@ -34,6 +34,8 @@ export function speechForLogged(e: BabyEvent, all: readonly BabyEvent[]): string
       return 'Vitamin D logged for today';
     case 'medicine':
       return `Medicine logged, ${t}`;
+    case 'bottle':
+      return `Bottle logged, ${t}`;
     case 'sleep':
       return e.start ? `Asleep at ${t}` : 'Awake. Sleep length unknown';
   }
@@ -116,6 +118,8 @@ export function voiceHe(sex: 'boy' | 'girl' | undefined): Voice {
           return 'נרשם ויטמין די להיום';
         case 'medicine':
           return `נרשמה תרופה, ${t}`;
+        case 'bottle':
+          return `נרשם בקבוק, ${t}`;
         case 'sleep':
           return e.start ? `${fellAsleep} ב-${t}` : `${wokeUp}. אורך השינה לא ידוע`;
       }
