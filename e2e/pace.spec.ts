@@ -52,11 +52,11 @@ for (const night of [false, true]) {
         await page.waitForTimeout(40);
       }
     };
-    await advance(16_000);
+    await advance(31_000);
     await expect(mark, 'not while the app is in use').toBeHidden();
 
     await page.clock.setSystemTime(start.getTime() + 11 * 60_000); // nobody touched it for eleven minutes
-    await advance(16_000);
+    await advance(31_000);
     await expect(mark).toHaveAttribute('data-state', 'current');
     const text = page.getByTestId('sync-text');
     await expect(text).toHaveText(/^עדכני לשעה \d\d:\d\d$/);

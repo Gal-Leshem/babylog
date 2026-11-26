@@ -84,7 +84,7 @@ const hhmm = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-d
  */
 function SyncMark() {
   const st = useEngine();
-  useNow(15_000); // the slow pace begins with no event of its own: look again every 15 s
+  useNow(30_000); // the slow pace begins with no event of its own: look again every 30 s (only the mark redraws)
   const [slow, setSlow] = useState(false);
   const sending = st.pending > 0;
   useEffect(() => {
