@@ -676,6 +676,13 @@ No names, addresses or secrets in this file (the repository is public).
   opening after a deploy); it is applied when the app is hidden, after the usage counts are kept, or at once on the next
   return if that moment did not run. The start after it counts as a return, not an opening. Browser tests (no reload on screen,
   reload when hidden, counted as a return; both parts failed on the old code) and unit tests.
+- Pace of an untouched app **(owner: the full option)**: an app left open with nobody touching the screen checks every 30 s
+  after 10 minutes and every minute after 30 (was 15 s for as long as it stayed open); the first 2 minutes after opening,
+  returning or logging stay at 5 s. The next touch checks at once when the last check is older than 15 s (shown as "מתעדכן…",
+  logged "נגיעה במסך") and brings back the 15 s pace; a touch that logs something carries the check in its own request. An
+  hour open untouched: about 126 requests instead of 256. Tests: engine (the pace, the touch check, a tap carrying it even when
+  the touch's timer fires late; each proven to fail when broken) and browser (a touch after a quiet minute checks, one right
+  after a check does not; failed without the touch listener). The full list every 5 minutes is unchanged.
 - Request counts **(owner: how many families the setup holds)**: the phone counts every request to the server and the entries
   it carries (`sync.requests`, `sync.ops`; in memory, sent with the daily usage beacon into the "שימוש" tab). The totals per
   family and a warning near the shared daily quota come from the families session. Engine test (failed without the count).
@@ -686,7 +693,8 @@ No names, addresses or secrets in this file (the repository is public).
   performance session) and send them once a day to their own sheet's "שימוש" tab. New action `usageTotals` (numbers only: per
   day, requests, operations and phones; no names): the owner's admin key on a family's server, or the owner's own key on the
   owner's server; a family's own key gets `send_only`. The owner's feedback screen shows "עומס על השרתים (אתמול)": the owner's
-  server and each family's, an estimate of the calls (requests + 3 x operations + 2 per phone, `src/shared/quota.ts`) and the
+  server and each family's, an estimate of the calls (requests + 2 x operations, `src/shared/quota.ts`; first written as requests + 3 x operations + 2 per
+  phone and corrected the same day with the performance session's check against the server) and the
   total against 50,000, in warning colour above 75% or when one family is above 3 x the median (three servers or more). The
   numbers appear from the day after the phones have the counting version. Tests: core, the built family bundle, the estimate,
   and a browser test with the owner's server and a family's (the admin-only rule failed when taken out).

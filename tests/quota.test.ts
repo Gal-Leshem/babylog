@@ -3,7 +3,7 @@ import { DAILY_PROPS_QUOTA, propsEstimate, quotaCheck } from '../src/shared/quot
 
 describe('the shared daily quota (owner, family servers)', () => {
   it('estimates property calls from the counted requests, operations and phones', () => {
-    expect(propsEstimate({ requests: 500, ops: 40, phones: 2 })).toBe(500 + 120 + 4);
+    expect(propsEstimate({ requests: 500, ops: 40, phones: 2 })).toBe(500 + 80);
   });
   it('warns above 75% of the quota, and names a family far above the others (only with three servers or more)', () => {
     expect(quotaCheck([{ label: 'שלנו', calls: 1500 }, { label: 'א', calls: 1200 }])).toEqual({ total: 2700, share: 2700 / DAILY_PROPS_QUOTA, over: false, heavy: [] });

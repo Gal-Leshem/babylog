@@ -121,15 +121,15 @@ test("the owner sees yesterday's load of his server and each family's, and a war
     await page.getByTestId('tab-settings').click();
     await page.getByTestId('open-feedback').click();
     const row = (label: string) => page.locator(`[data-testid="srv-load-row"][data-label="${label}"]`);
-    await expect(row('שלנו')).toContainText('כ-992 פעולות (900 בקשות)'); // 900 + 3 × 30 + 2
+    await expect(row('שלנו')).toContainText('כ-960 פעולות (900 בקשות)'); // 900 + 2 × 30
     await expect(page.getByTestId('srv-load-total')).not.toHaveClass(/err/);
     await page.getByTestId('fam-add-open').click();
     await page.getByTestId('fam-label').fill('משפחה א');
     await page.getByTestId('fam-code').fill(encodeAdminCode(a.url, a.admin));
     await page.getByTestId('fam-add').click();
-    await expect(row('משפחה א')).toContainText('כ-30,302 פעולות');
-    // 992 + 30,302 = 31,294 of 50,000: 63%, no warning yet; the family's load moves above 75% with more requests
-    await expect(page.getByTestId('srv-load-total')).toContainText('(63%)');
+    await expect(row('משפחה א')).toContainText('כ-30,200 פעולות');
+    // 960 + 30,200 = 31,160 of 50,000: 62%, no warning yet; the family's load moves above 75% with more requests
+    await expect(page.getByTestId('srv-load-total')).toContainText('(62%)');
     expect((await usage(a.url, a.key, { 'sync.requests': 40_000, 'sync.ops': 100 }, 'a1')).ok).toBe(true);
     await page.getByTestId('tab-settings').click();
     await page.getByTestId('open-feedback').click();

@@ -10,6 +10,7 @@ const WHY: Record<SyncWhy, string> = {
   retry: 'ניסיון חוזר',
   online: 'חזרת רשת',
   manual: 'סנכרן עכשיו',
+  touch: 'נגיעה במסך',
 };
 const RESULT: Record<Exclude<SyncLogEntry['result'], 'ok'>, string> = { offline: 'אין חיבור', timeout: 'פג הזמן', error: 'שגיאת שרת', auth: 'מפתח לא תקין' };
 /** where the server spent its time */

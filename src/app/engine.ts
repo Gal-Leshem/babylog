@@ -42,7 +42,7 @@ export interface SyncTiming {
 }
 
 /** Why a sync ran (for the sync log). */
-export type SyncWhy = 'open' | 'return' | 'poll' | 'tap' | 'full' | 'retry' | 'online' | 'manual';
+export type SyncWhy = 'open' | 'return' | 'poll' | 'tap' | 'full' | 'retry' | 'online' | 'manual' | 'touch';
 
 /**
  * One line of the sync log (owner: to see why the app is sometimes slow to catch up after opening). Kept on this phone only,
@@ -125,7 +125,21 @@ const RETRY_MS = [3_000, 6_000, 12_000, 30_000, 60_000];
 export const POLL_ACTIVE_MS = 5_000;
 export const POLL_IDLE_MS = 15_000;
 export const ACTIVE_FOR_MS = 2 * 60_000;
-export const pollDelay = (sinceActiveMs: number): number => (sinceActiveMs < ACTIVE_FOR_MS ? POLL_ACTIVE_MS : POLL_IDLE_MS);
+/**
+ * (owner, performance session) An app left open with nobody touching it checks less often: every 30 s after 10 minutes without a
+ * touch, every minute after 30 (the servers share one daily Google quota). The next touch checks at once if the last check is
+ * older than TOUCH_STALE_MS (`Engine.touched`) and brings back the 15 s pace.
+ */
+export const UNTOUCHED_SLOW_MS = 10 * 60_000;
+export const UNTOUCHED_SLOWER_MS = 30 * 60_000;
+export const POLL_UNTOUCHED_MS = 30_000;
+export const POLL_LONG_UNTOUCHED_MS = 60_000;
+export const TOUCH_STALE_MS = 15_000;
+/** `sinceTouchMs`: since the screen was last touched (or the app opened, returned to or used to log something). */
+export const pollDelay = (sinceActiveMs: number, sinceTouchMs = 0): number =>
+  sinceActiveMs < ACTIVE_FOR_MS ? POLL_ACTIVE_MS : sinceTouchMs < UNTOUCHED_SLOW_MS ? POLL_IDLE_MS : sinceTouchMs < UNTOUCHED_SLOWER_MS ? POLL_UNTOUCHED_MS : POLL_LONG_UNTOUCHED_MS;
+/** A touch waits this long before its check, so that a tap that logs something carries the check itself (one request, not two). */
+export const TOUCH_CHECK_DELAY_MS = 400;
 /** Full refresh even without a reported change, to catch edits made directly in the sheet. */
 export const FULL_REFRESH_MS = 5 * 60_000;
 /** How often the full-refresh clock is looked at (a look that comes much later than this means timers were frozen). */
@@ -201,6 +215,8 @@ export class Engine {
   private readonly random: () => number;
   /** When the app was last opened, returned to, or used to log something (drives the polling pace). */
   private lastActive = -Infinity;
+  /** When the screen was last touched (owner: an app left open untouched checks less often). */
+  private lastTouch = -Infinity;
   private readonly beacon: (ep: Endpoint, req: ApiRequest) => boolean;
   private readonly onRequest: (writes: number) => void;
   private retryTimer: unknown = null;
@@ -749,6 +765,28 @@ export class Engine {
     return this.sync('rev');
   }
 
+  /** How long until the next regular check (see `pollDelay`). */
+  nextCheckIn(): number {
+    const now = this.now();
+    return pollDelay(now - this.lastActive, now - Math.max(this.lastActive, this.lastTouch));
+  }
+
+  /**
+   * (owner, performance session) The screen was touched: the slow pace of an untouched app ends, and if the last check is older
+   * than TOUCH_STALE_MS one is made now, shown like the check on opening ("מתעדכן…"). It waits a moment first: a touch that logs
+   * something starts its own exchange, which carries the check (one request, not two).
+   */
+  touched(): void {
+    const at = this.now();
+    this.lastTouch = at;
+    if (!this.config || at - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
+    this.setTimer(() => {
+      if (this.syncStartedAt >= at) return; // something else asked the server meanwhile (a tap): that answer is as fresh
+      if (this.now() - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
+      void this.sync('rev', true, 'touch');
+    }, TOUCH_CHECK_DELAY_MS);
+  }
+
   /** The open app's regular check (every few seconds, `pollDelay`). */
   async timerCheck(): Promise<boolean> {
     return this.sync('rev', false, 'poll', true);
@@ -811,9 +849,20 @@ export class Engine {
     let poll: ReturnType<typeof setTimeout>;
     const tick = () => {
       if (visible() && this.config) void this.timerCheck();
-      poll = setTimeout(tick, pollDelay(this.now() - this.lastActive));
+      poll = setTimeout(tick, this.nextCheckIn());
     };
     poll = setTimeout(tick, POLL_ACTIVE_MS);
+    // (owner) a touch ends the slow pace of an untouched app: check now if the last one is old, and plan the next at the usual pace
+    const touch = () => {
+      if (!visible()) return;
+      const slow = this.nextCheckIn() > POLL_IDLE_MS;
+      this.touched();
+      if (slow) {
+        clearTimeout(poll);
+        poll = setTimeout(tick, this.nextCheckIn());
+      }
+    };
+    document.addEventListener('pointerdown', touch, { capture: true, passive: true });
     // The safety net: the whole list after FULL_REFRESH_MS of the app being open since the last list, opening or return.
     // (owner's sync log) iOS freezes timers while the app is hidden and fires them on return, which fetched the whole list a
     // second time right after the return's own check: a look that comes far later than planned counts as a return instead.
@@ -844,6 +893,7 @@ export class Engine {
       document.removeEventListener('visibilitychange', resume);
       document.removeEventListener('visibilitychange', leaving);
       window.removeEventListener('pagehide', closing);
+      document.removeEventListener('pointerdown', touch, { capture: true });
     };
   }
 }
