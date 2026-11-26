@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "fa08b24",
+  "sha": "54bb4aa",
   "ref": "main",
-  "at": "2026-11-25T14:56:30.732Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45638600235",
+  "at": "2026-11-26T08:02:58.606Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45779109725",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,13 +21,13 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-DGZN9VBk.css   27.59 kB │ gzip:  5.83 kB",
-      "dist/assets/index-Bwcm9oqb.js   186.78 kB │ gzip: 59.06 kB",
+      "dist/assets/index-CJrIMLlX.js   187.89 kB │ gzip: 59.41 kB",
       "",
       "✓ built in 109ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (211.22 KiB)",
+      "precache  10 entries (212.30 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -73,15 +73,15 @@
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published fa08b24 to gh-pages",
+      "published 54bb4aa to gh-pages",
       "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 812b3db, waiting for fa08b24",
-      "attempt 2: serves 812b3db, waiting for fa08b24",
-      "attempt 3: serves 812b3db, waiting for fa08b24",
-      "site is live and serves fa08b24",
+      "attempt 1: serves fa08b24, waiting for 54bb4aa",
+      "attempt 2: serves fa08b24, waiting for 54bb4aa",
+      "attempt 3: serves fa08b24, waiting for 54bb4aa",
+      "site is live and serves 54bb4aa",
       "took 31s"
     ]
   }
