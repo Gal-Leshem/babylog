@@ -165,6 +165,13 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   last visit, a pre-visit report) and the proposal is written; open decisions when it is resumed: where it lives (a fifth tab
   "ביקור" or a third part of "סיכום"), the kinds of items (שאלה / לעקוב / לספר, maybe "לאמא"), what the visit record holds
   (text and next steps, maybe weight), sharing the report as text. Then mockups before building.
+- **F18 Bottles: expressed milk and formula (owner, 26 Nov 2026, asked by the second family)**: Settings toggles per family for
+  feeding modes (breastfeeding, expressed-milk bottle, formula bottle); Home buttons follow them. Research: trackers model a
+  bottle as its own entry with the milk type and an optional amount (ml), saved in one tap with the last amount, corrected in
+  the undo toast; a mixed bottle is two entries; pumping is a separate optional type (the mother's supply, never a feed); a
+  milk stash and discard timers are left out (inventory work, and storage rules differ between sources: medical-advice risk).
+  Pitfalls seen elsewhere: a bottle changing the "next side", a breast feed plus a top-up counted as two feeds, a daily volume
+  total that ignores breastfeeding, too many Home buttons. Definition proposed to the owner; waiting for his decisions.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted
