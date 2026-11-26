@@ -56,7 +56,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   out of the view like a local delete) and marks new ones from the other phone as news. Older apps do not send `delta` and get
   the list; an older server ignores it.
 - The engine runs one exchange at a time (`Engine.sync`). A request made meanwhile is remembered and runs right after (never
-  dropped); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
+  dropped, with one exception: the regular timer check, `timerCheck`, when the exchange it waited for has just succeeded: that
+  answer is as fresh, and the next check is seconds away); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
   requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
   because every operation has an id. The answer's events replace the phone's guesses (server time stamps).
 - While the app is open and visible: a check every 5 s for two minutes after it was opened, returned to or used to log
@@ -92,7 +93,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   reset (clearing empties the rows' contents and keeps the titles); the uuid `id` makes a retry harmless. Not log data: the
   revision does not move.
 - Usage counts (owner, F15; `src/app/usage.ts`, `src/shared/usage.ts`): `count(name)` adds one in memory (never a request or a
-  storage write); when the app is hidden or closed the counts are stored, and whole past days are handed to the browser once as
+  storage write); `sync.requests` / `sync.ops` count every request to the server and the entries it carries (`Engine` option
+  `onRequest`), to see each family's share of the daily Google quota that all servers share; when the app is hidden or closed the counts are stored, and whole past days are handed to the browser once as
   one `usage` beacon (user = the parent chosen on the phone, a random phone id, the version). The server writes the "שימוש"
   tab without the lock and without a revision (each phone writes only its own rows; a day sent again replaces its row). Kept on
   the phone: at most 14 days. Unknown counter names are refused: add a name and its Hebrew title in `USAGE_LABELS` first. Each day also carries the state of every insight question (`states`: shown / on / off / waiting, `USAGE_QUESTIONS`, written in words in a column per question) and `seen.<id>` counts (a card came into view).
@@ -100,7 +102,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   and breakdown (`debug: true` on every sync), size, and for an opening or return the time until the data was on screen. Shown
   in Settings > מתקדם > "יומן סנכרון" (`SyncLog.tsx`).
 - Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
-  work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
+  work: open, sheet (finding the Events tab and its row count, once per request: on the real sheet the spreadsheet loads there),
+  read, find, write, settings, props, lock, unlock). The sync log shows the rest of `ms` as "לא מדוד". The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.
 
 - Family servers (`--family` build, `familyServer` in `Deps`): no sheet link in any answer; the family's key gets `send_only` for
@@ -242,8 +245,10 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
   Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
   bars (oldest on the right; then today so far, apart and lighter, labelled "היום"; owner), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
-- **App update:** a new version reloads the page only when nothing can be lost (`update.ts`: the app is in the background, or
-  no sheet / form is open and no field has the cursor).
+- **App update:** a new version never reloads the page while the app is on screen (owner's sync log 3: that aborted the
+  return's check, about 2 s per opening after a deploy): it is applied when the app is hidden (usage counts kept first) or, if
+  that moment did not run, at once on the next return (`applyWhenAway` in `update.ts`); the start after it counts as a return
+  in the usage counts. (The theme reload in `statusbar.ts` keeps `reloadWhenSafe`: no form open and no field in use.)
 - **Sync:** see "Sync engine" above (one `sync` request; a check every 5 or 15 s, a full list every 5 minutes, a check on resume).
 
 ## Server deployment details

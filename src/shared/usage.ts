@@ -61,6 +61,10 @@ const LABELS = {
   'settings.syncLog': 'יומן סנכרון',
   'settings.feedback': 'מסך משוב',
   'feedback.sent': 'משוב: נשלח',
+  // (owner, performance session) every request this phone makes to the server, and the entries they carry: the servers share
+  // one daily Google quota, so these show how much of it each family uses
+  'sync.requests': 'בקשות לשרת',
+  'sync.ops': 'רישומים שנשלחו לשרת',
 } as const;
 
 export type UsageName = keyof typeof LABELS;

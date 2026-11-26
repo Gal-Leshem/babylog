@@ -9,7 +9,12 @@ import { insights } from '../shared/insights';
 import { moreAnswers } from '../shared/questions-data';
 import { QUESTIONS, questionState } from './questions';
 
-export const engine = new Engine({ storage: browserStorage });
+export const engine = new Engine({ storage: browserStorage, onRequest: countRequest });
+/** (owner) every request to the server and the entries it carries, for the shared daily quota (adds to counts in memory only) */
+function countRequest(writes: number): void {
+  usage.count('sync.requests');
+  for (let i = 0; i < writes; i++) usage.count('sync.ops');
+}
 
 // (owner, F15) usage counts of this phone: `count` only adds one in memory (see usage.ts)
 const usageStore: UsageKV = {

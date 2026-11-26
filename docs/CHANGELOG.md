@@ -638,6 +638,29 @@ No names, addresses or secrets in this file (the repository is public).
 - Wording **(owner)**: a time of day is "בסביבות השעה 21:45" everywhere (the next-feed estimate, when the long night stretch
   starts, cluster feeding), as already in "מתי מתחילה שנת הלילה?". Browser tests.
 
+## Performance session (in parallel with the features and families sessions)
+- The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
+  the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five
+  were published that morning), which aborted the request and cost about 2 s; a tap took 1.1 to 4.2 s on the server, 0.5 to
+  2.8 s of it not timed; a check ran right after every slow tap for nothing. Quota and capacity estimated from Google's quotas
+  page: about 20 to 35 families at 75% of the daily properties quota (about 10 if they are heavy users).
+- Server **(owner approved)**: a request finds the Events tab and counts its rows once (a tap did it 5 and 4 times), timed as
+  `sheet`; the lock release is timed; the row count is read again after the lock is taken. The sync log names the new parts,
+  shows "לא מדוד" for server time still not timed, and leaves out parts that would read 0.0. Same bundle on every family
+  server; no API change. Tests: the built bundle in the fake Google runtime (a tap, a list, an edit and three taps: 1 and 1;
+  failed on the old code with 5 and 4), a guard that rows written while waiting for the lock are seen, the log lines.
+- App **(owner approved)**: a timer check that fell during an exchange that has just succeeded is dropped (one request less
+  after every slow exchange); taps made meanwhile and every other kind of request still run right after. Engine test (failed
+  on the old code: two requests).
+- New app versions **(owner approved; agreed with the features session, whose files these are)**: a version that takes over
+  while the app is on screen no longer reloads the page there (that aborted the return's check and cost about 2 s on every
+  opening after a deploy); it is applied when the app is hidden, after the usage counts are kept, or at once on the next
+  return if that moment did not run. The start after it counts as a return, not an opening. Browser tests (no reload on screen,
+  reload when hidden, counted as a return; both parts failed on the old code) and unit tests.
+- Request counts **(owner: how many families the setup holds)**: the phone counts every request to the server and the entries
+  it carries (`sync.requests`, `sync.ops`; in memory, sent with the daily usage beacon into the "שימוש" tab). The totals per
+  family and a warning near the shared daily quota come from the families session. Engine test (failed without the count).
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

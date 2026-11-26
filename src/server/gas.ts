@@ -87,12 +87,25 @@ function timed<T>(kind: string, fn: () => T): T {
 class SheetStore implements Store {
   private ss = timed('open', () => SpreadsheetApp.getActive());
 
+  /**
+   * (owner's sync log 3: 0.5 to 2.8 s of a tap was not timed) The Events tab and its row count are looked up once per request:
+   * each is a call to Google, and on the real sheet the first of them is where the spreadsheet actually loads ('sheet').
+   */
+  private eventsTab: GoogleAppsScript.Spreadsheet.Sheet | null = null;
+  private lastRowSeen: number | null = null;
   private events(): GoogleAppsScript.Spreadsheet.Sheet {
-    return this.ss.getSheetByName(EVENTS) ?? fatal('Events sheet missing: run setup()');
+    return (this.eventsTab ??= timed('sheet', () => this.ss.getSheetByName(EVENTS)) ?? fatal('Events sheet missing: run setup()'));
+  }
+  private lastRow(): number {
+    return (this.lastRowSeen ??= timed('sheet', () => this.events().getLastRow()));
+  }
+  /** Taking the lock: another request may have appended rows while this one waited, so the row count is read again. */
+  locked(): void {
+    this.lastRowSeen = null;
   }
   private read(fromRow: number): BabyEvent[] {
     const sh = this.events();
-    const last = sh.getLastRow();
+    const last = this.lastRow();
     if (last < 2) return [];
     const start = Math.max(2, fromRow);
     const values = timed('read', () => sh.getRange(start, 1, last - start + 1, COLS).getValues());
@@ -106,13 +119,13 @@ class SheetStore implements Store {
     return out;
   }
   recent(n: number): BabyEvent[] {
-    return this.read(this.events().getLastRow() - n + 1);
+    return this.read(this.lastRow() - n + 1);
   }
   all(): BabyEvent[] {
     return this.read(2);
   }
   count(): number {
-    return Math.max(0, this.events().getLastRow() - 1);
+    return Math.max(0, this.lastRow() - 1);
   }
   /** The 'prev' column has its title (checked once per request, only when an edit needs it). */
   private prevTitled = false;
@@ -132,10 +145,14 @@ class SheetStore implements Store {
     return rowToEvent(this.events().getRange(row, 1, 1, COLS).getValues()[0]!);
   }
   append(e: BabyEvent): void {
+    const sh = this.events();
+    const last = this.lastRow();
     timed('write', () => {
-      this.events().appendRow(eventToRow(e));
+      sh.appendRow(eventToRow(e));
       SpreadsheetApp.flush();
     });
+    this.lastRowSeen = last + 1; // appendRow writes right after the last row with content
+    this.rows.set(e.id, last + 1);
   }
   replace(e: BabyEvent): boolean {
     const row = this.rowOf(e.id);
@@ -390,8 +407,9 @@ function P(): Record<string, string> {
 
 function deps(): Deps {
   const checkKey = makeCheckKey(P().API_KEY ?? null, __FIXED_KEY__);
+  const store = new SheetStore();
   return {
-    store: new SheetStore(),
+    store,
     now: () => Date.now(),
     checkKey,
     ...(FAMILY ? { familyServer: true, checkAdmin: makeCheckKey(P().ADMIN_KEY ?? null, '') } : {}),
@@ -399,10 +417,11 @@ function deps(): Deps {
       const lock = LockService.getScriptLock();
       timed('lock', () => lock.waitLock(10_000));
       snapshot = null; // someone may have written while we waited
+      store.locked();
       try {
         return fn();
       } finally {
-        lock.releaseLock();
+        timed('unlock', () => lock.releaseLock());
       }
     },
   };

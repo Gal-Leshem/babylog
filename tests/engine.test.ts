@@ -5,7 +5,7 @@ import { memoryStorage } from '../src/app/storage';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
 import { formatLocal, localDate } from '../src/shared/tz';
-import { safeToReload } from '../src/app/update';
+import { applyWhenAway, cameFromUpdateReload, markUpdateReload, safeToReload } from '../src/app/update';
 import { T, ev } from './helpers';
 
 const KEY = 'secret-key-123';
@@ -690,6 +690,64 @@ describe('polling for changes made on the other phone', () => {
     expect(e.getState().events.map((v) => v.id)).toEqual(['late']); // ... but not forgotten: the new event arrives at once
   });
 
+  // (owner's sync log 3) a timer check that fell during a tap's exchange ran right after it, although that answer had just said
+  // "nothing else changed": one wasted request per slow exchange. Only the timer's check is dropped; anything else still runs.
+  it('a timer check that fell during an exchange that just succeeded is dropped; a tap or another request meanwhile is not', async () => {
+    const e = makeEngine();
+    await e.pollOnce();
+    seen = [];
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t1')); // a tap: its exchange is on its way
+    await idle();
+    gate = null;
+    void e.timerCheck(); // the 5-second check falls due meanwhile
+    release();
+    await idle();
+    await idle();
+    expect(syncs(), 'only the tap: the check would learn nothing its answer did not').toHaveLength(1);
+
+    // a request from somewhere else (the medicines window opening) still runs right after
+    seen = [];
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t2'));
+    await idle();
+    gate = null;
+    void e.timerCheck();
+    void e.resume();
+    release();
+    await idle();
+    await idle();
+    expect(syncs()).toHaveLength(2);
+
+    // and a tap made meanwhile is sent right after, timer check or not
+    seen = [];
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t3'));
+    await idle();
+    gate = null;
+    void e.timerCheck();
+    e.dispatch(feed('t4'));
+    release();
+    await idle();
+    await idle();
+    expect(syncs().map((x) => (x.ops ?? []).map((o: { id: string }) => o.id))).toEqual([['t3'], ['t4']]);
+  });
+
+  // (owner, performance session) the servers share one daily Google quota: every request is counted, with the entries it carries
+  it('tells the usage counts about every request to the server and the entries it carries, beacons included', async () => {
+    const told: number[] = [];
+    const e = new Engine({ storage, fetchImpl, now: () => clock, newId: () => `op${++n}`, setTimer: () => 0, clearTimer: () => undefined, beacon: () => true, onRequest: (w) => told.push(w) });
+    e.configure({ url: 'http://127.0.0.1/x', key: KEY, me: 'P1' });
+    await e.pollOnce(); // a check
+    e.dispatch(feed('c1')); // a tap
+    await idle();
+    await e.ensureRange('2026-10-01', '2026-10-02'); // an older day in History
+    await e.ask({ action: 'ping' }); // feedback and the like
+    e.sendAway({ action: 'ping' }); // the usage beacon
+    expect(told).toEqual([0, 1, 0, 0, 0]);
+  });
+
   it('resume() sends the queue first, otherwise refreshes', async () => {
     const e = makeEngine();
     theirFeed('r');
@@ -975,6 +1033,40 @@ describe('client housekeeping', () => {
     expect(safeToReload({ visible: true, formOpen: false, typing: false })).toBe(true);
     expect(safeToReload({ visible: true, formOpen: true, typing: false })).toBe(false);
     expect(safeToReload({ visible: true, formOpen: false, typing: true })).toBe(false);
+  });
+
+  // owner's sync log 3: a new version reloaded the page on screen and aborted the return's check (about 2 s each time)
+  it('a new version is applied when the app is next hidden or returned to, once, never while it stays on screen', () => {
+    const doc = Object.assign(new EventTarget(), { visibilityState: 'visible' as DocumentVisibilityState });
+    let applied = 0;
+    applyWhenAway(doc, () => applied++);
+    expect(applied, 'on screen: waits').toBe(0);
+    doc.visibilityState = 'hidden';
+    doc.dispatchEvent(new Event('visibilitychange'));
+    expect(applied).toBe(1);
+    doc.visibilityState = 'visible'; // the reload did not run while hidden (frozen): the return does not apply it twice
+    doc.dispatchEvent(new Event('visibilitychange'));
+    expect(applied).toBe(1);
+    // the hiding was never seen by the page (frozen before the event): the next return applies it
+    const frozen = Object.assign(new EventTarget(), { visibilityState: 'visible' as DocumentVisibilityState });
+    let later = 0;
+    applyWhenAway(frozen, () => later++);
+    frozen.dispatchEvent(new Event('visibilitychange'));
+    expect(later).toBe(1);
+    // already hidden: at once
+    let now = 0;
+    applyWhenAway(Object.assign(new EventTarget(), { visibilityState: 'hidden' as DocumentVisibilityState }), () => now++);
+    expect(now).toBe(1);
+  });
+
+  it('the start after an update reload is recognised once (usage counts it as a return)', () => {
+    const m = new Map<string, string>();
+    const store = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) };
+    expect(cameFromUpdateReload(store)).toBe(false);
+    markUpdateReload(store);
+    expect(cameFromUpdateReload(store)).toBe(true);
+    expect(cameFromUpdateReload(store)).toBe(false);
+    expect(cameFromUpdateReload(null)).toBe(false);
   });
 });
 

@@ -4,13 +4,13 @@ import vm from 'node:vm';
 type Cell = string | number | boolean | Date;
 
 /** Minimal in-memory imitation of the parts of Google Sheets / Apps Script the server uses. */
-export function createGasRuntime(opts: { url?: string | null } = {}) {
+export function createGasRuntime(opts: { url?: string | null; whileWaitingForLock?: () => void } = {}) {
   const sheets = new Map<string, Cell[][]>();
   const props = new Map<string, string>();
   const logs: string[] = [];
   let locks = 0;
   /** How many calls reached each Google service (the slow part of every request). */
-  const calls = { props: 0, values: 0, find: 0 };
+  const calls = { props: 0, values: 0, find: 0, tabs: 0, lastRow: 0 };
 
   // like Google: a new tab has 26 columns, and a range beyond them is refused until columns are inserted
   const maxCols = new Map<string, number>();
@@ -65,7 +65,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
     };
     return {
       getName: () => name,
-      getLastRow: lastRow,
+      getLastRow: () => (calls.lastRow++, lastRow()),
       getLastColumn: () => Math.max(0, ...rows().map((r) => r.length)),
       getMaxRows: () => 1000,
       getRange: (a: number | string, b?: number, c?: number, d?: number) => {
@@ -95,7 +95,7 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
 
   const ss = {
     setSpreadsheetTimeZone: () => undefined,
-    getSheetByName: (n: string) => (sheets.has(n) ? sheetObj(n) : null),
+    getSheetByName: (n: string) => (calls.tabs++, sheets.has(n) ? sheetObj(n) : null),
     insertSheet: (n: string) => ensure(n),
     getSheets: () => [...sheets.keys()].map(sheetObj),
     deleteSheet: (s: { getName(): string }) => sheets.delete(s.getName()),
@@ -128,7 +128,8 @@ export function createGasRuntime(opts: { url?: string | null } = {}) {
         deleteProperty: (k: string) => (calls.props++, void props.delete(k)),
       }),
     },
-    LockService: { getScriptLock: () => ({ waitLock: () => void locks++, releaseLock: () => void locks-- }) },
+    // `whileWaitingForLock`: what another request does while this one waits (it writes, then lets go)
+    LockService: { getScriptLock: () => ({ waitLock: () => (opts.whileWaitingForLock?.(), void locks++), releaseLock: () => void locks-- }) },
     ContentService: { createTextOutput: out, MimeType: { JSON: 'json' } },
     Utilities: {
       getUuid: () => randomUUID(),

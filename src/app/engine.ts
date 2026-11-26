@@ -106,6 +106,11 @@ export interface EngineOptions {
   random?: () => number;
   /** A clock for measuring durations (not the app's time). */
   stopwatch?: () => number;
+  /**
+   * Told about every request this phone makes to the server (`writes`: entries it carries), for the usage counts that show how
+   * much of the shared daily quota each family uses (owner). Must cost nothing: it only adds to counts in memory.
+   */
+  onRequest?: (writes: number) => void;
 }
 
 const STATE_KEY = 'bl.state.v1';
@@ -172,8 +177,10 @@ export class Engine {
   private syncing = false;
   private syncStartedAt = -Infinity;
   private syncSeq = 0;
-  /** A sync was requested while one was running: run another one as soon as that one ends (never drop the request). */
+  /** A sync was requested while one was running: run another one as soon as that one ends (never dropped, except a timer check that an exchange which just succeeded already answered). */
   private again: false | 'rev' | 'full' = false;
+  /** The remembered request was asked for by something other than the regular timer check (see `sync`). */
+  private againKeep = false;
   /** When the whole list last arrived, or the app was last opened or returned to (the safety-net refresh counts from there). */
   private fullAt = 0;
   /** Operations travelling in the running request (they can no longer be dropped by an undo). */
@@ -195,6 +202,7 @@ export class Engine {
   /** When the app was last opened, returned to, or used to log something (drives the polling pace). */
   private lastActive = -Infinity;
   private readonly beacon: (ep: Endpoint, req: ApiRequest) => boolean;
+  private readonly onRequest: (writes: number) => void;
   private retryTimer: unknown = null;
   private retryStep = 0;
 
@@ -206,6 +214,7 @@ export class Engine {
     this.setTimer = opts.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimer = opts.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
     this.beacon = opts.beacon ?? sendAway;
+    this.onRequest = opts.onRequest ?? (() => undefined);
     this.random = opts.random ?? Math.random;
     this.stopwatch = opts.stopwatch ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     const savedLog = this.storage.get<SyncLogEntry[]>(LOG_KEY);
@@ -382,13 +391,16 @@ export class Engine {
   async ask(req: ApiRequest): Promise<ApiResponse> {
     const ep = this.endpoint();
     if (!ep) return { ok: false, error: 'unauthorized' };
+    this.onRequest(0);
     return callApi(ep, req, this.fetchImpl);
   }
 
   /** Hands one request to the browser to deliver on its own (no answer read); false when there is no server or it was not taken. */
   sendAway(req: ApiRequest): boolean {
     const ep = this.endpoint();
-    return ep ? this.beacon(ep, req) : false;
+    if (!ep) return false;
+    this.onRequest(0);
+    return this.beacon(ep, req);
   }
 
   private endpoint(): Endpoint | null {
@@ -406,13 +418,14 @@ export class Engine {
    * `soft` marks an "I am back" event, which is dropped when a sync has only just started.
    * Returns true when new data arrived or operations were delivered.
    */
-  private async sync(mode: 'rev' | 'full', soft = false, why: SyncWhy = 'poll'): Promise<boolean> {
+  private async sync(mode: 'rev' | 'full', soft = false, why: SyncWhy = 'poll', timer = false): Promise<boolean> {
     const ep = this.endpoint();
     if (!ep) return false;
     const age = this.now() - this.syncStartedAt;
     if (soft && age >= 0 && age < COALESCE_MS && (this.syncing || this.status === 'idle')) return false; // the same return to the app, already served
     if (this.syncing && age < SYNC_STALE_MS) {
       if (this.again !== 'full') this.again = mode; // remembered: it may postdate what the running one will learn
+      if (!timer) this.againKeep = true; // asked for by something other than the regular timer: never dropped
       return false;
     }
     this.syncing = true;
@@ -447,8 +460,12 @@ export class Engine {
           this.emit(false);
         }
         // A remembered request, a second batch, or taps made meanwhile. Not after a failure: the retry timer and the next check take over.
-        const next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
+        let next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
+        // (owner's sync log 3) only the timer's check fell meanwhile, and this exchange has just succeeded: its answer is as fresh
+        // as that check would be, and the next check is seconds away. Dropped (one request less after every slow exchange).
+        if (next === 'rev' && !this.againKeep && !this.p.queue.length && this.status === 'idle') next = false;
         this.again = false;
+        this.againKeep = false;
         // (owner's sync log) taps that waited behind a running exchange are labelled as taps, not as checks
         if (next) void this.sync(next, false, this.returnAt !== null ? 'return' : this.p.queue.length ? 'tap' : 'poll');
       }
@@ -468,6 +485,7 @@ export class Engine {
     const ops = this.wireOps(batch);
     // a request that carries entries is marked keepalive: the browser should finish it even if the phone is locked right after
     const meta: { bytes?: number } = {};
+    this.onRequest(ops.length);
     const res = await callApi(ep, { action: 'sync', ...range, ...rev, ...(ops.length ? { ops } : {}), debug: true }, this.fetchImpl, batch.length || mode === 'full' ? 20_000 : 10_000, batch.length > 0, meta);
     if (seq !== this.syncSeq) return false; // declared dead meanwhile: a newer sync owns the state (anything sent is sent again; ids make that safe)
     if (!res.ok) {
@@ -571,6 +589,7 @@ export class Engine {
     if (this.stopwatch() - this.lastBeaconAt < 2_000) return 0; // "hidden" and "page closing" arrive together: once is enough
     this.lastBeaconAt = this.stopwatch();
     const ops = this.wireOps(batch);
+    this.onRequest(ops.length);
     const ok = this.beacon(ep, { action: 'sync', ...this.defaultRange(), ...(this.p.rev ? { rev: this.p.rev } : {}), ops });
     return ok ? batch.length : 0;
   }
@@ -601,6 +620,7 @@ export class Engine {
     while (this.p.queue.length) {
       const op = this.p.queue[0]!;
       this.inFlight.add(op.opId);
+      this.onRequest(1);
       const res = await callApi(ep, op.req, this.fetchImpl);
       if (seq !== this.syncSeq) return false;
       this.inFlight.delete(op.opId);
@@ -624,6 +644,7 @@ export class Engine {
       this.emit();
     }
     if (mode === 'rev' && sent === 0 && this.p.rev) {
+      this.onRequest(0);
       const poll = await callApi(ep, { action: 'poll' }, this.fetchImpl, 8_000);
       if (seq !== this.syncSeq) return false;
       if (!poll.ok && poll.error === 'unauthorized') {
@@ -637,6 +658,7 @@ export class Engine {
     }
     const range = this.defaultRange();
     const queued = this.p.queue.length;
+    this.onRequest(0);
     const res = await callApi(ep, { action: 'list', from: range.from, to: range.to }, this.fetchImpl);
     if (seq !== this.syncSeq) return false;
     if (!res.ok) {
@@ -682,6 +704,7 @@ export class Engine {
     if (!ep) return false;
     const startEpoch = this.epoch;
     try {
+      this.onRequest(0);
       const res = await callApi(ep, { action: 'list', from: range.from, to: range.to }, this.fetchImpl);
       if (!res.ok) {
         this.setStatus(res.error === 'unauthorized' ? 'auth' : 'error');
@@ -724,6 +747,11 @@ export class Engine {
    */
   async pollOnce(): Promise<boolean> {
     return this.sync('rev');
+  }
+
+  /** The open app's regular check (every few seconds, `pollDelay`). */
+  async timerCheck(): Promise<boolean> {
+    return this.sync('rev', false, 'poll', true);
   }
 
   /** Used on every return to the app: the same cheap exchange. */
@@ -782,7 +810,7 @@ export class Engine {
     };
     let poll: ReturnType<typeof setTimeout>;
     const tick = () => {
-      if (visible() && this.config) void this.sync('rev');
+      if (visible() && this.config) void this.timerCheck();
       poll = setTimeout(tick, pollDelay(this.now() - this.lastActive));
     };
     poll = setTimeout(tick, POLL_ACTIVE_MS);
