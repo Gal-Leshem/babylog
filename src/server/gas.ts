@@ -1,6 +1,6 @@
 /// <reference types="google-apps-script" />
 import { type Medicine, normalizeMedicine } from '../shared/medicines';
-import { API_VERSION, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
+import { API_VERSION, type FeedbackItem, type FeedbackKind, type UsageTotal } from '../shared/protocol';
 import { QUESTION_STATES, USAGE_LABELS, USAGE_QUESTIONS, type UsageDay, questionColumn } from '../shared/usage';
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
@@ -319,6 +319,30 @@ class SheetStore implements Store {
     timed('props', () => props().setProperty('FEEDBACK_SEQ', String(no)));
     P().FEEDBACK_SEQ = String(no);
     return { ...item, no };
+  }
+  /** (owner, family servers) Request counts per day over every phone (numbers only), read from the usage tab. */
+  usageTotals(dates: readonly string[]): UsageTotal[] {
+    const out = dates.map((date) => ({ date, requests: 0, ops: 0, phones: 0 }));
+    const sh = this.ss.getSheetByName(USAGE);
+    const last = sh ? sh.getLastRow() : 0;
+    if (!sh || last < 2) return out;
+    const width = sh.getLastColumn();
+    const values = timed('read', () => sh.getRange(1, 1, last, width).getValues());
+    const header = values[0]!.map((h) => String(h ?? ''));
+    const col = (k: string) => header.indexOf(USAGE_LABELS[k]!);
+    const [req, ops] = [col('sync.requests'), col('sync.ops')];
+    const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || 0);
+    const phones = new Map<string, Set<string>>();
+    for (const r of values.slice(1)) {
+      const date = String(r[0] ?? '').replace(/^'/, '');
+      const day = out.find((d) => d.date === date);
+      if (!day) continue;
+      if (req >= 0) day.requests += num(r[req]);
+      if (ops >= 0) day.ops += num(r[ops]);
+      (phones.get(date) ?? phones.set(date, new Set()).get(date)!).add(String(r[2] ?? ''));
+    }
+    for (const d of out) d.phones = phones.get(d.date)?.size ?? 0;
+    return out;
   }
   /** No lock: each phone writes only its own rows (date, parent, phone), and a beacon is never waited for. */
   usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void {

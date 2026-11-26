@@ -607,6 +607,19 @@ describe('the bundle built for a family (--family)', () => {
     expect(post({ key: admin, action: 'feedbackClear', ids: ['f1'] }).feedback).toEqual([]);
   });
 
+  it("the admin key reads the day totals of the phones' request counts from the usage tab (numbers only)", () => {
+    const { rt, g, post } = bootFam();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const admin = rt.props.get('ADMIN_KEY')!;
+    const today = post({ key, action: 'ping' }).serverNow.slice(0, 10);
+    expect(post({ key, action: 'usage', user: 'P', install: 'i1', days: [{ date: today, counts: { 'sync.requests': 120, 'sync.ops': 7 } }] }).ok).toBe(true);
+    expect(post({ key, action: 'usage', user: 'Q', install: 'i2', days: [{ date: today, counts: { 'sync.requests': 30 } }] }).ok).toBe(true);
+    const r = post({ key: admin, action: 'usageTotals', days: 1 });
+    expect(r.usageTotals).toEqual([{ date: today, requests: 150, ops: 7, phones: 2 }]);
+    expect(post({ key, action: 'usageTotals' }).error).toBe('send_only');
+  });
+
   it("the owner's build has no admin key: setup makes none and prints no admin code", () => {
     const { rt, g } = boot();
     g.setup!();

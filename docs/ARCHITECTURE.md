@@ -110,7 +110,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   `feedbackList` / `feedbackClear`; the admin key (`ADMIN_KEY`, `checkAdmin`) may only `ping`, `feedbackList` and `feedbackClear`
   (with `ids`: only those items). The owner's phone keeps the family servers it reads (`bl.families.v1`: private label, address,
   admin key) and shows them under "משפחות נוספות" in the feedback screen; the feedback screen learns "send only" from the
-  answer to its list.
+  answer to its list. The admin key also reads `usageTotals` (numbers only), shown on the owner's phone as "עומס על השרתים"
+  against the shared daily quota (`src/shared/quota.ts`).
 
 ## Security
 Every request carries a secret key (a script property). The web app is anonymous-accessible (Siri cannot sign

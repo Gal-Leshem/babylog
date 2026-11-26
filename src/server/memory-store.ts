@@ -1,4 +1,4 @@
-import type { FeedbackItem } from '../shared/protocol';
+import type { FeedbackItem, UsageTotal } from '../shared/protocol';
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
 import type { Store } from './core';
 import type { UsageDay } from '../shared/usage';
@@ -83,6 +83,13 @@ export class MemoryStore implements Store {
       if (i >= 0) this.usage[i] = row;
       else this.usage.push(row);
     }
+  }
+  usageTotals(dates: readonly string[]): UsageTotal[] {
+    return dates.map((date) => {
+      const rows = this.usage.filter((r) => r.date === date);
+      const sum = (k: string) => rows.reduce((a, r) => a + (r.counts[k] ?? 0), 0);
+      return { date, requests: sum('sync.requests'), ops: sum('sync.ops'), phones: new Set(rows.map((r) => r.install)).size };
+    });
   }
   usageAll(): UsageRow[] {
     return this.usage.map((r) => ({ ...r, counts: { ...r.counts } }));
