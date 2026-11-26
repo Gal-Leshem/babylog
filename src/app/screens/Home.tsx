@@ -200,15 +200,16 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
       </span>
     </button>
   );
+  // the row runs left to right (the nursing buttons keep their physical side); (owner) the bottle is on the left of them
   const feedButtons = feeding.breast
     ? [
-        kindButton('feed_left'),
-        kindButton('feed_right'),
         ...(bottleKinds.length === 0
           ? []
           : bottleKinds.length === 1
             ? [bottleButton('bottle', 'בקבוק', () => press('bottle', () => logBottle(bottleKinds[0]!)))]
             : [bottleButton('bottle', 'בקבוק', onOpenBottle)]),
+        kindButton('feed_left'),
+        kindButton('feed_right'),
       ]
     : bottleKinds.map((k) => bottleButton(`bottle_${k}`, KIND_LABEL[kindOfBottle(k)], () => press(`bottle_${k}`, () => logBottle(k))));
 

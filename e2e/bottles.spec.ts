@@ -29,6 +29,10 @@ test('Settings: turning on formula adds "בקבוק" beside the nursing buttons;
   await expect(page.getByTestId('default-ml-formula-value')).toHaveText('100 מ״ל');
   await page.getByTestId('tab-home').click();
   await expect(page.locator('.feedrow .big')).toHaveCount(3);
+  // (owner) the bottle is on the left of the nursing buttons; nursing left stays on the left of nursing right
+  const x = async (id: string) => (await page.getByTestId(id).boundingBox())!.x;
+  expect(await x('btn-bottle')).toBeLessThan(await x('btn-feed_left'));
+  expect(await x('btn-feed_left')).toBeLessThan(await x('btn-feed_right'));
   await page.getByTestId('btn-bottle').click();
   await expect(page.getByTestId('toast-text')).toContainText('בקבוק תמ״ל · 100 מ״ל');
   await expect(page.getByTestId('toast-ml')).toHaveText('100 מ״ל');
