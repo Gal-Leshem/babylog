@@ -191,6 +191,10 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   offers -20 / -10 / +10 / +20 ml; proposed: when the last bottles of a type keep the same amount that differs from the
   default, offer to update the default; "מתוכן X עם בקבוק" only when breastfeeding and bottles are both on (sensitive: some
   mothers cannot nurse); be careful with bottle volume in "היום חריג" for combined feeding (open).
+  **Third round (owner):** "נשאר" is picked on a wheel (0 = ate it all, up to the amount given = did not eat; steps of 10, or 5
+  for small bottles), no vague chips; the bottle toast stays while it is used (an amount and "היה לפני" can both be set; each
+  tap restarts a short time, not an excessive one); the default-update suggestion after 5 equal bottles: build it; bottle
+  volume left out of "היום חריג" when breastfeeding is on; "כמה מההאכלות עם בקבוק?" only when turned on by hand.
   Next: mockups (Home at 852 / 700 / 560 for each combination, the bottle window, the toast, Settings, the summary row).
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
