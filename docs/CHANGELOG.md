@@ -790,6 +790,9 @@ No names, addresses or secrets in this file (the repository is public).
   `perf-analyst` now also checks a log for version reloads, the untimed part of a tap and the pace. Guides only: on `dev`.
 - `PROGRESS.md` "Where we are" is now one list of open items for every area (waiting for the owner, waiting for daily use,
   on hold), not per session. The old session branches were checked against `dev` on a full clone: nothing is missing.
+- CI: "Summary with nursing and bottles" failed on `dev` at 01:15 (Israel time): it seeded a feed "200 minutes ago", which
+  was yesterday, so today's Summary had one feeding. Both Summary bottle tests now pin the page's day and seed fixed times
+  (`pinPageDay`). The old test failed when run at 01:17; the new ones pass 10 of 10 then, and against the slow server. Not an app bug.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

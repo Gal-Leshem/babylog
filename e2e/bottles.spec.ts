@@ -1,5 +1,5 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { api, install, nowLocal, resetServer, seed, serverEvents } from './helpers';
+import { api, install, nowLocal, pinPageDay, resetServer, seed, serverEvents } from './helpers';
 
 // F18 (owner): bottles of expressed milk and formula, next to breastfeeding or instead of it.
 
@@ -182,10 +182,11 @@ async function check(page: import('@playwright/test').Page): Promise<void> {
 
 test('Summary with nursing and bottles: feedings (a top-up is the same feeding), nursings, bottles, ml eaten', async ({ page, request }) => {
   await feeding(request, { formula: true });
+  const d = await pinPageDay(page); // "200 minutes ago" is yesterday before 03:20: the Summary of today would miss it (CI at 01:15)
   await seed(request, [
-    { type: 'feed', detail: 'left', start: nowLocal(-200) },
-    { type: 'bottle', detail: 'formula:60', start: nowLocal(-190) }, // a top-up 10 minutes later: one feeding
-    { type: 'bottle', detail: 'formula:120:30', start: nowLocal(-60) },
+    { type: 'feed', detail: 'left', start: `${d} 08:20` },
+    { type: 'bottle', detail: 'formula:60', start: `${d} 08:30` }, // a top-up 10 minutes later: one feeding
+    { type: 'bottle', detail: 'formula:120:30', start: `${d} 10:20` },
   ]);
   await install(page);
   await page.getByTestId('tab-summary').click();
@@ -200,7 +201,8 @@ test('Summary with nursing and bottles: feedings (a top-up is the same feeding),
 
 test('Summary with bottles only: no nursing or left / right rows', async ({ page, request }) => {
   await feeding(request, { breast: false, formula: true });
-  await seed(request, [{ type: 'bottle', detail: 'formula:90', start: nowLocal(-60) }]);
+  const d = await pinPageDay(page); // "an hour ago" is yesterday before 01:00
+  await seed(request, [{ type: 'bottle', detail: 'formula:90', start: `${d} 10:20` }]);
   await install(page);
   await page.getByTestId('tab-summary').click();
   await expect(page.getByTestId('sum-האכלות').locator('td').first()).toHaveText('1');

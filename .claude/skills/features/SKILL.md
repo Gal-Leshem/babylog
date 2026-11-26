@@ -104,6 +104,8 @@ is reviewed against every skill that owns the file.
 - A passing "does not move" test proves nothing until the drag helper is shown to move something (raw CDP touch events only).
 - A browser test must wait for the state it means, not for a text shown one step earlier.
 - Seeding early-morning times ("00:05") needs `pinPageDay(page)` first, or the test fails just after midnight.
+- A test that reads today's Summary and seeds `nowLocal(-N)` fails for the first N minutes after midnight (bottles, CI at
+  01:15) -> any test about "today" pins the day and seeds fixed times; prove it by running the old test just after midnight.
 - `npx prettier` reformatted whole files -> never run it; edit only the lines you mean.
 - A sheet behind the tab bar on iPhone could not be reproduced in Chromium -> test that the sheet is not inside `.main` and
   that `elementFromPoint` at its button hits the button.
