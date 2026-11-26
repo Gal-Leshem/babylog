@@ -161,6 +161,10 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   the questions into the visit record (answers, what was said, next steps), and a report on screen built from the list, the
   last visit's next steps and a small snapshot of the log since then (no raw logs, no flags, "recorded by the parents");
   waiting for the owner's decisions.
+  **Status (owner, 26 Nov 2026): low priority, parked.** The owner chose the three features (questions before a visit, the
+  last visit, a pre-visit report) and the proposal is written; open decisions when it is resumed: where it lives (a fifth tab
+  "ביקור" or a third part of "סיכום"), the kinds of items (שאלה / לעקוב / לספר, maybe "לאמא"), what the visit record holds
+  (text and next steps, maybe weight), sharing the report as text. Then mockups before building.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted
