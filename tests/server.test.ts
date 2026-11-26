@@ -825,6 +825,21 @@ describe("the baby's date of birth (owner)", () => {
 });
 
 describe('bottles (F18, owner)', () => {
+  it("Siri's last feed: a bottle after nursing is the last feeding, with what was eaten; the next side from nursing", () => {
+    log('feed', 'left', '2026-11-14 09:00');
+    log('bottle', 'formula:120:30', '2026-11-14 10:50');
+    expect(ok(call({ action: 'status' })).speech).toBe('1 hour 10 minutes ago, formula bottle, 90 milliliters. Next side: right');
+    expect(ok(call({ action: 'status', lang: 'he' })).speech).toBe('ההאכלה האחרונה לפני שעה ו-10 דקות, בקבוק תמ״ל, 90 מיליליטר. הנקה הבאה: צד ימין');
+    // nursing after the bottle: as before
+    log('feed', 'right', '2026-11-14 11:30');
+    expect(ok(call({ action: 'status' })).speech).toBe('30 minutes ago, right side. Next: left');
+  });
+
+  it("Siri's last feed for a family on bottles only: the bottle, no side", () => {
+    log('bottle', 'expressed:60', '2026-11-14 11:00');
+    expect(ok(call({ action: 'status' })).speech).toBe('1 hour ago, expressed milk bottle, 60 milliliters.');
+  });
+
   it('a bottle is logged with its kind and amounts in the detail; a bad one is refused', () => {
     for (const detail of ['formula:90', 'expressed:120:30', 'formula:120:120']) {
       expect(call({ action: 'log', id: id(), type: 'bottle', detail, start: '2026-11-14 11:00', user: 'Parent 1', source: 'app' })).toMatchObject({ ok: true });

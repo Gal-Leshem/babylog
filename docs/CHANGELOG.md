@@ -675,6 +675,13 @@ No names, addresses or secrets in this file (the repository is public).
   nursing; failed with bottles outside the episodes) and 8 more browser tests (Summary rows, the offer and its refusal, the
   questions with and without nursing; failed with bottles outside the episodes and with the share shown by itself).
 
+- Bottles, the last two pieces **(owner, F18)**: Siri's "last feed" is the last feeding of either kind: a bottle says its
+  kind and what was eaten ("ההאכלה האחרונה לפני שעה ו-10 דקות, בקבוק תמ״ל, 90 מיליליטר. הנקה הבאה: צד ימין"; English alike),
+  nursing as before, the next side from nursing only, nothing about a side for a family on bottles only. The week in Summary
+  has daily bars for bottles and for the ml eaten from them (the ml card across the whole width, so three-digit numbers fit
+  their bars on a narrow phone). Tests: server (failed on the old answer) and browser (bars, numbers fit at 360 wide, failed
+  with the ml card at half width; no bottle bars without bottles).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five

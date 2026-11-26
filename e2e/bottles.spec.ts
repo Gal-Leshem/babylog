@@ -291,3 +291,31 @@ test('questions without nursing: no left / right, no cluster feeding, no share; 
   for (const id of ['sides', 'cluster', 'bottleShare']) await expect(page.getByTestId(`pick-${id}`)).toHaveCount(0);
   await expect(page.getByTestId('pick-nextFeed')).toContainText('מתי ההאכלה הבאה צפויה?');
 });
+
+test('the week in Summary: daily bars for bottles and their ml, the numbers fit their bars (360 wide)', async ({ page, request }) => {
+  await feeding(request, { formula: true });
+  await seed(request, mixedWeek());
+  await page.clock.setFixedTime(QNOW);
+  await page.setViewportSize({ width: 360, height: 700 });
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-day').click();
+  await expect(page.getByTestId('cnt-bottles').locator('.bn').first()).toHaveText('8');
+  await expect(page.getByTestId('cnt-bottleMl').locator('.bn').first()).toHaveText(String(4 * 60 + 4 * 120));
+  const overflow = await page.getByTestId('cnt-bottleMl').evaluate((card) =>
+    [...card.querySelectorAll('.bar')].some((bar) => {
+      const n = bar.querySelector('.bn') as HTMLElement;
+      return n.scrollWidth > (bar as HTMLElement).clientWidth + 1 || n.getBoundingClientRect().width > bar.getBoundingClientRect().width + 1;
+    }),
+  );
+  expect(overflow, 'every ml number fits its bar').toBe(false);
+});
+
+test('the week without bottles: no bottle bars', async ({ page, request }) => {
+  await resetServer(request);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-day').click();
+  await expect(page.getByTestId('cnt-feeds')).toBeVisible();
+  await expect(page.getByTestId('cnt-bottles')).toHaveCount(0);
+});

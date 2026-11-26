@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { dailySummary } from '../../shared/domain';
 import { type TimelineRow, insightWindow, timeline } from '../../shared/insights';
 import { addDays, localDate } from '../../shared/tz';
@@ -43,10 +44,10 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
  * Small bars, oldest on the right (time runs right to left), with the number above and the weekday below: the seven full
  * days and then today so far (owner), set a little apart, labelled "היום" and drawn lighter (the day is not over).
  */
-function countCard(id: string, title: string, days: string[], values: number[], today: string): JSX.Element {
+function countCard(id: string, title: string, days: string[], values: number[], today: string, wide = false): JSX.Element {
   const max = Math.max(1, ...values);
   return (
-    <div class="cnt" data-testid={`cnt-${id}`} key={id}>
+    <div class={`cnt ${wide ? 'wide' : ''}`} data-testid={`cnt-${id}`} key={id}>
       <div class="ie">{title}</div>
       <div class="bars">
         {values.map((v, i) => (
@@ -78,6 +79,8 @@ export function Week() {
     return { w, rows, countDays, sums };
   }, [events, now, settings.mergeWindowMin]);
   const today = localDate(now);
+  // the family's bottle settings, or bottles given this week (before they were turned off)
+  const withBottles = bottleKindsOn(feedingOf(settings)).length > 0 || sums.some((s) => s.feeds.bottles > 0);
   const tlRef = useRef<HTMLDivElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +140,10 @@ export function Week() {
       <h3>ספירות יומיות</h3>
       <div class="cnts" ref={barsRef}>
         {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
+        {/* (owner, F18) with bottles: how many, and the ml eaten from them */}
+        {withBottles && countCard('bottles', 'בקבוקים', countDays, sums.map((s) => s.feeds.bottles), today)}
+        {/* three-digit numbers: the whole width, so each fits over its bar */}
+        {withBottles && countCard('bottleMl', 'מ״ל בבקבוקים', countDays, sums.map((s) => s.feeds.bottleMl), today, true)}
         {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}
         {countCard('poop', 'קקי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.poop + s.diapers.both), today)}
         {countCard('sleep', 'שינה (שעות)', countDays, sums.map((s) => Math.round(s.sleep.totalMin / 60)), today)}

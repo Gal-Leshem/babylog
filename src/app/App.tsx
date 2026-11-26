@@ -269,7 +269,7 @@ function ToastView() {
   );
 }
 
-/** History has one row per sleep: a finished sleep opens on its wake-up (proposal, waiting for the owner), an open one on falling asleep. */
+/** History has one row per sleep: a finished sleep opens on its wake-up (owner agreed), an open one on falling asleep. */
 const historyFocus = (e: BabyEvent): Moment | undefined => (e.type === 'sleep' ? (e.end ? 'end' : 'start') : undefined);
 
 /** After a reload for the theme, the parent is back on the tab they were on, scrolled where they were. */

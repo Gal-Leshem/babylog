@@ -1,3 +1,4 @@
+import { eaten, parseBottle } from './bottle';
 import { clock, nextSide, oppositeSide } from './domain';
 import { parseLocal } from './tz';
 import type { BabyEvent } from './types';
@@ -53,10 +54,12 @@ export function speechAwake(sleepMinutes: number | null): string {
   return sleepMinutes === null ? 'Awake. Sleep length unknown' : `Awake. Slept ${durationEn(sleepMinutes)}`;
 }
 
-export function speechStatus(last: BabyEvent | undefined, nowEpoch: number): string {
+export function speechStatus(last: BabyEvent | undefined, nowEpoch: number, next: 'left' | 'right' | null = last ? oppositeSide(last.detail) : null): string {
   if (!last) return 'No feeds logged yet';
   const ago = capitalize(durationEn((nowEpoch - parseLocal(last.start)) / MIN));
-  const next = oppositeSide(last.detail);
+  // (owner, F18) the last feeding may be a bottle: its kind and what was eaten; the next side still comes from nursing
+  const b = last.type === 'bottle' ? parseBottle(last.detail) : null;
+  if (b) return `${ago} ago, ${b.kind === 'formula' ? 'formula' : 'expressed milk'} bottle, ${eaten(b)} milliliters.${next ? ` Next side: ${next}` : ''}`;
   return `${ago} ago, ${last.detail} side.${next ? ` Next: ${next}` : ''}`;
 }
 
@@ -83,7 +86,8 @@ export interface Voice {
   vitaminAgain(firstGiven: BabyEvent): string;
   alreadyAsleep(open: BabyEvent): string;
   awake(sleepMinutes: number | null): string;
-  status(last: BabyEvent | undefined, nowEpoch: number): string;
+  /** the last feeding (nursing or a bottle) and the next side (from nursing only) */
+  status(last: BabyEvent | undefined, nowEpoch: number, next?: 'left' | 'right' | null): string;
   /** (owner) "Which side next?": the side only. */
   nextSide(next: 'left' | 'right' | null): string;
 }
@@ -127,9 +131,10 @@ export function voiceHe(sex: 'boy' | 'girl' | undefined): Voice {
     vitaminAgain: (first) => `ויטמין די נרשם שוב. כבר ניתן היום ב-${at(first)}`,
     alreadyAsleep: (open) => `כבר ${girl ? 'מסומנת כישנה' : 'מסומן כישן'} מ-${at(open)}`,
     awake: (min) => (min === null ? `${wokeUp}. אורך השינה לא ידוע` : `${wokeUp}. ${slept} ${durationHe(min)}`),
-    status(last, nowEpoch) {
+    status(last, nowEpoch, next = last ? oppositeSide(last.detail) : null) {
       if (!last) return 'עוד לא נרשמו הנקות';
-      const next = oppositeSide(last.detail);
+      const b = last.type === 'bottle' ? parseBottle(last.detail) : null;
+      if (b) return `ההאכלה האחרונה לפני ${durationHe((nowEpoch - parseLocal(last.start)) / MIN)}, בקבוק ${b.kind === 'formula' ? 'תמ״ל' : 'חלב שאוב'}, ${eaten(b)} מיליליטר.${next ? ` הנקה הבאה: צד ${SIDE_HE[next]}` : ''}`;
       return `ההנקה האחרונה לפני ${durationHe((nowEpoch - parseLocal(last.start)) / MIN)}, צד ${SIDE_HE[last.detail] ?? ''}.${next ? ` הבאה: ${SIDE_HE[next]}` : ''}`;
     },
     nextSide: (next) => (next ? `ההנקה הבאה: צד ${SIDE_HE[next]}` : 'עוד לא נרשמו הנקות'),

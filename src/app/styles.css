@@ -564,3 +564,4 @@ button.prow .t small { display: block; }
 .sheet .calc { margin: 4px 0 2px; font-weight: 700; }
 .toast .tact .tbtns { display: flex; gap: 6px; flex: none; }
 .toast .tact .tbtns button + button { background: none; color: var(--toast-fg); border-color: color-mix(in srgb, currentColor 45%, transparent); }
+.cnt.wide { grid-column: 1 / -1; }
