@@ -108,7 +108,7 @@ describe('daily summary', () => {
     expect(s.feeds.count).toBe(3); // 01:00+01:10 merged, 04:00, 08:00
     expect(s.feeds.left).toBe(3);
     expect(s.feeds.right).toBe(1);
-    expect(s.feeds.avgGapMin).toBe((180 + 240) / 2);
+    expect(s.feeds.gapMin).toBe((180 + 240) / 2);
     expect(s.diapers).toEqual({ wet: 2, poop: 1, both: 1 });
     expect(s.vitaminD).toBe(true);
     // 00:00-00:30 (30) + 02:00-03:00 (60) + 11:00-12:00 open (60)
@@ -120,7 +120,19 @@ describe('daily summary', () => {
     const yesterday = dailySummary(events, '2026-11-13', now, 20);
     expect(yesterday.sleep.totalMin).toBe(60); // 23:00-24:00
     expect(yesterday.vitaminD).toBe(false);
-    expect(yesterday.feeds.avgGapMin).toBeNull();
+    expect(yesterday.feeds.gapMin).toBeNull();
+  });
+
+  it('the gap between feeds is the median: one forgotten feed does not stretch it (owner)', () => {
+    const day = [
+      ev({ type: 'feed', detail: 'left', start: '2026-11-14 01:00' }),
+      ev({ type: 'feed', detail: 'right', start: '2026-11-14 03:00' }),
+      ev({ type: 'feed', detail: 'left', start: '2026-11-14 05:00' }),
+      // the 07:00 feed was not logged: a 4-hour gap
+      ev({ type: 'feed', detail: 'right', start: '2026-11-14 09:00' }),
+    ];
+    // gaps 120, 120, 240: the mean would be 160 (2:40), the median stays 2:00
+    expect(dailySummary(day, '2026-11-14', now, 20).feeds.gapMin).toBe(120);
   });
 
   it('does not count future time of an open sleep', () => {

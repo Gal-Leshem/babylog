@@ -119,9 +119,18 @@ export function vitaminDOnDate(events: readonly BabyEvent[], date: string): Baby
 
 // ---------- daily summary ----------
 
+/** The middle value (the mean of the two middle ones for an even count); null for none. */
+export function median(values: readonly number[]): number | null {
+  if (!values.length) return null;
+  const v = [...values].sort((a, b) => a - b);
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m]! : (v[m - 1]! + v[m]!) / 2;
+}
+
 export interface DailySummary {
   date: string;
-  feeds: { count: number; avgGapMin: number | null; left: number; right: number };
+  /** gapMin: the median gap between feeds that day (owner: a forgotten entry must not skew it, as a mean would) */
+  feeds: { count: number; gapMin: number | null; left: number; right: number };
   diapers: { wet: number; poop: number; both: number };
   sleep: { totalMin: number; longestMin: number };
   vitaminD: boolean;
@@ -166,7 +175,7 @@ export function dailySummary(
     date,
     feeds: {
       count: groups.length,
-      avgGapMin: gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : null,
+      gapMin: median(gaps),
       left: dayFeeds.filter((e) => e.detail === 'left').length,
       right: dayFeeds.filter((e) => e.detail === 'right').length,
     },

@@ -161,6 +161,49 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   the questions into the visit record (answers, what was said, next steps), and a report on screen built from the list, the
   last visit's next steps and a small snapshot of the log since then (no raw logs, no flags, "recorded by the parents");
   waiting for the owner's decisions.
+  **Status (owner, 26 Nov 2026): low priority, parked.** The owner chose the three features (questions before a visit, the
+  last visit, a pre-visit report) and the proposal is written; open decisions when it is resumed: where it lives (a fifth tab
+  "ביקור" or a third part of "סיכום"), the kinds of items (שאלה / לעקוב / לספר, maybe "לאמא"), what the visit record holds
+  (text and next steps, maybe weight), sharing the report as text. Then mockups before building.
+- **F18 Bottles: expressed milk and formula (owner, 26 Nov 2026, asked by the second family)**: Settings toggles per family for
+  feeding modes (breastfeeding, expressed-milk bottle, formula bottle); Home buttons follow them. Research: trackers model a
+  bottle as its own entry with the milk type and an optional amount (ml), saved in one tap with the last amount, corrected in
+  the undo toast; a mixed bottle is two entries; pumping is a separate optional type (the mother's supply, never a feed); a
+  milk stash and discard timers are left out (inventory work, and storage rules differ between sources: medical-advice risk).
+  Pitfalls seen elsewhere: a bottle changing the "next side", a breast feed plus a top-up counted as two feeds, a daily volume
+  total that ignores breastfeeding, too many Home buttons. **Agreed with the owner (26 Nov 2026):**
+  - Settings (per family, both phones): feeding modes הנקה / בקבוק חלב שאוב / בקבוק תמ"ל (at least one on; default: only
+    breastfeeding, so nothing changes for existing families), and a default amount in ml per enabled bottle type.
+  - Home: breastfeeding as today. One bottle type on: its own button. Both types with breastfeeding: one "בקבוק" button that
+    opens a small window like the medicines window (type, amount prefilled from the default, "רישום"): a bottle is less rushed
+    than nursing, clarity first. Both types without breastfeeding: a button per type. A dedicated type button logs in one tap
+    with the default amount; its toast offers -10 / +10 ml and size chips, "היה לפני" and "בטל" (the change is for this
+    bottle only). The amount is what the baby drank (ml); optional.
+  - Amount in the edit / add-after-the-fact forms and in the lists ("🍼 בקבוק תמ\"ל · 90 מ״ל").
+  - Logic: the next side and left / right balance come from breastfeeding only; a bottle within the merge window of a nursing
+    or another bottle is the same feeding (episode); feeds, gaps, the next-feed estimate and "after a feed" use episodes.
+  - Summary table: nursings as today, plus bottles (count) and total ml.
+  - Questions: review all (feeds today count every feeding; sides and cluster only with breastfeeding on) and add bottle
+    questions (bottles and ml today vs a usual day; bottle size over the week; share of feeds with a bottle).
+  - Out of scope: pumping (the owner decides later), stash, discard timers, volume targets, a mixed bottle type, solids (later).
+  **Second round (owner):** the edit form has "כמה נשאר" (leftover; the app computes what was drunk; default: all of it); every
+  new bottle starts from the default of its type (never the previous bottle); the toast after a bottle (one tap or the window)
+  offers -20 / -10 / +10 / +20 ml; proposed: when the last bottles of a type keep the same amount that differs from the
+  default, offer to update the default; "מתוכן X עם בקבוק" only when breastfeeding and bottles are both on (sensitive: some
+  mothers cannot nurse); be careful with bottle volume in "היום חריג" for combined feeding (open).
+  **Third round (owner):** "נשאר" is picked on a wheel (0 = ate it all, up to the amount given = did not eat; steps of 10, or 5
+  for small bottles), no vague chips; the bottle toast stays while it is used (an amount and "היה לפני" can both be set; each
+  tap restarts a short time, not an excessive one); the default-update suggestion after 5 equal bottles: build it; bottle
+  volume left out of "היום חריג" when breastfeeding is on; "כמה מההאכלות עם בקבוק?" only when turned on by hand.
+  **Fourth round, after the mockups (owner):** the bottle is a third button in the feed row (logically one with the nursing
+  buttons). With three in a row the icon stays above the label at every height, smaller on short screens (side by side broke
+  "הנקה שמאל" into two lines on a small iPhone installed as an app, not only at 560); checked at widths 393 / 375 / 360.
+  Bottles without breastfeeding: two buttons per type in the feed row (or one across it for a single type). "כמה נשאר" uses
+  the same -10 / +10 buttons as the amount given, from 0 (default) up to the amount given; "נאכל" is computed. Summary: the
+  gap between feeds is the median, "רווח רגיל בין האכלות" (done); with bottles the rows are "האכלות" (all), "הנקות",
+  "בקבוקים", "מ״ל בבקבוקים"; breastfeeding only keeps today's "הנקות (האכלות)".
+  Build: stage 1 settings, the event type and its amount, the buttons, the window, the toast, the edit form, the lists;
+  stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted

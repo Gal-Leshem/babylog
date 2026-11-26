@@ -4,6 +4,7 @@ import { parseLocal } from '../../shared/tz';
 import { NetworkError, callApi } from '../api';
 import { decodeAdminCode } from '../config';
 import { type FamilySource, loadFamilies, saveFamilies } from '../families';
+import { DAILY_PROPS_QUOTA, propsEstimate, quotaCheck } from '../../shared/quota';
 import { errorText } from '../labels';
 import { count, engine } from '../state';
 import { day, logLines } from './SyncLog';
@@ -35,6 +36,70 @@ export function familiesText(groups: readonly { label: string; items: readonly F
     .filter((g) => g.items.length)
     .map((g) => `== ${g.label} ==\n${feedbackText(g.items)}`)
     .join('\n\n');
+}
+
+/** What one server said about yesterday: estimated property calls, or why there is no number. */
+type LoadState = { calls: number; requests: number } | 'none' | 'old' | 'error' | null;
+
+/**
+ * (owner, family servers) Yesterday's load of every server on the owner's account, from the phones' own request counts:
+ * the owner's server and each family's (through its admin code), the estimated share of the shared daily quota, and a warning
+ * above 75% or when one family is far above the others. Numbers only.
+ */
+function ServerLoad({ list }: { list: readonly FamilySource[] }) {
+  const [own, setOwn] = useState<LoadState>(null);
+  const [fams, setFams] = useState<Record<string, LoadState>>({});
+  const read = (r: Awaited<ReturnType<typeof engine.ask>>): LoadState => {
+    if (!r.ok) return r.error === 'unknown_action' ? 'old' : 'error';
+    const y = r.usageTotals?.[0]; // two days asked: yesterday (whole) and today (still counting)
+    if (!y || (y.requests === 0 && y.phones === 0)) return 'none';
+    return { calls: propsEstimate(y), requests: y.requests };
+  };
+  useEffect(() => {
+    engine.ask({ action: 'usageTotals', days: 2 }).then(
+      (r) => setOwn(read(r)),
+      () => setOwn('error'),
+    );
+  }, []);
+  useEffect(() => {
+    for (const f of list) {
+      callApi(f, { action: 'usageTotals', days: 2 }).then(
+        (r) => setFams((m) => ({ ...m, [f.url]: read(r) })),
+        () => setFams((m) => ({ ...m, [f.url]: 'error' })),
+      );
+    }
+  }, [list.length]);
+  const rows: [string, LoadState][] = [['שלנו', own], ...list.map((f): [string, LoadState] => [f.label, fams[f.url] ?? null])];
+  const check = quotaCheck(rows.map(([label, s]) => ({ label, calls: s && typeof s === 'object' ? s.calls : null })));
+  const text = (s: LoadState): string =>
+    s === null ? 'טוען…' : s === 'none' ? 'אין נתונים עדיין' : s === 'old' ? 'השרת עוד לא מעודכן' : s === 'error' ? 'לא ענה' : `כ-${s.calls.toLocaleString('he-IL')} פעולות (${s.requests.toLocaleString('he-IL')} בקשות)`;
+  const anyNumber = rows.some(([, s]) => s && typeof s === 'object');
+  return (
+    <div class="srvload" data-testid="srv-load">
+      <h3>עומס על השרתים (אתמול)</h3>
+      <ul class="loglist">
+        {rows.map(([label, s]) => (
+          <li key={label} data-testid="srv-load-row" data-label={label}>
+            <bdi>{label}</bdi>: {text(s)}
+          </li>
+        ))}
+      </ul>
+      {anyNumber && (
+        <p class={check.over || check.heavy.length ? 'err' : 'muted'} data-testid="srv-load-total">
+          סך הכל: כ-{check.total.toLocaleString('he-IL')} מתוך {DAILY_PROPS_QUOTA.toLocaleString('he-IL')} ביום ({Math.round(check.share * 100)}%)
+          {check.over ? '. קרוב למכסה היומית המשותפת: אם תיגמר, כל השרתים ייעצרו עד למחרת.' : ''}
+          {check.heavy.length ? (
+            <>
+              . הרבה מעל האחרים: <bdi>{check.heavy.join(', ')}</bdi>
+            </>
+          ) : (
+            ''
+          )}
+        </p>
+      )}
+      {!anyNumber && <p class="muted">הטלפונים סופרים את הבקשות מהגרסה הנוכחית ושולחים פעם ביום: המספרים יופיעו מחר.</p>}
+    </div>
+  );
 }
 
 interface Loaded {
@@ -114,6 +179,7 @@ function FamiliesFeedback() {
 
   return (
     <section data-testid="fam-section">
+      <ServerLoad list={list} />
       <h3>משפחות נוספות</h3>
       {list.map((f) => {
         const l = loaded[f.url];

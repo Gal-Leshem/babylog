@@ -119,3 +119,29 @@ describe('a family server', () => {
     expect(ok(handle({ key: KEY, action: 'settings' }, { ...deps, store: withUrl })).sheetUrl).toContain('spreadsheets');
   });
 });
+
+// Owner (family servers, the shared daily quota): the day totals of the phones' request counts, numbers only.
+describe('usage totals', () => {
+  const ADMIN = 'admin-key';
+  const fam = (): Deps => ({ ...deps, familyServer: true, checkAdmin: (k) => k === ADMIN });
+  const save = (d: Deps, install: string, date: string, counts: Record<string, number>, user = 'P') =>
+    ok(handle({ key: KEY, action: 'usage', user, install, days: [{ date, counts }] }, d));
+
+  it('sums requests and operations per day over every phone, counts the phones, and reads only what was asked', () => {
+    const d = fam();
+    save(d, 'phone-a', '2026-11-13', { 'sync.requests': 300, 'sync.ops': 20, open: 9 });
+    save(d, 'phone-b', '2026-11-13', { 'sync.requests': 200, 'sync.ops': 5 }, 'Q');
+    save(d, 'phone-a', '2026-11-14', { 'sync.requests': 40 });
+    const r = ok(handle({ key: ADMIN, action: 'usageTotals', days: 2 }, d));
+    expect(r.usageTotals).toEqual([
+      { date: '2026-11-13', requests: 500, ops: 25, phones: 2 },
+      { date: '2026-11-14', requests: 40, ops: 0, phones: 1 },
+    ]);
+    expect(JSON.stringify(r)).not.toMatch(/"P"|"Q"|phone-a/); // numbers only: no names, no phones' ids
+  });
+  it("a family's own key may not read them; the owner's own server gives them to the owner's key; bad sizes are refused", () => {
+    expect(handle({ key: KEY, action: 'usageTotals' }, fam())).toEqual({ ok: false, error: 'send_only' });
+    expect(ok(call({ action: 'usageTotals' })).usageTotals).toHaveLength(7);
+    expect(call({ action: 'usageTotals', days: 30 })).toMatchObject({ ok: false, error: 'bad_request' });
+  });
+});

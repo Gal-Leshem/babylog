@@ -1,7 +1,7 @@
 import { type Browser, type Page, expect, test } from '@playwright/test';
 import { startMockServer } from '../scripts/mock-server';
 import { encodeAdminCode, encodeSetupCode } from '../src/app/config';
-import { install, resetServer, MOCK } from './helpers';
+import { addDaysLocal, install, MOCK, resetServer, todayLocal } from './helpers';
 
 // Owner (family servers): two other families and the owner, side by side, each phone with its own server, as in real life
 // (each family's server is its own sheet + script). Nothing of one family may show up at another; the families only send
@@ -105,5 +105,37 @@ test('two families and the owner side by side: each sees only its own log; both 
   } finally {
     await a.server.close();
     await b.server.close();
+  }
+});
+
+// Owner (the shared daily quota): yesterday's load of every server, from the phones' own counts, on the owner's feedback screen.
+test("the owner sees yesterday's load of his server and each family's, and a warning near the shared daily quota", async ({ page, request }) => {
+  const a = await family('a');
+  try {
+    const yesterday = addDaysLocal(todayLocal(), -1);
+    const usage = (url: string, key: string, counts: Record<string, number>, install: string) =>
+      fetch(url, { method: 'POST', body: JSON.stringify({ key, action: 'usage', user: 'P', install, days: [{ date: yesterday, counts }] }) }).then((r) => r.json());
+    expect((await usage(a.url, a.key, { 'sync.requests': 30_000, 'sync.ops': 100 }, 'a1')).ok).toBe(true);
+    expect((await usage(`${MOCK}/`, 'test-key', { 'sync.requests': 900, 'sync.ops': 30 }, 'o1')).ok).toBe(true);
+    await install(page);
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId('open-feedback').click();
+    const row = (label: string) => page.locator(`[data-testid="srv-load-row"][data-label="${label}"]`);
+    await expect(row('שלנו')).toContainText('כ-992 פעולות (900 בקשות)'); // 900 + 3 × 30 + 2
+    await expect(page.getByTestId('srv-load-total')).not.toHaveClass(/err/);
+    await page.getByTestId('fam-add-open').click();
+    await page.getByTestId('fam-label').fill('משפחה א');
+    await page.getByTestId('fam-code').fill(encodeAdminCode(a.url, a.admin));
+    await page.getByTestId('fam-add').click();
+    await expect(row('משפחה א')).toContainText('כ-30,302 פעולות');
+    // 992 + 30,302 = 31,294 of 50,000: 63%, no warning yet; the family's load moves above 75% with more requests
+    await expect(page.getByTestId('srv-load-total')).toContainText('(63%)');
+    expect((await usage(a.url, a.key, { 'sync.requests': 40_000, 'sync.ops': 100 }, 'a1')).ok).toBe(true);
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId('open-feedback').click();
+    await expect(page.getByTestId('srv-load-total')).toHaveClass(/err/);
+    await expect(page.getByTestId('srv-load-total')).toContainText('קרוב למכסה היומית המשותפת');
+  } finally {
+    await a.server.close();
   }
 });

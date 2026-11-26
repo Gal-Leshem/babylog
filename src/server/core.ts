@@ -2,7 +2,7 @@ import { byTimeAsc, lastFeed, live, nextSide, openSleep, vitaminDOnDate } from '
 import type { Change, Since } from './journal';
 import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
-import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch } from '../shared/protocol';
+import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch, type UsageTotal } from '../shared/protocol';
 import { type Voice, voiceFor } from '../shared/speech';
 import { QUESTION_STATES, type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, USAGE_QUESTIONS, type UsageDay } from '../shared/usage';
 import { addDays, dayStart, formatLocal, isDateString, parseLocal } from '../shared/tz';
@@ -44,6 +44,8 @@ export interface Store {
   changesSince(rev: string): Since | null;
   /** (owner, F15) Stores the usage counts of one phone (`install`) and parent for whole days; a day already stored is replaced. */
   usageSave(user: string, install: string, version: string, days: readonly UsageDay[], now: string): void;
+  /** (owner, family servers) The request counts summed per day over every phone, for these dates (oldest first; a day without rows is zeros). */
+  usageTotals(dates: readonly string[]): UsageTotal[];
   /** (owner) Feedback items, oldest first. */
   feedbackAll(): FeedbackItem[];
   /** Stores one item under the next number of a sequence that is never reset (call under the lock). */
@@ -67,8 +69,9 @@ export interface Deps {
 }
 
 /** What the owner's admin key may do on a family's server. */
-const ADMIN_ACTIONS = new Set(['ping', 'feedbackList', 'feedbackClear']);
-const FEEDBACK_READ = new Set(['feedbackList', 'feedbackClear']);
+const ADMIN_ACTIONS = new Set(['ping', 'feedbackList', 'feedbackClear', 'usageTotals']);
+/** On a family's server only the owner's admin key may do these (the family's own key gets `send_only`). */
+const FEEDBACK_READ = new Set(['feedbackList', 'feedbackClear', 'usageTotals']);
 
 /** A family's server never hands out its sheet link (also not inside the answers to a sync's operations). */
 function withoutSheetUrl(r: ApiResponse): ApiResponse {
@@ -319,6 +322,13 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
     // (owner, F15) not log data and nobody waits for it: no lock (each phone writes only its own rows), no revision
     case 'usage':
       return saveUsage(o, store, now);
+    case 'usageTotals': {
+      const n = o.days === undefined ? 7 : o.days;
+      if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 14) return fail('bad_request', 'days must be 1-14');
+      const today = stamp(now).slice(0, 10);
+      const dates = Array.from({ length: n }, (_, i) => addDays(today, i - n + 1));
+      return { ok: true, usageTotals: store.usageTotals(dates) };
+    }
     case 'feedbackClear':
       return deps.withLock(() => {
         const ids = o.ids;

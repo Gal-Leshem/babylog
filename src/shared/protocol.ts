@@ -59,6 +59,11 @@ export type ApiRequest =
    * (owner, F15) Usage counts of one phone for whole past days, sent once a day in the background (beacon, no answer read).
    * Not log data: no lock, the revision does not move; a day sent twice replaces its row.
    */
+  /**
+   * (owner, family servers) The day totals of the phones' request counts for the last `days` days (today included): numbers only.
+   * The owner's admin key on a family's server, or the owner's own key on the owner's server; a family's own key gets `send_only`.
+   */
+  | { action: 'usageTotals'; days?: number }
   | { action: 'usage'; user: string; install: string; version?: string; days: { date: string; counts: Record<string, number>; states?: Record<string, string> }[] }
   /** `ids`: only these items (the ones the owner has seen); without it, all of them. */
   | { action: 'feedbackClear'; ids?: string[] }
@@ -66,6 +71,14 @@ export type ApiRequest =
   | { action: 'settings'; set?: Partial<Omit<Settings, 'medicines'>> & { medicines?: MedicineChange[] } };
 
 export type FeedbackKind = 'bug' | 'idea' | 'other';
+
+/** (owner, family servers) One day of a server's load as its phones counted it: requests, operations sent, and how many phones counted. */
+export interface UsageTotal {
+  date: string;
+  requests: number;
+  ops: number;
+  phones: number;
+}
 export const FEEDBACK_KINDS: readonly FeedbackKind[] = ['bug', 'idea', 'other'];
 /** Longest feedback text, and longest attached sync log (characters). */
 export const FEEDBACK_TEXT_MAX = 2000;
@@ -127,6 +140,8 @@ export interface ApiOk {
   /** `feedback` on a family's server: this phone may only send (it may answer before the list's `send_only` arrives). */
   sendOnly?: true;
   feedback?: FeedbackItem[];
+  /** `usageTotals`: one entry per day, oldest first. */
+  usageTotals?: UsageTotal[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
   unchanged?: true;
   /**

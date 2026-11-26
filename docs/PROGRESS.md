@@ -58,8 +58,8 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    new family server with a plain HTTP 403: the deploy reports it as "waiting for the owner's setup".
 6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
 7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") and the date of birth built. Open with the owner:
-   F15 usage measurement option A built; F16 questions built (stages A and B, 14 questions; privacy page wording approved and live); F17 visit journal (the owner will send his notes from
-   the first visit). **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
+   F15 usage measurement option A built; F16 questions built (stages A and B, 14 questions; privacy page wording approved and live); F17 visit journal: researched twice, proposal written,
+   parked at low priority (open decisions in `BACKLOG.md`). **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
    `BACKLOG.md`): ask the owner about it; not built.
 
 ## How to resume (first 10 minutes in a new session)
@@ -126,7 +126,12 @@ same `dev` and `main` and share one pipeline, so:
     `src/server/journal.ts`, the request / properties / sheet-reading parts of `src/server/gas.ts` and the `sync` / `list` paths of
     `src/server/core.ts`, `SyncLog.tsx`, the `TIMING` part of `scripts/live-test.ts`, `REFACTOR_PLAN.md`.
   - features session: everything else in the app (screens, insights, medicines, wording, styles).
-  A session that needs another one's files tells the owner first. A change that touches the server API (`protocol.ts`) or the
+  A session that needs another one's files tells the owner first.
+  - Coordination note (features session, owner approved, 26 Nov 2026): F18 bottles adds an event type for bottles with an
+    amount in ml, appended as a new last column of the Events sheet (rows from older versions still read), so it touches the
+    event row read / write in `gas.ts`, `protocol.ts` and the event validation in `core.ts`; feeding "episodes" (a bottle within
+    the merge window of a nursing is one feeding) change the feed counts used by the insights. Performance session: please take
+    the column into account in any reading optimisation. A change that touches the server API (`protocol.ts`) or the
   pipeline, or that could slow the owner's own app, is said in the report to the owner.
 - Before every push: `git fetch origin` and merge `origin/dev` into your work (never force-push, never rebase pushed commits);
   rerun the tests if the merge brought changes. Conflicts in `CHANGELOG.md` / `PROGRESS.md`: keep both sides.
