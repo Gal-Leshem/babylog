@@ -661,6 +661,16 @@ No names, addresses or secrets in this file (the repository is public).
   it carries (`sync.requests`, `sync.ops`; in memory, sent with the daily usage beacon into the "שימוש" tab). The totals per
   family and a warning near the shared daily quota come from the families session. Engine test (failed without the count).
 
+- Other families, the shared daily quota **(owner approved, with the performance session)**: every server runs as the owner's
+  free Google account and they share one quota of 50,000 property calls a day; when it runs out every server stops until the
+  next day, and nothing reports what is left. The phones already count their requests (`sync.requests`, `sync.ops`, from the
+  performance session) and send them once a day to their own sheet's "שימוש" tab. New action `usageTotals` (numbers only: per
+  day, requests, operations and phones; no names): the owner's admin key on a family's server, or the owner's own key on the
+  owner's server; a family's own key gets `send_only`. The owner's feedback screen shows "עומס על השרתים (אתמול)": the owner's
+  server and each family's, an estimate of the calls (requests + 3 x operations + 2 per phone, `src/shared/quota.ts`) and the
+  total against 50,000, in warning colour above 75% or when one family is above 3 x the median (three servers or more). The
+  numbers appear from the day after the phones have the counting version. Tests: core, the built family bundle, the estimate,
+  and a browser test with the owner's server and a family's (the admin-only rule failed when taken out).
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
