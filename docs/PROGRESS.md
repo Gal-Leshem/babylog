@@ -63,7 +63,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    parked at low priority (open decisions in `BACKLOG.md`). F18 bottles complete and live (settings card, Home button, window,
    toast, edit form, one feeding, Summary, questions, default-update offer, Siri, the week's ml card split by kind). Age above
    Summary and a line on Home on each whole month: live. On hold by the owner: the Siri shortcuts test on the phones (F11), F17.
-   Proposed, not decided: explanations in "תובנות" that fit only the first weeks could follow the age. **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
+   Decided (owner): explanations in "תובנות" that mention an age stay; nothing disappears by itself with the age. **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
    `BACKLOG.md`): ask the owner about it; not built.
 
 ## How to resume (first 10 minutes in a new session)

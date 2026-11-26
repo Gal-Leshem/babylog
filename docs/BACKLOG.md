@@ -206,8 +206,9 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion (done).
   Then (done): Siri's "last feed" with bottles; bottles and ml as their own bars in the week view. F18 is complete.
 - Age-based "things to watch": postponed **(owner)**; it belongs with the visits (F17). The date of birth is in Settings,
-  the age above Summary / "תובנות" and a line on Home on each whole month (done). Explanations that fit only the first weeks
-  could follow the age later (proposed, not decided).
+  the age above Summary / "תובנות" and a line on Home on each whole month (done). Explanations that mention the first weeks
+  stay as they are **(owner, 26 Nov 2026)**: nothing in "תובנות" disappears by itself because of the age; the parents hide a
+  question themselves when they no longer want it.
 
 ### Not possible or not wanted
 - Home-screen / lock-screen widgets, Live Activities, Apple Watch app, haptic feedback, local scheduled reminders: not available to
