@@ -253,3 +253,55 @@ Seen once: right after a deploy a few answers came back without `ms` (probably s
 | After the settings copy | `sync`, one tap | 2300-4200 | 1500-3500 | find 700-780, write 170-1500 (very variable) |
 | After "changes since your version" (API 0.5.0) | `sync` after a foreign write, list | 1258 | 558 | events read 130 |
 | After "changes since your version" (API 0.5.0) | `sync` after a foreign write, changes | 590 | 49 | one properties call, no sheet: the same as "nothing new" (606 / 24) |
+
+## 8. The owner's sync logs (performance session, from 26 November 2026)
+One dated section per log: what it shows, where the time went, the comparison with earlier logs and section 7, the proposals
+and the owner's decisions. Earlier logs (fourth session) are summarised in `CHANGELOG.md` ("The owner's sync log, read" and
+"The owner's second sync log").
+
+### Log 3, 26 November 2026 (one phone, 10:15 to 12:31, 60 exchanges)
+Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no timeout; one answer with changes only (1 event,
+0.5 KB); every other answer "nothing changed".
+- **Checks while open:** 1.0 to 1.8 s (one 3.6 s), server 0.0 to 0.1 s (one properties call). As in log 1 (1.0 to 1.5): the
+  floor per request on the phone's network is about 1.1 s (CI runner: 0.6 to 0.7).
+- **Openings:** each of the three "פתיחה" came 2 s after a "חזרה לאפליקציה" that ended "אין חיבור" after 1.4 to 2.0 s. Not
+  the network: every one of those returns followed a new app version on the site (published 10:42, 11:00, 11:58 and 12:13
+  Israel time, three sessions pushing). The return's update check found it, the new service worker took over, and the page
+  reloaded at once (`main.tsx`, `reloadWhenSafe`: visible and no form open is "safe"), which aborted the return's request
+  (logged as offline) and started a new page load ("פתיחה": 1.4 to 1.5 s to data). From the return to data: about 3.5 s
+  instead of 1.4, plus a visible reload. It happens only after a deploy, but every push to `main` makes a new app version,
+  docs-only pushes included (the build id is in the bundle).
+- **Returns without a reload:** 1.3, 2.2 and 2.8 s to data, server 0.0: the first request after the phone was idle is slower,
+  as in log 1. Log 2 had openings with news at 2.3 to 2.5 s.
+- **Taps:** 2.4 to 5.9 s in total, server 1.1 to 4.2 s. The timed parts add up to only 0.6 to 1.4 s (properties 0.1 to 0.4 s in
+  3 to 4 calls, lock 0.1 to 0.3, read 0.1 to 0.3, write 0.2 to 0.9); 0.5 to 2.8 s is not timed: finding the Events tab and its
+  row count (`getSheetByName`, `getLastRow`, called several times per request; the spreadsheet really loads on the first of
+  them), the lock release, building the journal. On the CI test server (small sheet) a tap is 1.5 s total, 0.8 s server. The
+  tap shows on the phone at once; the server time delays the other phone and keeps later taps waiting.
+- **Extra checks:** at 11:38:59 and 11:39:15 a check ran immediately after an exchange ended: a timer check that fell during the
+  exchange was kept and run right after, although the answer that just arrived had said "nothing else changed". One extra
+  request per slow exchange (every tap here).
+- **Quota and capacity (owner's question).** Google's quotas page (read 26 November 2026), consumer account: properties read /
+  write 50,000 a day per user (resets 24 h after the first request), 30 simultaneous executions per user, no limit listed for
+  web app calls or for CacheService; "subject to change without notice". All servers (the owner's and every family's) run as the
+  owner, so they share these. Every request is at least one properties call, a tap 3 to 4. This phone: about 60 exchanges in a
+  morning's 2¼ hours, about 12 a minute while the app is open (a check every 5 s in the first two minutes). Estimate per family:
+  900 to 1,700 calls a day for two phones, 3,000 or more if a phone stays open for long. At 75% of the quota: the owner plus
+  about 20 to 35 families, about 10 if they are heavy users. Nothing reports the remaining quota: when it runs out, every server
+  fails its properties calls (every family at once) until 24 h after that day's first request. Simultaneous executions are far
+  from the limit (a check keeps an execution busy for well under a second).
+- Proposals to the owner (waiting for decisions):
+  1. Taps (server, this session): time the tab lookup and row count, and do each once per request. Expected 0.1 to 0.5 s per
+     tap; shows what is left (the spreadsheet itself loading, which grows with the file). Same bundle on every family server;
+     no API change.
+  2. Extra checks (engine, this session): drop a timer check that waited behind an exchange that has just succeeded (returns,
+     the network coming back and "סנכרן עכשיו" are still never dropped). About one request less per tap; no change in speed.
+  3. New versions (`main.tsx` / `update.ts`, the features session's files; or the pipeline): do not reload in the middle of an
+     opening; apply a new version found on return at the next return, at once, before any request. Or publish a new app version
+     only when the app itself changed (as `deploy-skip.ts` does for servers). Expected 1.5 to 2 s less for an opening after a
+     deploy, and no reload while looking.
+  4. Capacity (phones count their own requests in memory and send the counts with the daily usage beacon: zero cost; needs
+     `USAGE_LABELS` (features session) and a line per family in "משפחות נוספות" (families session, F15 option B)): real numbers
+     per family and day, and a warning in the owner's admin screen at 75% of the quota or for a family far above the others.
+  5. Later, only if families grow past about 15: keep the revision, journal and key also in the script cache, so a check spends
+     no properties quota (capacity about 4 to 6 times higher). Risk: a stale cache delays news by one check.
