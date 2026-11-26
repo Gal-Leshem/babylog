@@ -4,7 +4,7 @@ import { type DailySummary, dailySummary } from '../../shared/domain';
 import { type Medicine, dosesOf } from '../../shared/medicines';
 import { addDays, localDate } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
-import { KIND_LABEL, dayName, hm } from '../labels';
+import { KIND_LABEL, ageText, dayName, hm } from '../labels';
 import { count, engine, setSummaryView, useEngine, useNow, usePrefs } from '../state';
 import { DayNav } from './DayNav';
 import { Insights } from './Insights';
@@ -47,6 +47,10 @@ function medValue(m: Medicine, events: readonly BabyEvent[], date: string): stri
 /** The summary tab: the day table ("סיכום") or the pattern insights ("תובנות"); the choice is remembered on the device. */
 export function Summary() {
   const view = usePrefs().summaryView;
+  const { settings } = useEngine();
+  const now = useNow(60_000);
+  // (owner) the baby's age, once the date of birth is set in Settings
+  const age = ageText(settings.babyBirth, localDate(now));
   useEffect(() => count(view === 'insights' ? 'summary.insights' : 'summary.table'), [view]); // (owner, F15)
   return (
     <section class="page" data-testid="summary">
@@ -58,6 +62,11 @@ export function Summary() {
           תובנות
         </button>
       </div>
+      {age && (
+        <p class="muted sage" data-testid="summary-age">
+          גיל: {age}
+        </p>
+      )}
       {view === 'insights' ? (
         <Insights />
       ) : (

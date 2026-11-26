@@ -563,3 +563,6 @@ button.prow .t small { display: block; }
 .toast .tact .tbtns { display: flex; gap: 6px; flex: none; }
 .toast .tact .tbtns button + button { background: none; color: var(--toast-fg); border-color: color-mix(in srgb, currentColor 45%, transparent); }
 .cnt.wide { grid-column: 1 / -1; }
+/* (owner) the day the baby turns a whole number of months: quiet, in the list's own colours */
+.recent .mday { padding: 8px 4px; font-size: 14px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.sage { margin: 6px 2px 0; text-align: center; }

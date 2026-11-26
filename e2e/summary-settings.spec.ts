@@ -269,3 +269,32 @@ test('a phone that does not keep what the app saves is told so, on the install s
   await page.getByTestId('btn-wet').click(); // the app still works in memory
   await expect(page.getByTestId('recent-row')).toHaveCount(1);
 });
+
+// (owner) the age where the parents look, and a quiet line on the day the baby turns a whole number of months
+test('the age above Summary and "תובנות", and on a month day a line at the top of the recent list (girl wording)', async ({ page, request }) => {
+  await resetServer(request);
+  const day = new Date('2026-11-14T10:00:00Z'); // 12:00 in Israel
+  await api(request, { action: 'settings', set: { babyBirth: '2026-09-14', babySex: 'girl' } });
+  await page.clock.setFixedTime(day);
+  await install(page);
+  await expect(page.getByTestId('month-day')).toHaveText('🎉 היום Baby בת חודשיים');
+  await page.getByTestId('tab-summary').click();
+  await expect(page.getByTestId('summary-age')).toHaveText('גיל: חודשיים');
+  await page.getByTestId('view-insights').click();
+  await expect(page.getByTestId('summary-age')).toHaveText('גיל: חודשיים');
+});
+
+test('no month-day line on other days, and no age line without a date of birth', async ({ page, request }) => {
+  await resetServer(request);
+  await page.clock.setFixedTime(new Date('2026-11-15T10:00:00Z'));
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await expect(page.getByTestId('summary-age')).toHaveCount(0);
+  await api(request, { action: 'settings', set: { babyBirth: '2026-09-14' } });
+  await page.getByTestId('tab-home').click();
+  await page.reload();
+  await expect(page.getByTestId('home')).toBeVisible();
+  await expect(page.getByTestId('month-day')).toHaveCount(0);
+  await page.getByTestId('tab-summary').click();
+  await expect(page.getByTestId('summary-age')).toHaveText('גיל: חודשיים ויום אחד');
+});

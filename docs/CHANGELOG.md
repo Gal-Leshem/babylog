@@ -685,6 +685,12 @@ No names, addresses or secrets in this file (the repository is public).
 - Bottle window **(owner, from the phone)**: the quick amounts 60 / 90 / 120 / 150 are gone; the amount starts from the kind's
   default with − / + 10 only. Browser test (failed with the chips).
 
+- Age **(owner)**: once the date of birth is set, "גיל: חודשיים ויום אחד" under the "סיכום" / "תובנות" switch; on the day
+  the baby turns a whole number of months a quiet line at the top of Home's recent list, "🎉 היום <name> בן חודשיים" ("בת" for
+  a girl; "שנה", "שנה וחודשיים" later; the end of a month counts as the day), not an entry and nothing bright at night.
+  The week in Summary: no count of bottles (owner: the ml per day is enough). Tests: unit (the month day) and browser (the
+  lines, girl wording, none on other days or without a date of birth; failed without them).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five

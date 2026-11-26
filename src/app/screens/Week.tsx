@@ -140,9 +140,8 @@ export function Week() {
       <h3>ספירות יומיות</h3>
       <div class="cnts" ref={barsRef}>
         {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
-        {/* (owner, F18) with bottles: how many, and the ml eaten from them */}
-        {withBottles && countCard('bottles', 'בקבוקים', countDays, sums.map((s) => s.feeds.bottles), today)}
-        {/* three-digit numbers: the whole width, so each fits over its bar */}
+        {/* (owner, F18) with bottles: the ml eaten from them per day (a count of bottles is not needed); three-digit numbers:
+            the whole width, so each fits over its bar */}
         {withBottles && countCard('bottleMl', 'מ״ל בבקבוקים', countDays, sums.map((s) => s.feeds.bottleMl), today, true)}
         {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}
         {countCard('poop', 'קקי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.poop + s.diapers.both), today)}

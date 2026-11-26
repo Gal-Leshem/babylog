@@ -294,7 +294,7 @@ test('questions without nursing: no left / right, no cluster feeding, no share; 
   await expect(page.getByTestId('pick-nextFeed')).toContainText('מתי ההאכלה הבאה צפויה?');
 });
 
-test('the week in Summary: daily bars for bottles and their ml, the numbers fit their bars (360 wide)', async ({ page, request }) => {
+test('the week in Summary: daily bars for the ml from bottles (no count of bottles), the numbers fit their bars (360 wide)', async ({ page, request }) => {
   await feeding(request, { formula: true });
   await seed(request, mixedWeek());
   await page.clock.setFixedTime(QNOW);
@@ -302,7 +302,8 @@ test('the week in Summary: daily bars for bottles and their ml, the numbers fit 
   await install(page);
   await page.getByTestId('tab-summary').click();
   await page.getByTestId('view-day').click();
-  await expect(page.getByTestId('cnt-bottles').locator('.bn').first()).toHaveText('8');
+  await expect(page.getByTestId('cnt-bottleMl')).toBeVisible();
+  await expect(page.getByTestId('cnt-bottles')).toHaveCount(0); // (owner) the ml per day is enough
   await expect(page.getByTestId('cnt-bottleMl').locator('.bn').first()).toHaveText(String(4 * 60 + 4 * 120));
   const overflow = await page.getByTestId('cnt-bottleMl').evaluate((card) =>
     [...card.querySelectorAll('.bar')].some((bar) => {
@@ -319,5 +320,5 @@ test('the week without bottles: no bottle bars', async ({ page, request }) => {
   await page.getByTestId('tab-summary').click();
   await page.getByTestId('view-day').click();
   await expect(page.getByTestId('cnt-feeds')).toBeVisible();
-  await expect(page.getByTestId('cnt-bottles')).toHaveCount(0);
+  await expect(page.getByTestId('cnt-bottleMl')).toHaveCount(0);
 });

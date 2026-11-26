@@ -110,7 +110,29 @@ export function dateLabel(date: string): string {
  * words (no "בן" / "בת"). Empty when the date is missing or after today.
  */
 export function ageText(birth: string | undefined, today: string): string {
-  if (!birth || birth > today) return '';
+  const a = ageParts(birth, today);
+  if (!a) return '';
+  const { months, days } = a;
+  const n = (k: number, one: string, two: string, many: string) => (k === 1 ? one : k === 2 ? two : `${k} ${many}`);
+  const and = (s: string) => (/^\d/.test(s) ? ` ו-${s}` : ` ו${s}`);
+  const dayWords = (k: number) => n(k, 'יום אחד', 'יומיים', 'ימים');
+  if (months === 0) return days === 0 ? 'היום הראשון' : dayWords(days);
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const monthWords = (k: number) => n(k, 'חודש', 'חודשיים', 'חודשים');
+  if (years === 0) return monthWords(months) + (days ? and(dayWords(days)) : '');
+  return n(years, 'שנה', 'שנתיים', 'שנים') + (rest ? and(monthWords(rest)) : '');
+}
+
+/** (owner) On the day the baby turns a whole number of months ("חודשיים", "שנה ו-3 חודשים"): those words; otherwise ''. */
+export function monthDayText(birth: string | undefined, today: string): string {
+  const a = ageParts(birth, today);
+  return a && a.months > 0 && a.days === 0 ? ageText(birth, today) : '';
+}
+
+/** Whole calendar months and the days after them, from the date of birth to `today`; null when missing or after today. */
+function ageParts(birth: string | undefined, today: string): { months: number; days: number } | null {
+  if (!birth || birth > today) return null;
   const [by, bm, bd] = birth.split('-').map(Number) as [number, number, number];
   const [ty, tm, td] = today.split('-').map(Number) as [number, number, number];
   // the day k full months were reached (clamped to the month's length: born on the 31st, a month on 28 or 29 February)
@@ -124,15 +146,7 @@ export function ageText(birth: string | undefined, today: string): string {
   let months = (ty - by) * 12 + (tm - bm);
   if (anchor(months) > now) months -= 1;
   const days = Math.round((now - anchor(months)) / 86_400_000);
-  const n = (k: number, one: string, two: string, many: string) => (k === 1 ? one : k === 2 ? two : `${k} ${many}`);
-  const and = (s: string) => (/^\d/.test(s) ? ` ו-${s}` : ` ו${s}`);
-  const dayWords = (k: number) => n(k, 'יום אחד', 'יומיים', 'ימים');
-  if (months === 0) return days === 0 ? 'היום הראשון' : dayWords(days);
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
-  const monthWords = (k: number) => n(k, 'חודש', 'חודשיים', 'חודשים');
-  if (years === 0) return monthWords(months) + (days ? and(dayWords(days)) : '');
-  return n(years, 'שנה', 'שנתיים', 'שנים') + (rest ? and(monthWords(rest)) : '');
+  return { months, days };
 }
 
 /** 'YYYY-MM-DD' -> 'יום ראשון, 14 בנובמבר' */

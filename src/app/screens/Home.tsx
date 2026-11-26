@@ -5,7 +5,7 @@ import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doneToday, dos
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { logBottle, logMedicine, quickLog, toggleSleep } from '../actions';
-import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, kindOfBottle, timeOf } from '../labels';
+import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, kindOfBottle, monthDayText, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 import { overlay } from '../overlay';
@@ -86,6 +86,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
   };
 
   const today = localDate(now);
+  const monthDay = monthDayText(settings.babyBirth, today);
   const feeding = feedingOf(settings);
   const bottleKinds = bottleKindsOn(feeding);
   // (F18) the feed tile shows the last feeding of any kind; the next side comes from nursing only
@@ -283,6 +284,12 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
       </button>
 
       <ul class="recent" data-testid="recent">
+        {/* (owner) on the day the baby turns a whole number of months: a quiet line at the top of the list, not an entry */}
+        {monthDay && (
+          <li class="mday" data-testid="month-day">
+            <span class="emo">🎉</span> היום {settings.babyName} {settings.babySex === 'girl' ? 'בת' : 'בן'} {monthDay}
+          </li>
+        )}
         {recent.map(({ key, e, at, icon, label }) => (
           <li key={key}>
             <button type="button" class={`rrow ${isNew(e.id) ? 'new' : ''}`} data-testid="recent-row" onClick={() => onEdit(e, key.endsWith(':e') ? 'end' : key.endsWith(':s') ? 'start' : undefined)}>
