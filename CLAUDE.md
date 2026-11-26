@@ -66,3 +66,5 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   under load and force the suspected timing before changing app code.
 - A skill written from the docs alone said questions are on by default; the session that built them knew they wait for enough
   data -> a guide is checked against the code or by whoever worked in the area before it is trusted, and corrected at once.
+- A session's clone is shallow (about 50 commits): comparing branches showed old session branches as hundreds of commits
+  "not in dev" -> `git fetch --unshallow origin` before comparing history or judging that work is missing.

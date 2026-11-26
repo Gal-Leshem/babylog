@@ -29,42 +29,37 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   "היה לפני" / "בטל" under a marked medicine in the window; History "24 שעות אחרונות"; feedback in the app (🐞); Siri in Hebrew
   and English (two shortcut sets, an asking shortcut, "which side next"), with two fixes to `sign.sh` found on the owner's Mac.
 
-## Where we are (open items with the owner)
-1. **Siri**: the owner created the 58 signed shortcuts on the Mac (a local Claude session on the Mac ran `sign.sh`; Remote
-   Control is blocked by the owner's organisation). Not yet tried on the phones. Next: the owner AirDrops English (his phone)
-   and עברית (the other parent's), tries them open and locked, and reports: what worked, seconds until Siri answers, whether Face
-   ID was needed, whether Hebrew names were recognised the first time. Not verified on a real iPhone yet: Show Result spoken by
-   Siri, the asking shortcut answered by voice in Hebrew, network from a locked phone. More phrasings later: duplicate and rename
-   on the phone, or add them to `scripts/shortcuts/builder.ts` (then run `sign.sh` again). Lessons from the Mac: Google answers a
-   POST with a redirect that takes only GET (no `curl -X POST`); `shortcuts sign` needs the `.shortcut` extension.
-2. **Slow catching up after opening**: done. Second log: openings with news 2.3 to 2.5 s, server part 0.0. What remains (1.5 to
-   2.5 s) is the phone's network waking plus Google's routing. Options kept for later only if the owner asks: a second request
-   when the first is slow; a read copy outside Google or leaving Apps Script (a third party would hold the data).
-   The sync log: Settings > מתקדם > "יומן סנכרון" > "העתקה" (last 60 exchanges; copy soon after a slow opening).
-   Performance session (26 Nov): log 3 read (`REFACTOR_PLAN.md` section 8); built: one Events tab lookup per request and the
-   untimed part shown in the log, no wasted check after a slow exchange, no reload in the middle of an opening (new versions
-   wait until the app is hidden), request counts per phone (`sync.requests`, `sync.ops`, with the features session's consent).
-   Families session: totals and a quota warning in "משפחות נוספות" (owner approved `usageTotals`). Built: slower checks in an
-   app left open untouched, with a check on the next touch; "מתעדכן… · עודכן לאחרונה HH:MM" in the sync mark after a quiet
-   while, and "עדכני לשעה HH:MM" while the app is in the slow pace. Script cache: stage 0 (measure only) built; recommend stage 1 or not after the owner's next sync log,
-   with the `cacheProbe` numbers from the live test and the first request counts ("עומס על השרתים").
-3. **Feedback** in the app (Settings > מתקדם > "🐞 משוב"; the sheet's "משוב" tab; numbers never reused). Manual: the owner pastes
-   the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
-4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
-   ask for a screenshot if it happens again.
-5. **Other families** (owner): live. One server per family (`MULTI_FAMILY_PLAN.md` section 0); the first family is in
-   `families.json` (November 2026): created by the pipeline, the owner ran `setup`, the deploy reports "answers from this build",
-   and the owner sent the family its code. Next: hear how it goes for them; their feedback reaches the owner's phone through the
-   admin code ("משפחות נוספות"). Adding another: `INSTALL.he.md` "משפחה נוספת". Before the owner's `setup`, Google answers a
-   new family server with a plain HTTP 403: the deploy reports it as "waiting for the owner's setup".
-6. Smaller: which insight cards get used (F8). (The status bar after a day/night change: confirmed working by the owner.)
-7. Fixes session (parallel): deleting only a wake-up ("מחיקת ההתעוררות") and the date of birth built. Open with the owner:
-   F15 usage measurement option A built; F16 questions built (stages A and B; privacy page wording approved and live); F17 visit journal: researched twice, proposal written,
-   parked at low priority (open decisions in `BACKLOG.md`). F18 bottles complete and live (settings card, Home button, window,
-   toast, edit form, one feeding, Summary, questions, default-update offer, Siri, the week's ml card split by kind). Age above
-   Summary and a line on Home on each whole month: live. On hold by the owner: the Siri shortcuts test on the phones (F11), F17.
-   Decided (owner): explanations in "תובנות" that mention an age stay; nothing disappears by itself with the age. **For the families session:** F15 option B (reading every family's usage in the app with the admin code,
-   `BACKLOG.md`): ask the owner about it; not built.
+## Where we are (open items with the owner; one list for every area, 26 November 2026)
+Everything built is live; the three parallel sessions are closed and their knowledge is in the skills (`CLAUDE.md`).
+`dev` is ahead of `main` by guides and docs only; they reach `main` with the next app change (owner: docs alone are not shipped).
+
+Waiting for the owner (ask when it fits, do not build before):
+1. **Performance, slowing the 5-minute full list** in an app left untouched: offered, no answer yet (`performance` skill).
+2. **Families, F15 option B**: reading more of a family's "שימוש" tab than the day totals, in the app with the admin code
+   (`docs/BACKLOG.md`). Not built; the owner wants to be asked.
+3. **Families, consent at install**: an explicit "קראתי ומסכים/ה" for a new family, and a lawyer's reading of the privacy page
+   before a wider opening.
+4. **Families, "move the sheet to my Drive"**: wanted later, not built (ownership transfer between free accounts is untested).
+
+Waiting for something from the owner's daily use:
+5. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה", soon after a slow opening or a tap): it decides the script
+   cache stage 1 (with the `cacheProbe` numbers and the first request counts in "עומס על השרתים"); what it should show is in the
+   `performance` skill. Options kept only if the owner asks: a second request when the first is slow; a read copy outside Google.
+6. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
+   Adding another: the `families` skill ("Adding a family, end to end") and `INSTALL.he.md` "משפחה נוספת".
+7. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.
+8. **Which questions get used** (F8 / F16): the per-question usage counts in each sheet's "שימוש" tab.
+9. A tap that went through a disappearing toast was fixed (tap shield); "could not get back" was never reproduced: ask for a
+   screenshot if it happens again.
+
+On hold by the owner:
+10. **Siri shortcuts (F11)**: 58 shortcuts signed on the Mac; the test on the phones is on hold. When resumed: AirDrop English
+    (owner) and עברית (the other parent), try open and locked, report seconds until Siri answers, Face ID, Hebrew names.
+    Not verified on a real iPhone: Show Result spoken, the asking shortcut by voice in Hebrew, network from a locked phone.
+    Lessons from the Mac: Google answers a POST with a redirect that takes only GET; `shortcuts sign` needs the `.shortcut` extension.
+11. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
+
+Owner-only steps still open: see "Owner-only actions" below (second parent's phone, an optional second `rotateKey`).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).

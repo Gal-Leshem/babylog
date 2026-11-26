@@ -788,6 +788,8 @@ No names, addresses or secrets in this file (the repository is public).
   owns, how adding a family goes end to end and where it fails, what the next sync log must show) and corrected it: the skill
   written from the docs said questions are on by default, while a question shows by itself only once it has enough data.
   `perf-analyst` now also checks a log for version reloads, the untimed part of a tap and the pace. Guides only: on `dev`.
+- `PROGRESS.md` "Where we are" is now one list of open items for every area (waiting for the owner, waiting for daily use,
+  on hold), not per session. The old session branches were checked against `dev` on a full clone: nothing is missing.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
