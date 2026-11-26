@@ -68,6 +68,8 @@ function Banner() {
 
 const SLOW_MS = 8_000;
 const STALE_MS = 2 * 60_000;
+/** (owner) "מתעדכן…" also says when the data was last updated once that is older than this (after a quiet while: opening, a touch) */
+const UPDATING_OLD_MS = 60_000;
 const hhmm = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' });
 
 /**
@@ -75,6 +77,7 @@ const hhmm = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-d
  * and it is never a coloured band (at night iOS would tint the status bar with one). A small turning dot while something is
  * being sent or the first check after opening is on its way; words only when they help: "מתעדכן…" on opening, the number
  * waiting when sending takes long, and the reason when there is no connection (with the time of the last update when old).
+ * (owner) After a quiet while (an opening, a touch on an app left open), "מתעדכן…" also says when the data was last updated.
  */
 function SyncMark() {
   const st = useEngine();
@@ -94,7 +97,7 @@ function SyncMark() {
     const old = st.lastSync !== null && Date.now() - st.lastSync > STALE_MS ? ` · עודכן ${hhmm(st.lastSync)}` : '';
     text = `${st.status === 'offline' ? 'אין חיבור' : 'שגיאת שרת, מנסה שוב'}${waiting}${old}`;
   } else if (sending) text = slow ? `מסנכרן${waiting}` : '';
-  else text = 'מתעדכן…';
+  else text = st.lastSync !== null && Date.now() - st.lastSync > UPDATING_OLD_MS ? `מתעדכן… · עודכן לאחרונה ${hhmm(st.lastSync)}` : 'מתעדכן…';
   return (
     <div class={`syncmark ${trouble ? 'bad' : ''}`} role="status" aria-label={text || 'מסנכרן'} data-testid="banner-sync" data-state={trouble ? st.status : sending ? 'sending' : 'checking'}>
       <i />

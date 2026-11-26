@@ -686,6 +686,12 @@ No names, addresses or secrets in this file (the repository is public).
   hour open untouched: about 126 requests instead of 256. Tests: engine (the pace, the touch check, a tap carrying it even when
   the touch's timer fires late; each proven to fail when broken) and browser (a touch after a quiet minute checks, one right
   after a check does not; failed without the touch listener). The full list every 5 minutes is unchanged.
+- Sync mark **(owner; in the features session's file, with its consent)**: after a quiet while (an opening, a touch on an app
+  left open) "מתעדכן…" also says when the data was last updated, once that is older than a minute: "מתעדכן… · עודכן לאחרונה
+  HH:MM" (Israel time, same muted colour day and night, one line, nothing moves). The time of a check that found nothing new is
+  now stored when the app is left, so the next opening shows the real last update. Tests: browser (the words on opening after
+  twenty minutes, failed on the old mark; one line and nothing moves at 360 x 560, day and night; the existing "never moves"
+  test now also at 360 x 560) and engine (the time stored on leaving; failed without it). Screenshots day, night and 360 x 560.
 - Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
   by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
   live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the
