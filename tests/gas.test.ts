@@ -11,7 +11,7 @@ beforeAll(() => {
   code = readFileSync('apps-script/dist/Code.js', 'utf8');
 });
 
-function boot(opts?: { url?: string | null }) {
+function boot(opts?: Parameters<typeof createGasRuntime>[0]) {
   const rt = createGasRuntime(opts);
   const g = rt.load(code);
   const post = (body: unknown) => JSON.parse(g.doPost!({ postData: { contents: JSON.stringify(body) } }).getContent());
@@ -322,6 +322,39 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
       const tap = count(() => post({ key, action: 'sync', ...range, rev: first.rev, ops: [{ action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' }] }));
       expect(tap.out.unchanged).toBe(true);
       expect(tap.props).toBe(3);
+    });
+
+    // (owner's sync log 3: a tap took 1.1 to 4.2 s on the server, of which 0.5 to 2.8 s was not timed: finding the Events tab
+    // and counting its rows, several times per request; on the real sheet the spreadsheet loads on the first of these calls)
+    it('a tap, a check after a foreign write and an edit each find the Events tab once and count its rows once', () => {
+      const { post, key, rt } = start();
+      const first = post({ key, action: 'sync', ...range });
+      const tabsAndRows = (fn: () => unknown) => {
+        const before = { ...rt.calls };
+        fn();
+        return [rt.calls.tabs - before.tabs, rt.calls.lastRow - before.lastRow];
+      };
+      const op = { action: 'log', id: 'f1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app', fresh: true };
+      expect(tabsAndRows(() => post({ key, action: 'sync', ...range, rev: first.rev, ops: [op] })), 'a tap').toEqual([1, 1]);
+      expect(tabsAndRows(() => post({ key, action: 'sync', ...range, rev: first.rev })), 'the list').toEqual([1, 1]);
+      expect(tabsAndRows(() => post({ key, action: 'sync', ...range, ops: [{ action: 'update', id: 'f1', patch: { note: 'x' } }] })), 'an edit').toEqual([1, 1]);
+      // three taps in one request: still once
+      const three = [1, 2, 3].map((i) => ({ ...op, id: `t${i}` }));
+      expect(tabsAndRows(() => post({ key, action: 'sync', ...range, ops: three })), 'three taps').toEqual([1, 1]);
+      expect(rt.sheets.get('Events')!.filter((r) => /^t\d$/.test(String(r[0])))).toHaveLength(3);
+    });
+
+    it('rows that another request wrote while this one waited for the lock are seen (a re-sent entry is not written twice)', () => {
+      let other: (() => void) | null = null;
+      const b = boot({ whileWaitingForLock: () => { const run = other; other = null; run?.(); } });
+      b.g.setup!();
+      const key = b.rt.props.get('API_KEY')!;
+      const op = { action: 'log', id: 'b1', type: 'feed', detail: 'left', start: `${day} 01:00`, user: 'P', source: 'app' };
+      // the phone's beacon delivers the entry while the phone's own retry of it waits for the lock
+      other = () => b.post({ key, ...op });
+      const retry = b.post({ key, action: 'sync', ...range, ops: [{ ...op, queuedAt: Date.now() }] });
+      expect(retry.results[0].ok).toBe(true);
+      expect(b.rt.sheets.get('Events')!.filter((r) => r[0] === 'b1')).toHaveLength(1);
     });
 
     it('a first-attempt tap, a retry and an edit of a recent entry do not search the whole sheet', () => {

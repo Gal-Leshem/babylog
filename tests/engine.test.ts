@@ -690,6 +690,50 @@ describe('polling for changes made on the other phone', () => {
     expect(e.getState().events.map((v) => v.id)).toEqual(['late']); // ... but not forgotten: the new event arrives at once
   });
 
+  // (owner's sync log 3) a timer check that fell during a tap's exchange ran right after it, although that answer had just said
+  // "nothing else changed": one wasted request per slow exchange. Only the timer's check is dropped; anything else still runs.
+  it('a timer check that fell during an exchange that just succeeded is dropped; a tap or another request meanwhile is not', async () => {
+    const e = makeEngine();
+    await e.pollOnce();
+    seen = [];
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t1')); // a tap: its exchange is on its way
+    await idle();
+    gate = null;
+    void e.timerCheck(); // the 5-second check falls due meanwhile
+    release();
+    await idle();
+    await idle();
+    expect(syncs(), 'only the tap: the check would learn nothing its answer did not').toHaveLength(1);
+
+    // a request from somewhere else (the medicines window opening) still runs right after
+    seen = [];
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t2'));
+    await idle();
+    gate = null;
+    void e.timerCheck();
+    void e.resume();
+    release();
+    await idle();
+    await idle();
+    expect(syncs()).toHaveLength(2);
+
+    // and a tap made meanwhile is sent right after, timer check or not
+    seen = [];
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('t3'));
+    await idle();
+    gate = null;
+    void e.timerCheck();
+    e.dispatch(feed('t4'));
+    release();
+    await idle();
+    await idle();
+    expect(syncs().map((x) => (x.ops ?? []).map((o: { id: string }) => o.id))).toEqual([['t3'], ['t4']]);
+  });
+
   it('resume() sends the queue first, otherwise refreshes', async () => {
     const e = makeEngine();
     theirFeed('r');

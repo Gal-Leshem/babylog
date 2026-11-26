@@ -172,8 +172,10 @@ export class Engine {
   private syncing = false;
   private syncStartedAt = -Infinity;
   private syncSeq = 0;
-  /** A sync was requested while one was running: run another one as soon as that one ends (never drop the request). */
+  /** A sync was requested while one was running: run another one as soon as that one ends (never dropped, except a timer check that an exchange which just succeeded already answered). */
   private again: false | 'rev' | 'full' = false;
+  /** The remembered request was asked for by something other than the regular timer check (see `sync`). */
+  private againKeep = false;
   /** When the whole list last arrived, or the app was last opened or returned to (the safety-net refresh counts from there). */
   private fullAt = 0;
   /** Operations travelling in the running request (they can no longer be dropped by an undo). */
@@ -406,13 +408,14 @@ export class Engine {
    * `soft` marks an "I am back" event, which is dropped when a sync has only just started.
    * Returns true when new data arrived or operations were delivered.
    */
-  private async sync(mode: 'rev' | 'full', soft = false, why: SyncWhy = 'poll'): Promise<boolean> {
+  private async sync(mode: 'rev' | 'full', soft = false, why: SyncWhy = 'poll', timer = false): Promise<boolean> {
     const ep = this.endpoint();
     if (!ep) return false;
     const age = this.now() - this.syncStartedAt;
     if (soft && age >= 0 && age < COALESCE_MS && (this.syncing || this.status === 'idle')) return false; // the same return to the app, already served
     if (this.syncing && age < SYNC_STALE_MS) {
       if (this.again !== 'full') this.again = mode; // remembered: it may postdate what the running one will learn
+      if (!timer) this.againKeep = true; // asked for by something other than the regular timer: never dropped
       return false;
     }
     this.syncing = true;
@@ -447,8 +450,12 @@ export class Engine {
           this.emit(false);
         }
         // A remembered request, a second batch, or taps made meanwhile. Not after a failure: the retry timer and the next check take over.
-        const next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
+        let next = this.status === 'idle' || this.status === 'syncing' ? this.again || (this.p.queue.length ? 'rev' : false) : false;
+        // (owner's sync log 3) only the timer's check fell meanwhile, and this exchange has just succeeded: its answer is as fresh
+        // as that check would be, and the next check is seconds away. Dropped (one request less after every slow exchange).
+        if (next === 'rev' && !this.againKeep && !this.p.queue.length && this.status === 'idle') next = false;
         this.again = false;
+        this.againKeep = false;
         // (owner's sync log) taps that waited behind a running exchange are labelled as taps, not as checks
         if (next) void this.sync(next, false, this.returnAt !== null ? 'return' : this.p.queue.length ? 'tap' : 'poll');
       }
@@ -726,6 +733,11 @@ export class Engine {
     return this.sync('rev');
   }
 
+  /** The open app's regular check (every few seconds, `pollDelay`). */
+  async timerCheck(): Promise<boolean> {
+    return this.sync('rev', false, 'poll', true);
+  }
+
   /** Used on every return to the app: the same cheap exchange. */
   async resume(): Promise<void> {
     await this.sync('rev');
@@ -782,7 +794,7 @@ export class Engine {
     };
     let poll: ReturnType<typeof setTimeout>;
     const tick = () => {
-      if (visible() && this.config) void this.sync('rev');
+      if (visible() && this.config) void this.timerCheck();
       poll = setTimeout(tick, pollDelay(this.now() - this.lastActive));
     };
     poll = setTimeout(tick, POLL_ACTIVE_MS);

@@ -305,3 +305,15 @@ Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no t
      per family and day, and a warning in the owner's admin screen at 75% of the quota or for a family far above the others.
   5. Later, only if families grow past about 15: keep the revision, journal and key also in the script cache, so a check spends
      no properties quota (capacity about 4 to 6 times higher). Risk: a stale cache delays news by one check.
+- **Decisions (owner, 26 November 2026):** build 1 and 2; coordinate 3 and 4 with the other two sessions.
+  - 1 built: the Events tab and its row count are looked up once per request (a tap did 5 tab lookups and 4 row counts; now 1
+    and 1, also for three taps, a list and an edit), timed as `sheet`; the lock release is timed as `unlock`; the row count is
+    read again after the lock is taken. The sync log names the new parts ("לשונית ושורות", "שחרור נעילה"), adds "לא מדוד" for
+    server time that is still not timed, and leaves out parts under 0.05 s. The next log tells how much of a tap is the sheet
+    loading.
+  - 2 built: a timer check that waited behind an exchange that has just succeeded is dropped (`Engine.timerCheck`); taps made
+    meanwhile, returns, the network coming back, the medicines window and "סנכרן עכשיו" still run right after.
+  - 3 and 4: messages sent to the features session (the reload in `main.tsx` / `update.ts`, the counter names in
+    `USAGE_LABELS`) and to the families session (the totals and the warning in "משפחות נוספות", an admin read of the counts);
+    nothing in their files until they answer.
+  - Owner's question: fewer checks while the app is merely open. Proposal in the session report (waiting for a decision).

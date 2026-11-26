@@ -56,7 +56,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   out of the view like a local delete) and marks new ones from the other phone as news. Older apps do not send `delta` and get
   the list; an older server ignores it.
 - The engine runs one exchange at a time (`Engine.sync`). A request made meanwhile is remembered and runs right after (never
-  dropped); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
+  dropped, with one exception: the regular timer check, `timerCheck`, when the exchange it waited for has just succeeded: that
+  answer is as fresh, and the next check is seconds away); taps made meanwhile travel together in the next request. An exchange older than 30 s is declared dead (iOS can freeze
   requests while a phone sleeps) and its late answer is ignored (sequence token); what it carried is sent again, which is safe
   because every operation has an id. The answer's events replace the phone's guesses (server time stamps).
 - While the app is open and visible: a check every 5 s for two minutes after it was opened, returned to or used to log
@@ -100,7 +101,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   and breakdown (`debug: true` on every sync), size, and for an opening or return the time until the data was on screen. Shown
   in Settings > מתקדם > "יומן סנכרון" (`SyncLog.tsx`).
 - Timing: the real server adds `ms` (its own time) to every answer and, with `debug: true`, `t` (milliseconds and calls per kind of
-  work: open, read, find, write, settings, props, lock). The app shows the last exchange under Settings > מתקדם; the live test prints
+  work: open, sheet (finding the Events tab and its row count, once per request: on the real sheet the spreadsheet loads there),
+  read, find, write, settings, props, lock, unlock). The sync log shows the rest of `ms` as "לא מדוד". The app shows the last exchange under Settings > מתקדם; the live test prints
   a `TIMING` table into the server report.
 
 - Family servers (`--family` build, `familyServer` in `Deps`): no sheet link in any answer; the family's key gets `send_only` for
