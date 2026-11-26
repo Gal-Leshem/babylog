@@ -171,7 +171,22 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   the undo toast; a mixed bottle is two entries; pumping is a separate optional type (the mother's supply, never a feed); a
   milk stash and discard timers are left out (inventory work, and storage rules differ between sources: medical-advice risk).
   Pitfalls seen elsewhere: a bottle changing the "next side", a breast feed plus a top-up counted as two feeds, a daily volume
-  total that ignores breastfeeding, too many Home buttons. Definition proposed to the owner; waiting for his decisions.
+  total that ignores breastfeeding, too many Home buttons. **Agreed with the owner (26 Nov 2026):**
+  - Settings (per family, both phones): feeding modes הנקה / בקבוק חלב שאוב / בקבוק תמ"ל (at least one on; default: only
+    breastfeeding, so nothing changes for existing families), and a default amount in ml per enabled bottle type.
+  - Home: breastfeeding as today. One bottle type on: its own button. Both types with breastfeeding: one "בקבוק" button that
+    opens a small window like the medicines window (type, amount prefilled from the default, "רישום"): a bottle is less rushed
+    than nursing, clarity first. Both types without breastfeeding: a button per type. A dedicated type button logs in one tap
+    with the default amount; its toast offers -10 / +10 ml and size chips, "היה לפני" and "בטל" (the change is for this
+    bottle only). The amount is what the baby drank (ml); optional.
+  - Amount in the edit / add-after-the-fact forms and in the lists ("🍼 בקבוק תמ\"ל · 90 מ״ל").
+  - Logic: the next side and left / right balance come from breastfeeding only; a bottle within the merge window of a nursing
+    or another bottle is the same feeding (episode); feeds, gaps, the next-feed estimate and "after a feed" use episodes.
+  - Summary table: nursings as today, plus bottles (count) and total ml.
+  - Questions: review all (feeds today count every feeding; sides and cluster only with breastfeeding on) and add bottle
+    questions (bottles and ml today vs a usual day; bottle size over the week; share of feeds with a bottle).
+  - Out of scope: pumping (the owner decides later), stash, discard timers, volume targets, a mixed bottle type, solids (later).
+  Next: mockups (Home at 852 / 700 / 560 for each combination, the bottle window, the toast, Settings, the summary row).
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted

@@ -120,7 +120,12 @@ same `dev` and `main` and share one pipeline, so:
     `src/server/journal.ts`, the request / properties / sheet-reading parts of `src/server/gas.ts` and the `sync` / `list` paths of
     `src/server/core.ts`, `SyncLog.tsx`, the `TIMING` part of `scripts/live-test.ts`, `REFACTOR_PLAN.md`.
   - features session: everything else in the app (screens, insights, medicines, wording, styles).
-  A session that needs another one's files tells the owner first. A change that touches the server API (`protocol.ts`) or the
+  A session that needs another one's files tells the owner first.
+  - Coordination note (features session, owner approved, 26 Nov 2026): F18 bottles adds an event type for bottles with an
+    amount in ml, appended as a new last column of the Events sheet (rows from older versions still read), so it touches the
+    event row read / write in `gas.ts`, `protocol.ts` and the event validation in `core.ts`; feeding "episodes" (a bottle within
+    the merge window of a nursing is one feeding) change the feed counts used by the insights. Performance session: please take
+    the column into account in any reading optimisation. A change that touches the server API (`protocol.ts`) or the
   pipeline, or that could slow the owner's own app, is said in the report to the owner.
 - Before every push: `git fetch origin` and merge `origin/dev` into your work (never force-push, never rebase pushed commits);
   rerun the tests if the merge brought changes. Conflicts in `CHANGELOG.md` / `PROGRESS.md`: keep both sides.
