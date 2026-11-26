@@ -34,8 +34,8 @@ test('daily summary compares today with yesterday', async ({ page, request }) =>
   const cell = (row: string, col: number) => page.getByTestId(`sum-${row}`).locator('td').nth(col);
   await expect(cell('הנקות (האכלות)', 0)).toHaveText('2');
   await expect(cell('הנקות (האכלות)', 1)).toHaveText('1');
-  await expect(cell('רווח ממוצע בין האכלות', 0)).toHaveText('3:00');
-  await expect(cell('רווח ממוצע בין האכלות', 1)).toHaveText('—');
+  await expect(cell('רווח רגיל בין האכלות', 0)).toHaveText('3:00');
+  await expect(cell('רווח רגיל בין האכלות', 1)).toHaveText('—');
   await expect(cell('שמאל / ימין', 0)).toHaveText('2 / 1');
   // (owner) no separate "פיפי + קקי" row: it counts as one pee AND one poop, as in "תובנות"
   await expect(page.getByTestId('sum-פיפי + קקי')).toHaveCount(0);

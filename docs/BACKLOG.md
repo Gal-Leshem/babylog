@@ -195,7 +195,15 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   for small bottles), no vague chips; the bottle toast stays while it is used (an amount and "היה לפני" can both be set; each
   tap restarts a short time, not an excessive one); the default-update suggestion after 5 equal bottles: build it; bottle
   volume left out of "היום חריג" when breastfeeding is on; "כמה מההאכלות עם בקבוק?" only when turned on by hand.
-  Next: mockups (Home at 852 / 700 / 560 for each combination, the bottle window, the toast, Settings, the summary row).
+  **Fourth round, after the mockups (owner):** the bottle is a third button in the feed row (logically one with the nursing
+  buttons). With three in a row the icon stays above the label at every height, smaller on short screens (side by side broke
+  "הנקה שמאל" into two lines on a small iPhone installed as an app, not only at 560); checked at widths 393 / 375 / 360.
+  Bottles without breastfeeding: two buttons per type in the feed row (or one across it for a single type). "כמה נשאר" uses
+  the same -10 / +10 buttons as the amount given, from 0 (default) up to the amount given; "נאכל" is computed. Summary: the
+  gap between feeds is the median, "רווח רגיל בין האכלות" (done); with bottles the rows are "האכלות" (all), "הנקות",
+  "בקבוקים", "מ״ל בבקבוקים"; breastfeeding only keeps today's "הנקות (האכלות)".
+  Build: stage 1 settings, the event type and its amount, the buttons, the window, the toast, the edit form, the lists;
+  stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted

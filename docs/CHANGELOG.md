@@ -638,6 +638,9 @@ No names, addresses or secrets in this file (the repository is public).
 - Wording **(owner)**: a time of day is "בסביבות השעה 21:45" everywhere (the next-feed estimate, when the long night stretch
   starts, cluster feeding), as already in "מתי מתחילה שנת הלילה?". Browser tests.
 
+- Summary **(owner)**: the gap between feeds is the median of the day's gaps, not the mean (one feed that was not logged
+  stretched the mean), and the row is called "רווח רגיל בין האכלות". Unit test (failed on the mean: 2:40 instead of 2:00).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five

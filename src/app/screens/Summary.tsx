@@ -13,7 +13,7 @@ type Row = [label: string, value: (s: DailySummary) => string];
 
 const ROWS: Row[] = [
   ['הנקות (האכלות)', (s) => String(s.feeds.count)],
-  ['רווח ממוצע בין האכלות', (s) => (s.feeds.avgGapMin === null ? '—' : hm(s.feeds.avgGapMin))],
+  ['רווח רגיל בין האכלות', (s) => (s.feeds.gapMin === null ? '—' : hm(s.feeds.gapMin))],
   ['שמאל / ימין', (s) => `${s.feeds.left} / ${s.feeds.right}`],
   // "פיפי + קקי" is one pee AND one poop (owner), as in "תובנות": no row of its own
   [KIND_LABEL.wet, (s) => String(s.diapers.wet + s.diapers.both)],
