@@ -611,6 +611,20 @@ No names, addresses or secrets in this file (the repository is public).
   parts, the part we are in framed, the longest and shortest parts) is now part of "כל כמה זמן מאכילים?", under day / night;
   "מתי ההנקה הבאה צפויה?" shows only the estimate and the part of the day it comes from, and comes before it. Browser test
   (parts in the feed-gap card, none in the next-feed card, the order).
+- Bug **(owner, iPhone screenshot)**: the "מה זה אומר?" sheet went behind the tab bar when scrolled, so "הבנתי" could not
+  be tapped. On iOS, a tab's scrolling area (`-webkit-overflow-scrolling: touch`) is its own stacking layer, so no z-index
+  inside it rises above the tab bar; Chromium ignores the property, so tests did not see it. Sheets opened from inside a
+  screen are now drawn in a layer of their own under <body> (`src/app/overlay.ts`): the explanation sheet, and the dose
+  confirmation on Home, which had the same weakness. Browser tests: neither is inside the scrolling area, and "הבנתי" is the
+  element under its own centre after scrolling, at 852 / 700 / 560 (both failed with the old drawing).
+- Wording **(owner)**: the next-feed card speaks of the baby ("בבוקר (08:00 עד 12:00) התינוק אוכל בדרך כלל כל שעתיים ו-55
+  דקות", the gap in words, `durationHe`) and its "מה זה" says when the baby is expected to be hungry again (boy / girl words:
+  אוכל / אוכלת, יהיה שוב רעב / תהיה שוב רעבה); the sides card ("באיזה צד הייתה ההנקה האחרונה", "האיזון בין צדדי ההנקה
+  השבוע", and that balanced nursing can help establish and keep the milk supply, reduce engorgement and inflammation, and
+  keep comfort and balance); cluster feeding ("נקראת גם הנקת צבר", often linked to growth spurts, especially over several
+  hours; "the card helps see whether this is a recurring pattern" first under "why"); the sleep-per-day label ("אתמול התינוק
+  ישן בערך כמו ביום רגיל אצלכם", more / less); "מתי מתחילה שנת הלילה?" (was "שינת"), "בסביבות השעה 21:45", "בדרך כלל שנת
+  הלילה מתחילה בין ... ל-..."; the usage column titles follow ("תחילת שנת הלילה"). Browser tests for each, including a girl.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

@@ -17,6 +17,10 @@ export interface BabyWords {
   slept: string;
   /** the noun: "התינוק" / "התינוקת" */
   baby: string;
+  /** "התינוק אוכל" / "התינוקת אוכלת" */
+  eats: string;
+  /** "התינוק יהיה שוב רעב" / "התינוקת תהיה שוב רעבה" */
+  hungryAgain: string;
 }
 
 const BOY: BabyWords = {
@@ -30,6 +34,8 @@ const BOY: BabyWords = {
   markAwake: 'לסמן שהתעורר',
   slept: 'ישן',
   baby: 'התינוק',
+  eats: 'אוכל',
+  hungryAgain: 'יהיה שוב רעב',
 };
 
 const GIRL: BabyWords = {
@@ -43,6 +49,8 @@ const GIRL: BabyWords = {
   markAwake: 'לסמן שהתעוררה',
   slept: 'ישנה',
   baby: 'התינוקת',
+  eats: 'אוכלת',
+  hungryAgain: 'תהיה שוב רעבה',
 };
 
 export const babyWords = (sex: BabySex | undefined): BabyWords => (sex === 'girl' ? GIRL : BOY);

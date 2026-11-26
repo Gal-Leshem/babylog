@@ -8,9 +8,11 @@ import { formatLocal, localHour as localHourOf } from '../../shared/tz';
 const hhmm = (t: number) => formatLocal(t).slice(11, 16);
 import { addDays } from '../../shared/tz';
 import { hm } from '../labels';
+import { durationHe } from '../../shared/speech';
 import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
+import { overlay } from '../overlay';
 import type { UsageName } from '../../shared/usage';
 import { type BabyWords, babyWords } from '../words';
 
@@ -176,7 +178,7 @@ const UNUSUAL: Record<'feeds' | 'wet' | 'poop' | 'night', [string, string]> = {
 };
 
 /** The answer of a newer question that has enough data (stage B). */
-function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
+function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX.Element {
   switch (q.id) {
     case 'feedsToday': {
       const f = m.feedsToday!;
@@ -193,10 +195,11 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
     case 'nextFeed': {
       // (owner) only the estimate and the part of the day it comes from; the parts side by side live in "כל כמה זמן מאכילים?"
       const n = m.nextFeed!;
+      // (owner) about the baby, and the gap in words: "בבוקר (08:00 עד 12:00) התינוק אוכל בדרך כלל כל שעה ו-50 דקות"
       const basis =
         n.basis === 'part'
-          ? `${PART_NAMES[n.part]} (${partSpan(n.part)}) מאכילים בדרך כלל כל ${hm(n.gapMin)}`
-          : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} מאכילים כל ${hm(n.gapMin)} (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
+          ? `${PART_NAMES[n.part]} (${partSpan(n.part)}) ${w.baby} ${w.eats} בדרך כלל כל ${durationHe(n.gapMin)}`
+          : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} ${w.baby} ${w.eats} כל ${durationHe(n.gapMin)} (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
       if (n.last === null) return <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>;
       return (
         <>
@@ -305,7 +308,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
             {hm(s.usual.median)} <small>בדרך כלל</small>
           </div>
           <div class="qs">רוב הימים {range(s.usual.low, s.usual.high)} · אתמול {hm(s.yesterday)}</div>
-          <div class="qf">{chip(toneOf(s.trend), more(s.trend, 'אתמול יותר מהרגיל אצלכם', 'אתמול פחות מהרגיל אצלכם', 'אתמול כמו בדרך כלל'), 'q-sleepDay-trend')}</div>
+          <div class="qf">{chip(toneOf(s.trend), more(s.trend, `אתמול ${w.baby} ${w.slept} יותר מביום רגיל אצלכם`, `אתמול ${w.baby} ${w.slept} פחות מביום רגיל אצלכם`, `אתמול ${w.baby} ${w.slept} בערך כמו ביום רגיל אצלכם`), 'q-sleepDay-trend')}</div>
         </>
       );
     }
@@ -314,9 +317,9 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
       return (
         <>
           <div class="qa">
-            בסביבות <bdi>{clockOf(n.median)}</bdi>
+            בסביבות השעה <bdi>{clockOf(n.median)}</bdi>
           </div>
-          <div class="qs">{n.low === n.high ? 'כמעט באותה שעה כל ערב' : `בדרך כלל בין ${clockOf(n.low)} ל-${clockOf(n.high)}`}</div>
+          <div class="qs">{n.low === n.high ? 'כמעט באותה שעה כל ערב' : `בדרך כלל שנת הלילה מתחילה בין ${clockOf(n.low)} ל-${clockOf(n.high)}`}</div>
           <div class="qbasis">לפי {n.nights} לילות</div>
         </>
       );
@@ -370,7 +373,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number): JSX.Element {
 }
 
 const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop']);
-const answer = (q: Question, a: AllData, now: number) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins, a.more, now) : answerMore(q, a.more, now));
+const answer = (q: Question, a: AllData, now: number, w: BabyWords) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins, a.more, now) : answerMore(q, a.more, now, w));
 
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
 function waiting(q: Question, a: AllData): JSX.Element {
@@ -566,7 +569,7 @@ export function Insights() {
                     <bdi>{q.term}</bdi>
                   </div>
                 )}
-                {ready ? answer(q, a, now) : waiting(q, a)}
+                {ready ? answer(q, a, now, babyWords(settings.babySex)) : waiting(q, a)}
                 {q.about && (
                   <button type="button" class="qabout" data-testid={`q-${q.id}-about`} onClick={() => openHow(q.id)}>
                     <span class="emo">ℹ️</span> מה זה אומר?
@@ -582,7 +585,9 @@ export function Insights() {
         לפי 7 הימים המלאים האחרונים, מ-{shortDate(r.from)} עד {shortDate(r.to)} (בלי היום). לילה: מ-19:00 עד 07:00.
       </p>
       {disclaimer('q-disclaimer')}
-      {howQ && (
+      {howQ &&
+        // drawn above the tab bar (see overlay.ts)
+        overlay(
         <div class="sheet-backdrop" data-testid="q-how-sheet" onClick={(e) => e.target === e.currentTarget && setHow(null)}>
           <div class="sheet" role="dialog" aria-modal="true" aria-label={howQ.about ? 'מה זה אומר?' : 'איך זה מחושב?'}>
             <h2>{howQ.about ? 'מה זה אומר?' : 'איך זה מחושב?'}</h2>
@@ -613,7 +618,7 @@ export function Insights() {
             </div>
           </div>
         </div>
-      )}
+        )}
     </div>
   );
 }

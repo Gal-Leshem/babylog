@@ -7,6 +7,7 @@ import { logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
+import { overlay } from '../overlay';
 import { type BabyWords, babyWords } from '../words';
 
 const LOCK_SAME_MS = 1500;
@@ -269,7 +270,9 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
         ))}
         {recent.length === 0 && <li class="empty">עדיין לא תועד כלום</li>}
       </ul>
-      {confirm && (
+      {confirm &&
+        // drawn above the tab bar (see overlay.ts)
+        overlay(
         <ConfirmDose
           medicine={confirm}
           warnings={doseWarnings(confirm, events, now)}
@@ -280,8 +283,8 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onFixWake }: { onEdit: (e:
             if (confirm.id === VITAMIN_D_ID) quickLog('vitamin_d');
             else logMedicine(confirm, true);
           }}
-        />
-      )}
+        />,
+        )}
     </section>
   );
 }

@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { formatLocal, parseLocal } from '../src/shared/tz';
 import type { BabyEvent } from '../src/shared/types';
-import { install, resetServer, seed } from './helpers';
+import { api, install, resetServer, seed } from './helpers';
+import { durationHe } from '../src/shared/speech';
 import { moreAnswers } from '../src/shared/questions-data';
 import { hm } from '../src/app/labels';
 import { ev } from '../tests/helpers';
@@ -309,6 +310,11 @@ test('questions, stage B: today against a usual day, next feed, sides, nights, p
   await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות ${formatLocal(m.nextFeed!.at).slice(11, 16)}`);
   await expect(page.getByTestId('q-nextFeed')).toContainText('הערכה לפי הקצב שלכם בלבד, לא המלצה');
   await expect(page.getByTestId('q-sides')).toContainText('כמעט שווה'); // every feed is left and then right
+  await page.getByTestId('q-sides-about').click();
+  await expect(page.getByTestId('q-how-sheet')).toContainText('באיזה צד הייתה ההנקה האחרונה');
+  await expect(page.getByTestId('q-how-sheet')).toContainText('האיזון בין צדדי ההנקה השבוע');
+  await expect(page.getByTestId('q-how-sheet')).toContainText('בביסוס ובשימור אספקת החלב');
+  await page.getByTestId('q-how-close').click();
   const c = m.cluster!;
   await expect(page.getByTestId('q-cluster')).toContainText(c.days === 0 ? 'ההאכלות סדירות' : c.days <= 2 ? 'מדי פעם' : 'יש נטייה להתקבצות הנקות');
   await expect(page.getByTestId('q-cluster')).toContainText('Cluster feeding');
@@ -316,7 +322,11 @@ test('questions, stage B: today against a usual day, next feed, sides, nights, p
   await expect(page.getByTestId('q-nightTrend')).toContainText('בערך אותו דבר'); // the same two stretches every night
   await expect(page.getByTestId('q-nightTrend').locator('.spark > div')).toHaveCount(m.nightTrend!.nights.length);
   await expect(page.getByTestId('q-sleepDay')).toContainText(`${hm(m.sleepDay!.usual.median)} בדרך כלל`);
-  await expect(page.getByTestId('q-nightStart')).toContainText('בסביבות 22:00');
+  // (owner) "שנת הלילה", "בסביבות השעה"
+  await expect(page.getByTestId('q-nightStart')).toContainText('מתי מתחילה שנת הלילה?');
+  await expect(page.getByTestId('q-nightStart')).toContainText('בסביבות השעה 22:00');
+  // (owner) the sleep label says what it compares, about the baby
+  await expect(page.getByTestId('q-sleepDay-trend')).toHaveText({ same: 'אתמול התינוק ישן בערך כמו ביום רגיל אצלכם', more: 'אתמול התינוק ישן יותר מביום רגיל אצלכם', less: 'אתמול התינוק ישן פחות מביום רגיל אצלכם' }[m.sleepDay!.trend]);
   await expect(page.getByTestId('q-lastPoop')).toContainText(`לפני ${hm(m.lastPoop!.sinceMin)}`);
   await expect(page.getByTestId('q-diapersToday')).toContainText(`${m.diapersToday!.wet.today} פיפי · ${m.diapersToday!.poop.today} קקי`);
   await expect(page.getByTestId('q-unusual')).toContainText(m.unusual!.notes.length ? 'יש הבדל' : 'דומה לרגיל');
@@ -358,7 +368,7 @@ test('questions: cluster feeding says when and how often, and "מה זה אומ�
   const sheet = page.getByTestId('q-how-sheet');
   await expect(sheet).toContainText('מה זה אומר?');
   await expect(sheet).toContainText('Cluster feeding');
-  await expect(page.getByTestId('q-about-part')).toHaveText([/^מה זה.*התינוק רוצה לינוק שוב ושוב/, /^למה כדאי לדעת.*להתכונן/, /^אם משהו מדאיג/]);
+  await expect(page.getByTestId('q-about-part')).toHaveText([/^מה זה.*הנקת צבר.*התינוק רוצה לינוק שוב ושוב.*קפיצות גדילה/, /^למה כדאי לדעת\s*הכרטיס עוזר לראות אם מדובר בדפוס שחוזר.*להתכונן/, /^אם משהו מדאיג/]);
   await expect(sheet).toContainText('איך זה מחושב');
   await expect(page.getByTestId('q-how-disclaimer')).toBeVisible();
 });
@@ -397,7 +407,43 @@ test('questions: the parts of the day are in the feed-gap card, the next feed on
   const next = page.getByTestId('q-nextFeed');
   await expect(next.locator('.parts')).toHaveCount(0);
   await expect(next).toContainText(`בסביבות ${formatLocal(n.at).slice(11, 16)}`);
-  await expect(next).toContainText(`מאכילים בדרך כלל כל ${hm(n.gapMin)}`);
+  // (owner) about the baby, the gap in words ("שעה ו-50 דקות")
+  await expect(next).toContainText(`התינוק אוכל בדרך כלל כל ${durationHe(n.gapMin)}`);
+  await page.getByTestId('q-nextFeed-about').click();
+  await expect(page.getByTestId('q-about-part').first()).toContainText('הערכה מתי סביר שהתינוק יהיה שוב רעב');
+  await page.getByTestId('q-how-close').click();
+  // a girl: the same sentences in her words
+  await api(request, { action: 'settings', set: { babySex: 'girl' } });
+  await page.reload();
+  await openInsights(page);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`התינוקת אוכלת בדרך כלל כל ${durationHe(n.gapMin)}`);
+  await page.getByTestId('q-nextFeed-about').click();
+  await expect(page.getByTestId('q-about-part').first()).toContainText('הערכה מתי סביר שהתינוקת תהיה שוב רעבה');
   const order = await page.locator('.q[data-q]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.q));
   expect(order.indexOf('nextFeed')).toBeLessThan(order.indexOf('gaps'));
+});
+
+// (owner bug, iPhone) the explanation sheet was covered by the tab bar and "הבנתי" could not be tapped: on iOS a tab's scrolling
+// area is its own stacking layer, so the sheet must not be drawn inside it
+test('questions: the explanation sheet is drawn above the tab bar, and "הבנתי" can be tapped after scrolling, at 852 / 700 / 560', async ({ page, request }) => {
+  await seed(request, week());
+  await page.clock.setFixedTime(NOW);
+  for (const h of [852, 700, 560]) {
+    await page.setViewportSize({ width: 375, height: h });
+    if (h === 852) await install(page);
+    else await page.reload();
+    await openInsights(page);
+    await page.getByTestId('q-nextFeed-about').click();
+    await expect(page.getByTestId('q-how-sheet')).toBeVisible();
+    await expect(page.locator('.main [data-testid="q-how-sheet"]')).toHaveCount(0);
+    await page.locator('[data-testid="q-how-sheet"] .sheet').evaluate((s) => s.scrollBy(0, 5000));
+    const box = (await page.getByTestId('q-how-close').boundingBox())!;
+    const tabs = (await page.locator('nav.tabs').boundingBox())!;
+    const hit = await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.closest('[data-testid]')?.getAttribute('data-testid'), [box.x + box.width / 2, box.y + box.height / 2]);
+    expect(hit, `at ${h}`).toBe('q-how-close');
+    expect(box.y + box.height, `the button is not under the tab bar area at ${h}`).toBeLessThanOrEqual(page.viewportSize()!.height);
+    void tabs;
+    await page.getByTestId('q-how-close').click();
+    await expect(page.getByTestId('q-how-sheet')).toHaveCount(0);
+  }
 });

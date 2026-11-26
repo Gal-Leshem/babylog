@@ -93,6 +93,8 @@ test('vitamin D given today: the button turns quiet with a ✓ and the time; a s
   await expect(btn).toBeEnabled({ timeout: 3000 });
   await btn.click();
   await expect(page.getByTestId('confirm-dose')).toBeVisible(); // works as before: a second dose today asks first
+  // (owner bug) drawn above the tab bar: not inside a tab's scrolling area (iOS keeps anything inside it under the tab bar)
+  await expect(page.locator('.main [data-testid="confirm-dose"]')).toHaveCount(0);
 });
 
 for (const height of [852, 700, 560]) {
