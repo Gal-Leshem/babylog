@@ -245,6 +245,7 @@ export class Engine {
       sheetUrl: saved?.sheetUrl ?? '',
       rev: typeof saved?.rev === 'string' ? saved.rev : null,
     };
+    this.savedLastSync = this.p.lastSync;
     this.prune();
     this.snapshot = this.compute();
   }
@@ -280,7 +281,10 @@ export class Engine {
 
   private persist(): void {
     this.storage.set(STATE_KEY, this.p);
+    this.savedLastSync = this.p.lastSync;
   }
+  /** The time of the last update as stored (a check that found nothing new is not stored at once: see `leave`). */
+  private savedLastSync: number | null = null;
 
   private compute(data = true): EngineState {
     let view: Pick<EngineState, 'events' | 'allEvents' | 'settings'> = this.snapshot;
@@ -598,6 +602,9 @@ export class Engine {
    * retries, which the server recognises by their ids. Returns how many were handed over.
    */
   leave(): number {
+    // (owner) the next opening says when the data was last updated: a check that found nothing new is not stored at once
+    // (they come every few seconds), so its time is stored when the app is left
+    if (this.p.lastSync !== this.savedLastSync) this.persist();
     const ep = this.endpoint();
     if (!ep || this.legacy) return 0;
     const batch = this.p.queue.filter((o) => !this.inFlight.has(o.opId)).slice(0, MAX_OPS);

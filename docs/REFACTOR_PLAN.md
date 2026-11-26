@@ -326,8 +326,8 @@ Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no t
       passed to the owner.
   - Owner's question: fewer checks while the app is merely open. Owner chose the full option: built (30 s after 10 minutes
     untouched, 60 s after 30, a touch checks at once when the last check is older than 15 s). Owner also asked that the sync
-    mark then say when the last update was ("מתעדכן… · עודכן לאחרונה HH:MM" when older than a minute): asked the features
-    session (`App.tsx` is theirs).
+    mark then say when the last update was ("מתעדכן… · עודכן לאחרונה HH:MM" when older than a minute): built with the
+    features session's consent (`App.tsx` is theirs; one line at 360 x 560, Israel time, the muted colour at night).
 
 ### Proposal: the script cache for the per-request read (examined 26 November 2026, at the owner's request; not built)
 Raised by the families session; the owner asked for an orderly proposal (gain, speed, risks) before anything is built.

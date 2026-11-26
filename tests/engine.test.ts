@@ -748,6 +748,18 @@ describe('polling for changes made on the other phone', () => {
     expect(told).toEqual([0, 1, 0, 0, 0]);
   });
 
+  // owner: the next opening says "עודכן לאחרונה HH:MM": the time of a check that found nothing new is kept when the app is left
+  it('the time of the last check is stored when the app is left, even when that check found nothing new', async () => {
+    const e = makeEngine();
+    await e.pollOnce(); // the first list: stored
+    clock += 600_000;
+    await e.pollOnce(); // nothing new: not stored at once
+    expect(JSON.parse(storage.data.get('bl.state.v1')!).lastSync).toBe(clock - 600_000);
+    e.leave();
+    expect(JSON.parse(storage.data.get('bl.state.v1')!).lastSync).toBe(clock);
+    expect(makeEngine().getState().lastSync, 'the next opening knows it').toBe(clock);
+  });
+
   it('resume() sends the queue first, otherwise refreshes', async () => {
     const e = makeEngine();
     theirFeed('r');

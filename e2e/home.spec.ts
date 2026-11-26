@@ -395,9 +395,9 @@ test('recent list: the time stays in place whatever the length of the name', asy
 });
 
 // Owner (refactor plan, phase 5): the sync strip made Home jump after every tap and made the app feel slow.
-for (const height of [852, 700, 560]) {
-  test(`the sync mark never moves the screen and is never a coloured band (height ${height})`, async ({ page, request }) => {
-    await page.setViewportSize({ width: 393, height });
+for (const [width, height] of [[393, 852], [393, 700], [393, 560], [360, 560]] as const) {
+  test(`the sync mark never moves the screen and is never a coloured band (${width} x ${height})`, async ({ page, request }) => {
+    await page.setViewportSize({ width, height });
     await install(page);
     const top = () => page.getByTestId('tile-feed').evaluate((e) => e.getBoundingClientRect().top);
     const before = await top();
@@ -406,6 +406,7 @@ for (const height of [852, 700, 560]) {
     const mark = page.getByTestId('banner-sync');
     await expect(mark).toContainText('אין חיבור · 1 ממתינים לסנכרון');
     expect(await top(), 'the tiles stay where they were').toBe(before);
+    expect(await page.getByTestId('sync-text').evaluate((e) => e.getClientRects().length), 'one line').toBe(1);
     const box = await mark.evaluate((e) => ({ bottom: e.getBoundingClientRect().bottom, bg: getComputedStyle(e).backgroundColor, events: getComputedStyle(e).pointerEvents }));
     expect(box.bottom, 'the mark sits in the empty strip above the tiles').toBeLessThanOrEqual(before);
     expect(box.bg).toBe('rgba(0, 0, 0, 0)');
@@ -442,6 +443,47 @@ test('opening the app says "מתעדכן…" until its first check is back', asy
   await expect(page.getByTestId('tile-feed')).toBeVisible(); // the stored copy is on the screen meanwhile
   await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 5_000 });
 });
+
+// Owner: after a quiet while (an opening, a touch on an app left open) "מתעדכן…" also says when the data was last updated.
+test('opening after a quiet while says "מתעדכן…" with the time of the last update', async ({ page, request }) => {
+  await page.clock.install({ time: new Date('2026-11-14T10:00:00Z') }); // 12:00 in Israel
+  await install(page);
+  await control(request, 'delay=1500');
+  await page.clock.setSystemTime(new Date('2026-11-14T10:20:00Z')); // twenty minutes later
+  await page.reload();
+  await expect(page.getByTestId('sync-text')).toHaveText(/^מתעדכן… · עודכן לאחרונה 12:0\d$/);
+  await expect(page.getByTestId('banner-sync')).toBeHidden({ timeout: 5_000 });
+});
+
+// (features session's conditions) the longer words stay on one line and move nothing at 360 x 560, and at night keep the muted colour
+for (const night of [false, true]) {
+  test(`the longest "מתעדכן…" stays on one line and moves nothing at 360 x 560 (${night ? 'night' : 'day'})`, async ({ page, request }) => {
+    await page.setViewportSize({ width: 360, height: 560 });
+    await page.clock.install({ time: new Date(night ? '2026-11-14T21:00:00Z' : '2026-11-14T10:00:00Z') }); // 23:00 / 12:00 in Israel
+    await install(page);
+    const top = () => page.getByTestId('tile-feed').evaluate((e) => e.getBoundingClientRect().top);
+    const before = await top();
+    await control(request, 'delay=3000');
+    await page.clock.setSystemTime(new Date(night ? '2026-11-14T22:10:00Z' : '2026-11-14T11:10:00Z'));
+    await page.reload();
+    const text = page.getByTestId('sync-text');
+    await expect(text).toHaveText(/^מתעדכן… · עודכן לאחרונה \d\d:\d\d$/);
+    expect(await top(), 'the tiles stay where they were').toBe(before);
+    const look = await text.evaluate((e) => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--muted)';
+      document.body.appendChild(probe);
+      const muted = getComputedStyle(probe).color;
+      probe.remove();
+      const r = e.getBoundingClientRect();
+      return { lines: e.getClientRects().length, inside: r.left >= 0 && r.right <= window.innerWidth, color: getComputedStyle(e).color, muted, night: document.documentElement.dataset.theme };
+    });
+    expect(look.lines, 'one line').toBe(1);
+    expect(look.inside, 'inside the screen').toBe(true);
+    expect(look.color, 'the muted colour, nothing brighter').toBe(look.muted);
+    expect(look.night).toBe(night ? 'night' : 'day');
+  });
+}
 
 test('without a connection for a while, the mark says when the data was last updated', async ({ page, request }) => {
   await page.clock.install({ time: new Date('2026-11-14T10:00:00Z') });
