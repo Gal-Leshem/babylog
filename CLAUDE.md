@@ -51,3 +51,6 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   `ci-status` by its sha (the newest file may belong to the other branch).
 - When breaking a fix to prove a test, check the build still compiles: a failed build leaves the old build and the test "passes".
 - Wait in tests for a condition, not a fixed time, unless the test checks that something does NOT happen.
+- A `... | tail && git push` pushed although a test had failed -> read the test summary (or the exit code) before any push.
+- `main` failed on a flaky test of another area -> never an empty commit to rerun it: fix the test (or ask whoever owns it);
+  the next push to `main` ships the waiting commits too.
