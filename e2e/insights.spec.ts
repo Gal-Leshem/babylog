@@ -58,7 +58,7 @@ test('insights: the usual feed gaps, poop and diaper after a feed, and long nigh
   await expect(page.getByTestId('q-diaper')).toHaveCount(0); // (owner) removed: it showed the parents' habit, not the baby
   await expect(page.getByTestId('q-night')).toContainText('מה הרצף הארוך בלילה?');
   await expect(page.getByTestId('q-night')).toContainText('3:40 בדרך כלל');
-  await expect(page.getByTestId('q-night')).toContainText('מתחיל בדרך כלל בסביבות 22:00');
+  await expect(page.getByTestId('q-night')).toContainText('מתחיל בדרך כלל בסביבות השעה 22:00');
   await expect(page.getByTestId('q-night')).toContainText('רצפים של 3 שעות ומעלה: בדרך כלל שניים בלילה');
   await expect(page.getByTestId('q-night')).toContainText('הלילה האחרון: 3:40, 3:05');
   await expect(page.getByTestId('insights')).toContainText('מ-8.11 עד 14.11');
@@ -310,7 +310,7 @@ test('questions, stage B: today against a usual day, next feed, sides, nights, p
   await expect(page.getByTestId('q-feedsToday')).toContainText(`${f.today} עד עכשיו`);
   await expect(page.getByTestId('q-feedsToday')).toContainText(`יום רגיל, עד שעה כזו: ${f.usualByNow}`);
   await expect(page.getByTestId('q-feedsToday-trend')).toHaveText({ same: 'כמו ביום רגיל אצלכם', more: 'יותר מהרגיל אצלכם עד עכשיו', less: 'פחות מהרגיל אצלכם עד עכשיו' }[f.trend]);
-  await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות ${formatLocal(m.nextFeed!.at).slice(11, 16)}`);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`בסביבות השעה ${formatLocal(m.nextFeed!.at).slice(11, 16)}`);
   await expect(page.getByTestId('q-nextFeed')).toContainText('הערכה לפי הקצב שלכם בלבד, לא המלצה');
   await expect(page.getByTestId('q-sides')).toContainText('כמעט שווה'); // every feed is left and then right
   await page.getByTestId('q-sides-about').click();
@@ -409,7 +409,7 @@ test('questions: the parts of the day are in the feed-gap card, the next feed on
   for (const [k, p] of m.feedParts!.entries()) await expect(gaps.getByTestId(`q-part-${k}`)).toContainText(p.median === null ? 'אין מספיק' : p.median < 60 ? `כל ${Math.round(p.median)} דק׳` : `כל ${hm(p.median)} שעות`);
   const next = page.getByTestId('q-nextFeed');
   await expect(next.locator('.parts')).toHaveCount(0);
-  await expect(next).toContainText(`בסביבות ${formatLocal(n.at).slice(11, 16)}`);
+  await expect(next).toContainText(`בסביבות השעה ${formatLocal(n.at).slice(11, 16)}`);
   // (owner) about the baby, the gap in words ("שעה ו-50 דקות")
   await expect(next).toContainText(`התינוק אוכל בדרך כלל כל ${durationHe(n.gapMin)}`);
   await page.getByTestId('q-nextFeed-about').click();

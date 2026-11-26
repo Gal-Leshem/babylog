@@ -635,6 +635,8 @@ No names, addresses or secrets in this file (the repository is public).
   (the storage one failed when the check was taken out).- Feed gaps with their unit **(owner)**: the question is "כל כמה שעות מאכילים?" and every gap says its unit, so "2:50"
   cannot be read as minutes: the day / night numbers and the parts of the day with a small "שעות" (or "דק׳" under an hour),
   the longest / shortest parts "(3:50 שעות)", and the usual gap in the cluster card. Browser test.
+- Wording **(owner)**: a time of day is "בסביבות השעה 21:45" everywhere (the next-feed estimate, when the long night stretch
+  starts, cluster feeding), as already in "מתי מתחילה שנת הלילה?". Browser tests.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

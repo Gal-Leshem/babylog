@@ -116,7 +116,7 @@ function answerFirst(q: Question, r: InsightsData, m: MoreAnswers, now: number):
   if (q.id === 'night' && r.nightSleep) {
     const n = r.nightSleep;
     const long = LONG_STRETCH_MIN / 60;
-    const starts = n.startLow === n.startHigh ? `בסביבות ${clockOf(n.startLow)}` : `בין ${clockOf(n.startLow)} ל-${clockOf(n.startHigh)}`;
+    const starts = n.startLow === n.startHigh ? `בסביבות השעה ${clockOf(n.startLow)}` : `בין ${clockOf(n.startLow)} ל-${clockOf(n.startHigh)}`;
     const longLast = n.lastNight.length > 0 && n.lastNight[0]! >= LONG_STRETCH_MIN;
     return (
       <>
@@ -219,7 +219,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
       return (
         <>
           <div class="qa">
-            בסביבות <bdi>{hhmm(n.at)}</bdi>
+            בסביבות השעה <bdi>{hhmm(n.at)}</bdi>
           </div>
           <div class="qs">
             ההאכלה האחרונה ב-<bdi>{hhmm(n.last)}</bdi> · {basis}
@@ -260,7 +260,7 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
           ))}
         </div>
       );
-      const hours = c.from === c.to ? `בסביבות ${clockOf(c.from)}` : `בדרך כלל בין ${clockOf(c.from)} ל-${clockOf(c.to)}`;
+      const hours = c.from === c.to ? `בסביבות השעה ${clockOf(c.from)}` : `בדרך כלל בין ${clockOf(c.from)} ל-${clockOf(c.to)}`;
       if (c.days === 0)
         return (
           <>
