@@ -71,7 +71,8 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   something, then every 15 s; with nobody touching the screen, every 30 s after 10 minutes and every minute after 30 (owner:
   the servers share one daily quota; `pollDelay`, `nextCheckIn`). A touch (`pointerdown`, `Engine.touched`) brings back the
   15 s pace and, when the last check is older than 15 s, checks at once (soft: shown as "מתעדכן…", logged "נגיעה במסך"),
-  after 0.4 s and only if nothing else asked the server meanwhile (a touch that logs something carries the check itself); a forced full list after 5 minutes open since the last full list, opening or
+  after 0.4 s and only if nothing else asked the server meanwhile (a touch that logs something carries the check itself);
+  while the pace is slower than 15 s the sync mark says "עדכני לשעה HH:MM" (the last successful check); a forced full list after 5 minutes open since the last full list, opening or
   return (safety net; looked at every 30 s, and a look that comes far too late means timers were frozen while hidden and counts
   as a return, so a return is never followed by a second, full download); an immediate check on
   return to the foreground (visibilitychange, focus, pageshow: the several events of one return within 0.4 s count as one) and

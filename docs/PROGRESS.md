@@ -46,7 +46,7 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    wait until the app is hidden), request counts per phone (`sync.requests`, `sync.ops`, with the features session's consent).
    Families session: totals and a quota warning in "משפחות נוספות" (owner approved `usageTotals`). Built: slower checks in an
    app left open untouched, with a check on the next touch; "מתעדכן… · עודכן לאחרונה HH:MM" in the sync mark after a quiet
-   while. Script cache: stage 0 (measure only) built; recommend stage 1 or not after the owner's next sync log,
+   while, and "עדכני לשעה HH:MM" while the app is in the slow pace. Script cache: stage 0 (measure only) built; recommend stage 1 or not after the owner's next sync log,
    with the `cacheProbe` numbers from the live test and the first request counts ("עומס על השרתים").
 3. **Feedback** in the app (Settings > מתקדם > "🐞 משוב"; the sheet's "משוב" tab; numbers never reused). Manual: the owner pastes
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.

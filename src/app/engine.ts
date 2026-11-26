@@ -785,7 +785,9 @@ export class Engine {
    */
   touched(): void {
     const at = this.now();
+    const wasSlow = this.nextCheckIn() > POLL_IDLE_MS;
     this.lastTouch = at;
+    if (wasSlow) this.emit(false); // the screens drop "עדכני לשעה" at once
     if (!this.config || at - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
     this.setTimer(() => {
       if (this.syncStartedAt >= at) return; // something else asked the server meanwhile (a tap): that answer is as fresh

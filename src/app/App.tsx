@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { localHour } from '../shared/tz';
+import { POLL_IDLE_MS } from './engine';
 import type { BabyEvent } from '../shared/types';
 import { EventForm, type Moment } from './screens/EventForm';
 import { History } from './screens/History';
@@ -78,9 +79,12 @@ const hhmm = (t: number) => new Date(t).toLocaleTimeString('he-IL', { hour: '2-d
  * being sent or the first check after opening is on its way; words only when they help: "מתעדכן…" on opening, the number
  * waiting when sending takes long, and the reason when there is no connection (with the time of the last update when old).
  * (owner) After a quiet while (an opening, a touch on an app left open), "מתעדכן…" also says when the data was last updated.
+ * (owner) While an app left untouched checks only every 30 s or more (`Engine.nextCheckIn`), the mark says quietly how current
+ * the screen is: "עדכני לשעה HH:MM" (no dot); a touch brings back the usual pace and the words go.
  */
 function SyncMark() {
   const st = useEngine();
+  useNow(15_000); // the slow pace begins with no event of its own: look again every 15 s
   const [slow, setSlow] = useState(false);
   const sending = st.pending > 0;
   useEffect(() => {
@@ -90,17 +94,19 @@ function SyncMark() {
   }, [sending]);
 
   const trouble = st.status === 'offline' || st.status === 'error';
-  if (!trouble && !sending && !st.checking) return null;
+  const lazy = !trouble && !sending && !st.checking && st.lastSync !== null && engine.nextCheckIn() > POLL_IDLE_MS;
+  if (!trouble && !sending && !st.checking && !lazy) return null;
   const waiting = st.pending > 0 ? ` · ${st.pending} ממתינים לסנכרון` : '';
   let text = '';
   if (trouble) {
     const old = st.lastSync !== null && Date.now() - st.lastSync > STALE_MS ? ` · עודכן ${hhmm(st.lastSync)}` : '';
     text = `${st.status === 'offline' ? 'אין חיבור' : 'שגיאת שרת, מנסה שוב'}${waiting}${old}`;
   } else if (sending) text = slow ? `מסנכרן${waiting}` : '';
+  else if (lazy) text = `עדכני לשעה ${hhmm(st.lastSync!)}`;
   else text = st.lastSync !== null && Date.now() - st.lastSync > UPDATING_OLD_MS ? `מתעדכן… · עודכן לאחרונה ${hhmm(st.lastSync)}` : 'מתעדכן…';
   return (
-    <div class={`syncmark ${trouble ? 'bad' : ''}`} role="status" aria-label={text || 'מסנכרן'} data-testid="banner-sync" data-state={trouble ? st.status : sending ? 'sending' : 'checking'}>
-      <i />
+    <div class={`syncmark ${trouble ? 'bad' : ''}`} role="status" aria-label={text || 'מסנכרן'} data-testid="banner-sync" data-state={trouble ? st.status : sending ? 'sending' : lazy ? 'current' : 'checking'}>
+      {!lazy && <i />}
       {text && <span data-testid="sync-text">{text}</span>}
     </div>
   );

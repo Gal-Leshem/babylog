@@ -716,6 +716,11 @@ No names, addresses or secrets in this file (the repository is public).
   finished just after the test moved the clock forward rightly made the last update fresh, so the plain "מתעדכן…" was correct.
   The test (and the 360 x 560 one, and the touch test) now let the server refuse requests while the clock is moved, so no check
   can succeed in between. Stable over repeated runs, also against the slow server.
+- Sync mark **(owner)**: while an app left untouched checks only every 30 s or more (untouched for 10 minutes), the top
+  says quietly how current the screen is: "עדכני לשעה HH:MM" (the last successful check; no turning dot); a touch brings back
+  the usual pace and the words go at once. Same conditions as the other words in the mark (one line, nothing moves at 360 x 560,
+  the muted colour at night). Browser tests day and night (failed without the words, and without the immediate update on a
+  touch); screenshots day, night and 360 x 560.
 - Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
   by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
   live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the
