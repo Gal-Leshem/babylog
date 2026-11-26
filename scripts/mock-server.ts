@@ -104,7 +104,16 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
     listen: () => new Promise<void>((r) => server.listen(port, '127.0.0.1', r)),
     /** The port actually in use (useful when started with port 0). */
     port: () => (server.address() as { port: number }).port,
-    close: () => new Promise<void>((r) => server.close(() => r())),
+    /**
+     * Stops it and ends every connection still open. `close()` alone waits for them, and a browser may hold a connection it
+     * opened in advance with no request on it yet: a test that closed its own server then hung until its 30 s timeout (seen
+     * about once in 130 runs of the family tests, measured: 29 s in close).
+     */
+    close: () =>
+      new Promise<void>((r) => {
+        server.close(() => r());
+        server.closeAllConnections();
+      }),
   };
 }
 

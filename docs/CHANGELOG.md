@@ -692,6 +692,11 @@ No names, addresses or secrets in this file (the repository is public).
   now stored when the app is left, so the next opening shows the real last update. Tests: browser (the words on opening after
   twenty minutes, failed on the old mark; one line and nothing moves at 360 x 560, day and night; the existing "never moves"
   test now also at 360 x 560) and engine (the time stored on leaving; failed without it). Screenshots day, night and 360 x 560.
+- CI: a family test timed out on `dev` (the owner adds a family; seen before in the other family tests too) and stopped the
+  ship before `main`. Reproduced locally (about once in 130 runs) and measured: the test's own family server took 29 s to close,
+  because `close()` waits for open connections and the browser can hold one it opened in advance with no request yet. The mock
+  server now also ends every open connection when it closes (`scripts/mock-server.ts`); 780 runs of the family tests without a
+  failure afterwards. Not an app bug.
 - Script cache, stage 0 **(owner: as recommended)**: measurement only. The server answers `cacheProbe` (with its key; not used
   by the app) by timing a properties read next to script-cache reads and writes on keys of its own, which it removes again; the
   live test prints the numbers in its `TIMING` table (informational: a failure there does not fail the live test). Test: the
