@@ -1,6 +1,6 @@
 import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ACTIVE_FOR_MS, Engine, pollDelay } from '../src/app/engine';
+import { ACTIVE_FOR_MS, Engine, TOUCH_CHECK_DELAY_MS, pollDelay } from '../src/app/engine';
 import { memoryStorage } from '../src/app/storage';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
@@ -977,6 +977,60 @@ describe('pace', () => {
     expect(pollDelay(ACTIVE_FOR_MS - 1)).toBe(5_000);
     expect(pollDelay(ACTIVE_FOR_MS)).toBe(15_000);
     expect(pollDelay(Infinity)).toBe(15_000); // never used yet
+  });
+
+  // owner (performance session): an app left open with nobody touching it must not use up the shared daily quota
+  it('an app left open untouched checks every 30 s after 10 minutes and every minute after 30; a touch brings back 15 s', () => {
+    const min = 60_000;
+    expect(pollDelay(Infinity, 10 * min - 1)).toBe(15_000);
+    expect(pollDelay(Infinity, 10 * min)).toBe(30_000);
+    expect(pollDelay(Infinity, 30 * min - 1)).toBe(30_000);
+    expect(pollDelay(Infinity, 30 * min)).toBe(60_000);
+    expect(pollDelay(0, 60 * min), 'right after opening or logging: 5 s whatever came before').toBe(5_000);
+    const e = makeEngine();
+    clock += 45 * min; // opened long ago, never touched since
+    expect(e.nextCheckIn()).toBe(60_000);
+    e.touched();
+    expect(e.nextCheckIn()).toBe(15_000);
+  });
+
+  it('a touch after a quiet while checks at once (shown as "updating"); a fresh check, or a tap that logs, needs no extra request', async () => {
+    const e = makeEngine();
+    await e.pollOnce();
+    seen = [];
+    timers.length = 0;
+    clock += 5_000; // checked 5 s ago: nothing to do
+    e.touched();
+    expect(timers).toHaveLength(0);
+
+    clock += 60_000; // a minute without a check (slow pace)
+    e.touched();
+    expect(timers.map((t) => t.ms)).toEqual([TOUCH_CHECK_DELAY_MS]);
+    const states: boolean[] = [];
+    const off = e.subscribe(() => states.push(e.getState().checking));
+    timers.shift()!.fn();
+    await idle();
+    off();
+    expect(syncs()).toHaveLength(1);
+    expect(states[0], 'the mark says "מתעדכן…" while it runs').toBe(true);
+    expect(e.syncLog()[0]!.why).toBe('touch');
+
+    // the touch was the start of a tap that logs something: the tap's own exchange carries the check, even while it is still
+    // on its way (slow network) when the touch's moment comes
+    seen = [];
+    clock += 60_000;
+    e.touched();
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('tap'));
+    await idle();
+    gate = null;
+    clock += 2_000; // (and the touch's timer may fire late: iOS delays timers)
+    timers.find((t) => t.ms === TOUCH_CHECK_DELAY_MS)!.fn();
+    release();
+    await idle();
+    await idle();
+    expect(syncs()).toHaveLength(1);
   });
 
   it('spreads retries by up to a fifth, so two phones do not come back in step', async () => {

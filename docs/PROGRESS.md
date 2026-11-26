@@ -44,8 +44,9 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
    Performance session (26 Nov): log 3 read (`REFACTOR_PLAN.md` section 8); built: one Events tab lookup per request and the
    untimed part shown in the log, no wasted check after a slow exchange, no reload in the middle of an opening (new versions
    wait until the app is hidden), request counts per phone (`sync.requests`, `sync.ops`, with the features session's consent).
-   Families session: totals and a quota warning in "משפחות נוספות" (asking the owner). Open with the owner: fewer checks while
-   the app is merely open; the script cache for the per-request read (proposal 5, raised by the families session).
+   Families session: totals and a quota warning in "משפחות נוספות" (owner approved `usageTotals`). Built: slower checks in an
+   app left open untouched, with a check on the next touch. Waiting: the features session's answer on "עודכן לאחרונה" in the
+   sync mark (`App.tsx`); the owner's decision on the script cache (proposal in `REFACTOR_PLAN.md`, stage 0 = measure only).
 3. **Feedback** in the app (Settings > מתקדם > "🐞 משוב"; the sheet's "משוב" tab; numbers never reused). Manual: the owner pastes
    the list when he wants; do not ask for it. Item #1 (History 24 hours) is done; the owner clears the list himself.
 4. A tap that went through a disappearing toast (fixed with a tap shield); the "could not get back" part was never reproduced:
