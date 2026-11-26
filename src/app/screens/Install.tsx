@@ -4,6 +4,22 @@ import { decodeSetupCode, isEditorTestUrl, isServerUrl } from '../config';
 import type { Settings } from '../../shared/types';
 import { engine } from '../state';
 import { privacyText } from './Privacy';
+import type { JSX } from 'preact';
+import { storageWorks } from '../storage';
+import { iosHomeScreen } from '../statusbar';
+
+/** What to say when the phone does not keep what the app saves (here and in the banner on every screen). */
+export function storageBlocked(): JSX.Element {
+  return (
+    <>
+      הטלפון לא שומר את החיבור, ולכן האפליקציה תבקש את הקוד שוב בכל פתיחה. לתיקון: הגדרות ← אפליקציות ← <bdi>Safari</bdi> ← לכבות "חסום את כל
+      העוגיות", ואז לפתוח שוב את האפליקציה ולהזין את הקוד.
+    </>
+  );
+}
+
+/** Opened from the home-screen icon (iPhone), or as an installed app elsewhere. */
+const installedApp = (): boolean => iosHomeScreen() || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
 
 export function Install() {
   const [code, setCode] = useState('');
@@ -67,6 +83,17 @@ export function Install() {
         <p>
           הדביקו כאן את קוד ההתקנה שקיבלתם (מתחיל ב-<bdi>BL1</bdi>).
         </p>
+        {!storageWorks() && (
+          <p class="err" role="alert" data-testid="install-storage">
+            {storageBlocked()}
+          </p>
+        )}
+        {/* (owner) a family entered the code only in the browser: the home-screen app keeps its own, separate storage */}
+        {!installedApp() && (
+          <p class="muted" data-testid="install-hint">
+            הוספתם את האפליקציה למסך הבית? פתחו אותה מהאייקון והזינו את הקוד שם: היא שומרת את החיבור בנפרד מהדפדפן.
+          </p>
+        )}
         <textarea data-testid="setup-code" rows={5} value={code} placeholder="BL1...." onInput={(e) => setCode((e.target as HTMLTextAreaElement).value)} />
         {needExec && (
           <>

@@ -612,6 +612,13 @@ No names, addresses or secrets in this file (the repository is public).
   "מתי ההנקה הבאה צפויה?" shows only the estimate and the part of the day it comes from, and comes before it. Browser test
   (parts in the feed-gap card, none in the next-feed card, the order).
 
+- Other families **(owner, a family's screen recording)**: the home-screen app showed the setup screen on every opening while
+  the same site in Chrome was connected. A home-screen app on iPhone keeps its own storage, apart from any browser, so a code
+  entered only in the browser never reached it; and with Safari's "Block All Cookies" a home-screen app cannot save at all and
+  forgets silently. Now: the install screen, outside an installed app, says to open the app from its icon and enter the code
+  there; a phone that does not keep what the app saves gets a clear banner (and the same line on the install screen) naming the
+  setting to change (`storageWorks` in `storage.ts`). The family message and guide in `INSTALL.he.md` say it too. Browser tests
+  (the storage one failed when the check was taken out).
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

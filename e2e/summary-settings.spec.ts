@@ -241,3 +241,29 @@ test("settings: the baby's date of birth is saved for both phones and shows the 
   await expect(page.getByTestId('baby-age')).toHaveText('גיל: 12 ימים', { timeout: 20_000 });
   await expect(page.getByTestId('baby-birth')).toHaveValue(other);
 });
+
+// Owner (a family, November 2026): the setup screen came back on every opening of the home-screen app. The code had been entered
+// only in the browser, which keeps its own storage; and a phone that blocks saving forgets silently. Both are said now.
+test('the install screen says the home-screen app needs the code itself; not shown inside the installed app', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('install-hint')).toContainText('פתחו אותה מהאייקון והזינו את הקוד שם');
+  await expect(page.getByTestId('install-storage')).toHaveCount(0);
+  await page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { value: true }));
+  await page.reload();
+  await expect(page.getByTestId('setup-code')).toBeVisible();
+  await expect(page.getByTestId('install-hint')).toHaveCount(0);
+});
+
+test('a phone that does not keep what the app saves is told so, on the install screen and after connecting', async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('blocked', 'SecurityError');
+    };
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('install-storage')).toContainText('חסום את כל העוגיות');
+  await install(page);
+  await expect(page.getByTestId('banner-storage')).toBeVisible();
+  await page.getByTestId('btn-wet').click(); // the app still works in memory
+  await expect(page.getByTestId('recent-row')).toHaveCount(1);
+});
