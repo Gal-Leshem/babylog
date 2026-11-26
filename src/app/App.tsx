@@ -117,7 +117,7 @@ function amountButton(t: Toast, delta: number) {
       onClick={() => {
         count('toast.amount');
         const r = t.amount?.step(delta);
-        if (r) updateToast(t.id, { text: r.text, amount: { ...t.amount!, ml: r.ml }, done: 'amount' }, BOTTLE_TOAST_MS);
+        if (r) updateToast(t.id, { text: r.text, amount: { ...t.amount!, ml: r.ml, suggest: r.suggest }, done: 'amount' }, BOTTLE_TOAST_MS);
       }}
     >
       {delta > 0 ? `+${delta}` : `−${-delta}`}
@@ -203,6 +203,34 @@ function ToastView() {
           {TOAST_ML.filter((d) => d < 0).map((d) => amountButton(t, d))}
           <b data-testid="toast-ml">{t.amount.ml} מ״ל</b>
           {TOAST_ML.filter((d) => d > 0).map((d) => amountButton(t, d))}
+        </div>
+      )}
+      {t.amount?.suggest && t.done !== 'undo' && (
+        // (owner, F18) the same amount again and again: offer to make it the default of this kind
+        <div class="tact" data-testid="toast-suggest">
+          <span data-testid="toast-suggest-text">{t.amount.suggest.text}</span>
+          <span class="tbtns">
+            <button
+              type="button"
+              data-testid="toast-suggest-yes"
+              onClick={() => {
+                t.amount!.suggest!.yes();
+                updateToast(t.id, { text: `ברירת המחדל עודכנה ל-${t.amount!.ml} מ״ל`, amount: { ...t.amount!, suggest: null } }, BOTTLE_TOAST_MS);
+              }}
+            >
+              עדכון
+            </button>
+            <button
+              type="button"
+              data-testid="toast-suggest-no"
+              onClick={() => {
+                t.amount!.suggest!.no();
+                updateToast(t.id, { amount: { ...t.amount!, suggest: null } }, BOTTLE_TOAST_MS);
+              }}
+            >
+              לא עכשיו
+            </button>
+          </span>
         </div>
       )}
       {t.earlier && (

@@ -175,3 +175,119 @@ async function check(page: import('@playwright/test').Page): Promise<void> {
     const tile = await page.getByTestId('tile-feed').locator('.tv').evaluate((el) => el.getBoundingClientRect().height < parseFloat(getComputedStyle(el).fontSize) * 2);
     expect(tile, 'the feed tile value stays on one line').toBe(true);
 }
+
+// ---------- stage 2 ----------
+
+test('Summary with nursing and bottles: feedings (a top-up is the same feeding), nursings, bottles, ml eaten', async ({ page, request }) => {
+  await feeding(request, { formula: true });
+  await seed(request, [
+    { type: 'feed', detail: 'left', start: nowLocal(-200) },
+    { type: 'bottle', detail: 'formula:60', start: nowLocal(-190) }, // a top-up 10 minutes later: one feeding
+    { type: 'bottle', detail: 'formula:120:30', start: nowLocal(-60) },
+  ]);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  const cell = (row: string) => page.getByTestId(`sum-${row}`).locator('td').first();
+  await expect(cell('האכלות')).toHaveText('2');
+  await expect(cell('הנקות')).toHaveText('1');
+  await expect(cell('בקבוקים')).toHaveText('2');
+  await expect(cell('מ״ל בבקבוקים')).toHaveText('150');
+  await expect(page.getByTestId('sum-הנקות (האכלות)')).toHaveCount(0);
+  await expect(page.getByTestId('day-summary')).toContainText('הנקות ובקבוקים בהפרש של עד 20 דקות נספרים כהאכלה אחת');
+});
+
+test('Summary with bottles only: no nursing or left / right rows', async ({ page, request }) => {
+  await feeding(request, { breast: false, formula: true });
+  await seed(request, [{ type: 'bottle', detail: 'formula:90', start: nowLocal(-60) }]);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await expect(page.getByTestId('sum-האכלות').locator('td').first()).toHaveText('1');
+  await expect(page.getByTestId('sum-הנקות')).toHaveCount(0);
+  await expect(page.getByTestId('sum-שמאל / ימין')).toHaveCount(0);
+});
+
+test('the fifth bottle of the same amount (not the default) offers to make it the default; "עדכון" saves it for both phones', async ({ page, request }) => {
+  await feeding(request, { formula: true });
+  await seed(request, [1, 2, 3, 4].map((i) => ({ type: 'bottle', detail: 'formula:120', start: nowLocal(-i * 180) })));
+  await install(page);
+  await page.getByTestId('btn-bottle').click();
+  await expect(page.getByTestId('toast-suggest')).toHaveCount(0); // 90, the default
+  await page.getByTestId('toast-ml-plus-20').click();
+  await expect(page.getByTestId('toast-suggest')).toHaveCount(0); // 110
+  await page.getByTestId('toast-ml-plus-10').click();
+  await expect(page.getByTestId('toast-suggest-text')).toHaveText('חמשת הבקבוקים האחרונים היו 120 מ״ל. לעדכן את ברירת המחדל?');
+  await page.getByTestId('toast-suggest-yes').click();
+  await expect(page.getByTestId('toast-text')).toHaveText('ברירת המחדל עודכנה ל-120 מ״ל');
+  await expect(page.getByTestId('toast-suggest')).toHaveCount(0);
+  await expect.poll(async () => (await api(request, { action: 'settings' })).settings.feeding.formulaMl).toBe(120);
+});
+
+test('"לא עכשיו": the same amount is not offered again on this phone', async ({ page, request }) => {
+  await feeding(request, { formula: true });
+  await seed(request, [1, 2, 3, 4].map((i) => ({ type: 'bottle', detail: 'formula:120', start: nowLocal(-i * 180) })));
+  await install(page);
+  await page.getByTestId('btn-bottle').click();
+  await page.getByTestId('toast-ml-plus-20').click();
+  await page.getByTestId('toast-ml-plus-10').click();
+  await page.getByTestId('toast-suggest-no').click();
+  await expect(page.getByTestId('toast-suggest')).toHaveCount(0);
+  await expect(page.getByTestId('toast')).toBeHidden({ timeout: 8_000 });
+  await page.getByTestId('btn-bottle').click();
+  await page.getByTestId('toast-ml-plus-20').click();
+  await page.getByTestId('toast-ml-plus-10').click();
+  await expect(page.getByTestId('toast-ml')).toHaveText('120 מ״ל');
+  await expect(page.getByTestId('toast-suggest')).toHaveCount(0);
+});
+
+/** (F18) a week of nursing with top-ups and formula bottles, until 07:00 of NOW's day */
+const QNOW = new Date('2026-11-15T08:00:00Z'); // 10:00 in Israel; the window is Nov 8 .. 14
+function mixedWeek(): Partial<import('../src/shared/types').BabyEvent>[] {
+  const out: Partial<import('../src/shared/types').BabyEvent>[] = [];
+  for (let d = 8; d <= 15; d++) {
+    const day = `2026-11-${String(d).padStart(2, '0')}`;
+    for (const h of d === 15 ? [0, 3, 6] : [0, 3, 6, 9, 12, 15, 18, 21]) {
+      const hh = String(h).padStart(2, '0');
+      if (h % 6 === 0) out.push({ type: 'feed', detail: h % 12 ? 'right' : 'left', start: `${day} ${hh}:00` }, { type: 'bottle', detail: 'expressed:60', start: `${day} ${hh}:10` });
+      else out.push({ type: 'bottle', detail: 'formula:120', start: `${day} ${hh}:00` });
+    }
+  }
+  return out;
+}
+
+test('questions with nursing and bottles: bottle questions, "מתוכן X עם בקבוק", the share only by hand', async ({ page, request }) => {
+  await feeding(request, { formula: true, expressed: true });
+  await seed(request, mixedWeek());
+  await page.clock.setFixedTime(QNOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  await expect(page.getByTestId('q-feedsToday')).toBeVisible();
+  await expect(page.getByTestId('q-feedsToday-bottles')).toHaveText('מתוכן 3 עם בקבוק');
+  await expect(page.getByTestId('q-nextFeed')).toContainText('מתי ההאכלה הבאה צפויה?');
+  await expect(page.getByTestId('q-bottlesToday')).toContainText('3 בקבוקים · 240 מ״ל');
+  // (F18) per kind: the top-ups and the formula bottles are different sizes
+  await expect(page.getByTestId('q-bottleSize-expressed')).toHaveText('60 מ״ל בדרך כלל, חלב שאוב');
+  await expect(page.getByTestId('q-bottleSize-formula')).toHaveText('120 מ״ל בדרך כלל, תמ״ל');
+  await expect(page.getByTestId('q-sides')).toBeVisible();
+  // the share of feedings with a bottle: never by itself
+  await expect(page.getByTestId('q-bottleShare')).toHaveCount(0);
+  await page.getByTestId('q-pick').click();
+  await expect(page.getByTestId('pick-bottleShare')).toContainText('מוצגת רק כשמדליקים אותה');
+  await page.getByTestId('pick-bottleShare-switch').click();
+  await page.getByTestId('pick-back').click();
+  await expect(page.getByTestId('q-bottleShare')).toContainText('56 מתוך 56');
+});
+
+test('questions without nursing: no left / right, no cluster feeding, no share; "היום חריג" can speak of ml', async ({ page, request }) => {
+  await feeding(request, { breast: false, formula: true });
+  await seed(request, mixedWeek().filter((e) => e.type === 'bottle'));
+  await page.clock.setFixedTime(QNOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  await expect(page.getByTestId('q-bottlesToday')).toBeVisible();
+  await expect(page.getByTestId('q-feedsToday-bottles')).toHaveCount(0); // only when the family both nurses and gives bottles
+  await page.getByTestId('q-pick').click();
+  for (const id of ['sides', 'cluster', 'bottleShare']) await expect(page.getByTestId(`pick-${id}`)).toHaveCount(0);
+  await expect(page.getByTestId('pick-nextFeed')).toContainText('מתי ההאכלה הבאה צפויה?');
+});

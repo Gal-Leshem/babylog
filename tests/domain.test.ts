@@ -123,6 +123,19 @@ describe('daily summary', () => {
     expect(yesterday.feeds.gapMin).toBeNull();
   });
 
+  it('(F18) a bottle within the merge window of a nursing is the same feeding; nursings, bottles and ml eaten', () => {
+    const day = [
+      ev({ type: 'feed', detail: 'left', start: '2026-11-14 01:00' }),
+      ev({ type: 'bottle', detail: 'expressed:60', start: '2026-11-14 01:15' }), // a top-up: the same feeding
+      ev({ type: 'bottle', detail: 'formula:120:30', start: '2026-11-14 04:00' }), // a bottle on its own: 90 eaten
+      ev({ type: 'feed', detail: 'right', start: '2026-11-14 07:00' }),
+      ev({ type: 'bottle', detail: 'formula:90', start: '2026-11-14 09:00', deleted: true }),
+    ];
+    const s = dailySummary(day, '2026-11-14', now, 20).feeds;
+    expect(s).toMatchObject({ count: 3, nursing: 2, bottles: 2, bottleMl: 150, left: 1, right: 1, gapMin: 180 });
+    expect(nextSide(day)).toBe('left'); // the next side comes from nursing only
+  });
+
   it('the gap between feeds is the median: one forgotten feed does not stretch it (owner)', () => {
     const day = [
       ev({ type: 'feed', detail: 'left', start: '2026-11-14 01:00' }),

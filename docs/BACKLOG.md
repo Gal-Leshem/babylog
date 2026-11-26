@@ -203,7 +203,9 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   gap between feeds is the median, "רווח רגיל בין האכלות" (done); with bottles the rows are "האכלות" (all), "הנקות",
   "בקבוקים", "מ״ל בבקבוקים"; breastfeeding only keeps today's "הנקות (האכלות)".
   Build: stage 1 settings, the event type and its amount, the buttons, the window, the toast, the edit form, the lists (done);
-  stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion.
+  stage 2 one feeding and the next side, the summary, the new questions, the default-update suggestion (done).
+  Left for later: Siri's "last feed" answer still speaks of nursing only (a family on bottles only gets no answer); bottles
+  in the week view as their own bars.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted

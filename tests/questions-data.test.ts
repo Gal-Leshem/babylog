@@ -45,7 +45,7 @@ describe('the newer questions (F16 stage B)', () => {
   });
 
   it('feeds today against a usual day by this hour: the same, then clearly fewer', () => {
-    expect(moreAnswers(week(), NOW, 20).feedsToday).toEqual({ today: 5, usualByNow: 5, usualDay: 10, trend: 'same' });
+    expect(moreAnswers(week(), NOW, 20).feedsToday).toEqual({ today: 5, usualByNow: 5, usualDay: 10, trend: 'same', withBottle: 0 });
     expect(moreAnswers(week({ feedsToday: 2 }), NOW, 20).feedsToday).toMatchObject({ today: 2, usualByNow: 5, trend: 'less' });
     expect(moreAnswers(week({ feedsToday: 4 }), NOW, 20).feedsToday!.trend).toBe('same'); // one less is not a clear difference
   });
@@ -113,5 +113,64 @@ describe('the newer questions (F16 stage B)', () => {
     expect(r.feedsToday).toBeNull();
     expect(r.progress.feedsToday).toEqual({ have: 2, need: 5 });
     expect(r.unusual).toBeNull();
+  });
+});
+
+// (owner, F18) bottles: a bottle near a nursing is one feeding; bottles and ml today; the amount per bottle; the share with a bottle
+describe('bottles in the questions (F18)', () => {
+  /** every day: nursing at 00, 06, 12, 18 with a 60 ml top-up 10 minutes later; formula bottles at 03, 09, 15, 21 (ml grows) */
+  function mixed(opts: { mlToday?: number } = {}): BabyEvent[] {
+    const out: BabyEvent[] = [];
+    for (let d = 0; d < 7; d++) {
+      const day = addDays('2026-11-08', d);
+      for (const h of [0, 6, 12, 18]) {
+        const t = T(`${day} ${String(h).padStart(2, '0')}:00`);
+        out.push(ev({ type: 'feed', detail: h % 12 ? 'right' : 'left', start: at(t) }), ev({ type: 'bottle', detail: 'expressed:60', start: at(t + 10 * MIN) }));
+      }
+      for (const h of [3, 9, 15, 21]) out.push(ev({ type: 'bottle', detail: `formula:${100 + d * 10}:${d < 3 ? 10 : 0}`, start: `${day} ${String(h).padStart(2, '0')}:00` }));
+    }
+    // today until 14:00: nursing + top-up at 00, 06, 12; formula at 03, 09 (or one bigger bottle)
+    for (const h of [0, 6, 12]) {
+      const t = T(`2026-11-15 ${String(h).padStart(2, '0')}:00`);
+      out.push(ev({ type: 'feed', detail: 'left', start: at(t) }), ev({ type: 'bottle', detail: 'expressed:60', start: at(t + 10 * MIN) }));
+    }
+    out.push(ev({ type: 'bottle', detail: `formula:${opts.mlToday ?? 160}`, start: '2026-11-15 03:00' }), ev({ type: 'bottle', detail: `formula:${opts.mlToday ?? 160}`, start: '2026-11-15 09:00' }));
+    return out;
+  }
+
+  it('a top-up within the merge window is the same feeding; the feedings today with a bottle', () => {
+    const r = moreAnswers(mixed(), NOW, 20);
+    expect(r.feedsToday).toMatchObject({ today: 5, withBottle: 5, usualDay: 8 });
+    // with no merge window the top-ups are feedings of their own
+    expect(moreAnswers(mixed(), NOW, 0).feedsToday).toMatchObject({ today: 8 });
+  });
+
+  it('bottles and ml today against a usual day; the usual amount per bottle and its trend; the share of feedings with a bottle', () => {
+    const r = moreAnswers(mixed(), NOW, 20);
+    // by 14:00 a usual day has 5 bottles: 3 top-ups of 60 and 2 formula; today the formula bottles are 160
+    expect(r.bottlesToday!.count).toMatchObject({ today: 5, usualByNow: 5, usualDay: 8, trend: 'same' });
+    expect(r.bottlesToday!.ml.today).toBe(3 * 60 + 2 * 160);
+    // per kind: the top-ups stay 60; the formula (eaten = given - left: 90, 100, 110, then 130, 140, 150, 160) grows
+    expect(r.bottleSize!.map((b) => b.kind)).toEqual(['expressed', 'formula']); // 28 top-ups first, then 28 formula (a tie keeps the order)
+    const [ex, fo] = r.bottleSize!;
+    expect(ex).toMatchObject({ usual: 60, trend: 'same' });
+    expect(fo!.byDay.map((d) => d.ml)).toEqual([90, 100, 110, 130, 140, 150, 160]);
+    expect(fo).toMatchObject({ usual: 130, recent: 150, before: 105, trend: 'more' });
+    expect(r.bottleShare).toEqual({ withBottle: 56, total: 56 });
+    expect(r.progress.bottleShare).toEqual({ have: 56, need: 20 });
+  });
+
+  it('"היום חריג" looks at the ml from bottles only when the family does not nurse', () => {
+    const lots = mixed({ mlToday: 300 });
+    expect(moreAnswers(lots, NOW, 20, { nursing: false }).unusual!.notes).toContainEqual({ what: 'bottleMl', trend: 'more' });
+    expect(moreAnswers(lots, NOW, 20, { nursing: true }).unusual!.notes.some((n) => n.what === 'bottleMl')).toBe(false);
+    expect(moreAnswers(lots, NOW, 20).unusual!.notes.some((n) => n.what === 'bottleMl')).toBe(false);
+  });
+
+  it('families without bottles: no bottle answers, and the feed answers are as before', () => {
+    const r = moreAnswers(week(), NOW, 20);
+    expect(r.bottlesToday).toBeNull();
+    expect(r.bottleSize).toBeNull();
+    expect(r.bottleShare).toBeNull();
   });
 });
