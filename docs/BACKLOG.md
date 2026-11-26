@@ -150,6 +150,17 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   health-fund pediatrician are two systems that do not share information (parents carry results between them); many Hebrew
   indie trackers appeared in 2026 with almost no traction. Conclusion sent to the owner: no market gap; a modest personal gap
   (the visit loop shared by both parents, bridging the two systems), to be tried by hand before anything is built.
+  **Second research round (owner chose three features: questions before the visit, what happened at the last visit, a
+  pre-visit report).** Evidence: a patient's short agenda before a visit is rated helpful by 97% of clinicians but was used
+  before only 9% of visits (OurNotes): uptake is the risk; questions written down are often not asked (prioritise a top 3,
+  raise them at the start); recall improves with categorised notes; in the one study of parent-tracked baby data shown to
+  clinicians (CHI 2018), raw logs overwhelmed them, and what worked was a parent question with only the relevant data. Apps:
+  Sprout has a visit planner with questions, answers and an "Answered" section and a summary on the upcoming appointment;
+  Nara has questions and post-visit notes; the CDC app has a "show doctor" screen; patient AI recorders exist but the best-known
+  closed its consumer app. Proposal sent: one shared "for the visit" list (like the feedback screen), a visit mode that turns
+  the questions into the visit record (answers, what was said, next steps), and a report on screen built from the list, the
+  last visit's next steps and a small snapshot of the log since then (no raw logs, no flags, "recorded by the parents");
+  waiting for the owner's decisions.
 - Age-based "things to watch": postponed **(owner)**. The date of birth is in Settings (done).
 
 ### Not possible or not wanted
