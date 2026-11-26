@@ -51,3 +51,7 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   `ci-status` by its sha (the newest file may belong to the other branch).
 - When breaking a fix to prove a test, check the build still compiles: a failed build leaves the old build and the test "passes".
 - Wait in tests for a condition, not a fixed time, unless the test checks that something does NOT happen.
+- Every push to `main` publishes a new app version, which the phones reload into at their next return -> docs-only commits can
+  wait on `dev`; they reach `main` with the next ship.
+- A test failing only in CI under another task's push was an old race in the test each time -> reproduce with `--repeat-each`
+  under load and force the suspected timing before changing app code.
