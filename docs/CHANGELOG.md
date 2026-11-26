@@ -660,6 +660,21 @@ No names, addresses or secrets in this file (the repository is public).
 - Bottles **(owner)**: the "בקבוק" button is on the left of the nursing buttons (was on the right). Browser test (failed on the
   old order).
 
+- Bottles, stage 2 **(owner, F18)**: a bottle within the merge window of a nursing (or of another bottle) is the same feeding,
+  everywhere feedings are counted (Summary, the week, every question, the gaps and the next-feed estimate); the next side and
+  left / right still come from nursing only. Summary with bottles: "האכלות" (all), "הנקות" (feedings with nursing; only when
+  the family nurses), "בקבוקים", "מ״ל בבקבוקים" (eaten); nursing only keeps "הנקות (האכלות)". Questions: "כמה האכלות היום"
+  says "מתוכן X עם בקבוק" only when the family both nurses and gives bottles; "ימין ושמאל" and "התקבצות הנקות" only with
+  nursing; "מתי ההנקה הבאה" reads "מתי ההאכלה הבאה" with bottles; new "כמה בקבוקים היום, לעומת יום רגיל?" (count and ml),
+  "כמה אוכלים מבקבוק?" (per bottle kind: a top-up and a formula bottle are different sizes; the trend of the last 3 days) and
+  "כמה מההאכלות עם בקבוק?" (only with nursing and bottles, and never by itself: only when turned on by hand); "היום חריג"
+  looks at the ml from bottles only when the family does not nurse. After a bottle, when the amount in the toast equals the 4
+  bottles of that kind before it and is not the default: "חמשת הבקבוקים האחרונים היו 120 מ״ל. לעדכן את ברירת המחדל?" with
+  "עדכון" (for both phones) and "לא עכשיו" (not asked again on this phone for that amount). Usage counts the new questions and
+  the offer's answers. Tests: unit (episodes, the summary numbers, the new answers per kind, "היום חריג" with and without
+  nursing; failed with bottles outside the episodes) and 8 more browser tests (Summary rows, the offer and its refusal, the
+  questions with and without nursing; failed with bottles outside the episodes and with the share shown by itself).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five

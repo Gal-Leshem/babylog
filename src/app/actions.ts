@@ -1,11 +1,11 @@
-import { type BottleKind, bottleDetail, clampGiven, defaultMl, feedingOf } from '../shared/bottle';
+import { type BottleKind, bottleDetail, clampGiven, defaultMl, feedingOf, parseBottle } from '../shared/bottle';
 import { type Medicine, VITAMIN_D_ID } from '../shared/medicines';
 import type { ApiRequest } from '../shared/protocol';
 import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { KIND_LABEL, errorText, fromKind, hm, kindOf, kindOfBottle, nowLocal, timeOf, type Kind } from './labels';
-import { count, engine, showToast } from './state';
+import { type Suggest, count, declineDefault, engine, getPrefs as prefs, showToast } from './state';
 import { babyWords } from './words';
 
 const W = () => babyWords(engine.getState().settings.babySex);
@@ -93,6 +93,39 @@ export function quickLog(kind: Kind): void {
   toastFor((t) => savedText(label, timeOf(t), offline));
 }
 
+/** (owner, F18) After this many bottles of a kind in a row with the same amount, other than the default, offer to make it the default. */
+export const SAME_BOTTLES = 5;
+
+/**
+ * (owner, F18) The offer to update the default amount of a bottle kind: when the bottle just logged (`id`, now `ml`) and the
+ * SAME_BOTTLES - 1 bottles of that kind before it all have the same amount, and it is not the default, and this parent did not
+ * already say "לא עכשיו" to that amount. Null otherwise.
+ */
+export function suggestDefault(kind: BottleKind, ml: number, id: string): Suggest | null {
+  const { events, settings } = engine.getState();
+  const feeding = feedingOf(settings);
+  if (ml === defaultMl(feeding, kind) || prefs().declined?.[kind] === ml) return null;
+  const before = events
+    .filter((e) => e.type === 'bottle' && !e.deleted && e.id !== id && e.start)
+    .map((e) => ({ e, b: parseBottle(e.detail) }))
+    .filter((x) => x.b?.kind === kind)
+    .sort((x, y) => (x.e.start < y.e.start ? 1 : -1))
+    .slice(0, SAME_BOTTLES - 1);
+  if (before.length < SAME_BOTTLES - 1 || before.some((x) => x.b!.given !== ml)) return null;
+  const words = SAME_BOTTLES === 5 ? 'חמשת' : String(SAME_BOTTLES);
+  return {
+    text: `${words} הבקבוקים האחרונים היו ${ml} מ״ל. לעדכן את ברירת המחדל?`,
+    yes: () => {
+      count('bottle.defaultYes');
+      engine.dispatch({ action: 'settings', set: { feeding: { ...feeding, [kind === 'formula' ? 'formulaMl' : 'expressedMl']: ml } } });
+    },
+    no: () => {
+      count('bottle.defaultNo');
+      declineDefault(kind, ml);
+    },
+  };
+}
+
 /** (owner, F18) How long the toast after a bottle stays, and stays again after each tap on it (short, not excessive). */
 export const BOTTLE_TOAST_MS = 4_000;
 /** (owner) the amount buttons in the toast after a bottle */
@@ -117,9 +150,9 @@ export function logBottle(kind: BottleKind, ml?: number): void {
   const text = () => savedText(`${label} · ${current} מ״ל`, timeOf(at), offline);
   const mv = earlierFor(id, 'start', start, (t) => ((at = t), text()));
   const changes: { opId: string; before: number }[] = [];
-  const step = (delta: number): { text: string; ml: number } | null => {
+  const step = (delta: number): { text: string; ml: number; suggest: Suggest | null } | null => {
     const next = clampGiven(current + delta);
-    if (next === current) return { text: text(), ml: current };
+    if (next === current) return { text: text(), ml: current, suggest: suggestDefault(kind, current, id) };
     const r = engine.dispatch({ action: 'update', id, patch: { detail: bottleDetail({ kind, given: next, left: 0 }) } });
     if (!r.ok) {
       fail(r.error, r.detail);
@@ -127,7 +160,7 @@ export function logBottle(kind: BottleKind, ml?: number): void {
     }
     if (r.opId) changes.push({ opId: r.opId, before: current });
     current = next;
-    return { text: text(), ml: current };
+    return { text: text(), ml: current, suggest: suggestDefault(kind, current, id) };
   };
   const undo = () => {
     for (const c of changes.reverse()) engine.undo(c.opId, { action: 'update', id, patch: { detail: bottleDetail({ kind, given: c.before, left: 0 }) } });
@@ -136,7 +169,7 @@ export function logBottle(kind: BottleKind, ml?: number): void {
     undoOp(res.opId, { action: 'delete', id });
   };
   const asleep = openSleep(engine.getState().events) ? { action: { label: W().markAwake, note: W().stillMarkedAsleep, run: toggleSleep } } : {};
-  showToast({ text: text(), earlier: mv.earlier, amount: { ml: given, step }, sticky: true, undo, ...asleep }, BOTTLE_TOAST_MS);
+  showToast({ text: text(), earlier: mv.earlier, amount: { ml: given, step, suggest: suggestDefault(kind, given, id) }, sticky: true, undo, ...asleep }, BOTTLE_TOAST_MS);
 }
 
 /** The sleep button: falls asleep or wakes up depending on the current state. */

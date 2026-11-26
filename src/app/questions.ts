@@ -1,6 +1,7 @@
 import type { Insights, Progress } from '../shared/insights';
 import type { MoreAnswers } from '../shared/questions-data';
 import type { UsageQuestion } from '../shared/usage';
+import { type Feeding, bottleKindsOn } from '../shared/bottle';
 import type { BabyWords } from './words';
 
 /** Everything the questions are answered from. */
@@ -15,7 +16,7 @@ export interface AllData {
  * may turn any question on or off by hand (per phone, `prefs.questions`); one turned on without enough data shows how much is
  * still missing. The words here are neutral (no "ישן" / "ישנה"): anything about the baby comes from words.ts.
  */
-export type QuestionId = 'feedsToday' | 'gaps' | 'nextFeed' | 'sides' | 'cluster' | 'night' | 'nightTrend' | 'sleepDay' | 'nightStart' | 'lastPoop' | 'diapersToday' | 'poop' | 'unusual';
+export type QuestionId = 'feedsToday' | 'gaps' | 'nextFeed' | 'sides' | 'cluster' | 'night' | 'nightTrend' | 'sleepDay' | 'nightStart' | 'lastPoop' | 'diapersToday' | 'poop' | 'unusual' | 'bottlesToday' | 'bottleSize' | 'bottleShare';
 export type Category = 'feed' | 'sleep' | 'diaper' | 'general';
 // the usage measurement knows every question by the same id (a question missing there does not compile)
 const sameIds: [QuestionId] extends [UsageQuestion] ? ([UsageQuestion] extends [QuestionId] ? true : never) : never = true;
@@ -44,6 +45,12 @@ export interface Question {
   term?: string;
   /** (owner) what it is and why it is worth knowing, shown before the method (every card has its own "מה זה אומר?"); descriptive only: no norms, numbers from elsewhere or instructions */
   about?: (w: BabyWords) => { title: string; text: string }[];
+  /** (F18) only for families with these kinds of feeding (missing: every family) */
+  for?: (f: Feeding) => boolean;
+  /** (F18) the question's words when the family uses bottles */
+  qBottles?: string;
+  /** (owner, F18) never shown by itself: only when a parent turns it on */
+  manualOnly?: boolean;
 }
 
 const soFar = (p: Progress) => `עד עכשיו ${p.have}.`;
@@ -125,6 +132,7 @@ const MORE: Question[] = [
     id: 'nextFeed',
     cat: 'feed',
     q: 'מתי ההנקה הבאה צפויה?',
+    qBottles: 'מתי ההאכלה הבאה צפויה?',
     desc: 'הערכה לפי הקצב שלכם, לא המלצה',
     prog: (a) => a.more.progress.nextFeed,
     wait: (p) => `ההערכה תופיע אחרי ${p.need} רווחים בין האכלות ב-7 הימים האחרונים. ${soFar(p)}`,
@@ -140,6 +148,7 @@ const MORE: Question[] = [
   {
     id: 'sides',
     cat: 'feed',
+    for: (f) => f.breast,
     q: 'יש איזון בין ימין לשמאל?',
     desc: 'כמה מההנקות היו בכל צד',
     prog: (a) => a.more.progress.sides,
@@ -154,6 +163,7 @@ const MORE: Question[] = [
   {
     id: 'cluster',
     cat: 'feed',
+    for: (f) => f.breast,
     q: 'יש התקבצות הנקות?',
     term: 'Cluster feeding',
     desc: 'שעות של הנקות צפופות, באילו ימים ובאיזו שעה',
@@ -174,6 +184,56 @@ const MORE: Question[] = [
         text: 'הכרטיס עוזר לראות אם מדובר בדפוס שחוזר אצלכם, ולא בשינוי פתאומי. כשיודעים באילו שעות זה קורה בדרך כלל, אפשר להתכונן: לפנות את השעות האלה, להכין מראש מים ומשהו לאכול ליד מקום ההנקה, ולחלק משימות עם ההורה השני (ארוחת ערב, אמבטיה, סידורים).',
       },
       { title: 'אם משהו מדאיג', text: 'אם משהו בדפוס ההנקות מדאיג אתכם, פנו ליועצת הנקה, לרופא או לטיפת חלב.' },
+    ],
+  },
+  {
+    id: 'bottlesToday',
+    cat: 'feed',
+    for: (f) => bottleKindsOn(f).length > 0,
+    q: 'כמה בקבוקים היום, לעומת יום רגיל?',
+    desc: 'בקבוקים ומ״ל שנאכלו היום עד עכשיו, מול יום רגיל',
+    prog: (a) => a.more.progress.bottlesToday,
+    wait: (p) => `התשובה תופיע אחרי ${p.need} ימים עם בקבוקים. ${soFar(p)}`,
+    how: () => [
+      'לכל אחד מ-7 הימים המלאים האחרונים שהיו בהם בקבוקים נספרים הבקבוקים, והמ״ל שנאכלו מהם (מה שהוכן פחות מה שנשאר), עד אותה שעה ביום. "יום רגיל" הוא האמצע של הימים האלה.',
+      'יותר או פחות מוצג רק כשההפרש ברור: לפחות רבע מהרגיל (ובמ״ל לפחות 30).',
+    ],
+    about: () => [
+      { title: 'מה זה', text: 'כמה בקבוקים היו היום עד עכשיו, וכמה מ״ל נאכלו מהם, לצד מה שרגיל אצלכם עד אותה שעה ביום.' },
+      { title: 'למה כדאי לדעת', text: 'מבט אחד מראה אם היום דומה לימים הרגילים אצלכם, ועוזר לתכנן כמה בקבוקים להכין. ההשוואה היא רק לימים שלכם, לא לכמות מומלצת: הכמות המתאימה נקבעת עם הרופא או טיפת חלב.' },
+    ],
+  },
+  {
+    id: 'bottleSize',
+    cat: 'feed',
+    for: (f) => bottleKindsOn(f).length > 0,
+    q: 'כמה אוכלים מבקבוק?',
+    desc: 'הכמות הרגילה בבקבוק, יום אחרי יום',
+    prog: (a) => a.more.progress.bottleSize,
+    wait: (p) => `התשובה תופיע אחרי ${p.need} ימים עם בקבוקים. ${soFar(p)}`,
+    how: () => [
+      'לכל סוג בקבוק בנפרד (חלב שאוב, תמ״ל): לכל יום מ-7 הימים המלאים האחרונים שהיו בו בקבוקים מהסוג נלקחת הכמות האמצעית שנאכלה מבקבוק (מה שהוכן פחות מה שנשאר), מעוגלת ל-5 מ״ל. העמודות הן הימים של סוג שהכמות שלו השתנתה (אם יש כזה), אחרת של הסוג שיש ממנו הכי הרבה בקבוקים; הישן ביותר מימין.',
+      '"גדלה" או "קטנה" כשהאמצע של 3 הימים האחרונים שונה ב-10 מ״ל לפחות מהימים שלפניהם.',
+    ],
+    about: () => [
+      { title: 'מה זה', text: 'כמה נאכל בדרך כלל מבקבוק אחד, וכמה זה השתנה בימים האחרונים.' },
+      { title: 'למה כדאי לדעת', text: 'עוזר להחליט כמה להכין בכל בקבוק, ולעדכן את כמות ברירת המחדל בהגדרות כשהיא כבר לא מתאימה. אצל תינוקות רבים הכמות גדלה בהדרגה עם הזמן.' },
+    ],
+  },
+  {
+    id: 'bottleShare',
+    cat: 'feed',
+    // (owner) sensitive (not every mother can nurse): only with nursing and bottles both on, and only when turned on by hand
+    for: (f) => f.breast && bottleKindsOn(f).length > 0,
+    manualOnly: true,
+    q: 'כמה מההאכלות עם בקבוק?',
+    desc: 'החלק של ההאכלות שהיה בהן בקבוק, ב-7 ימים',
+    prog: (a) => a.more.progress.bottleShare,
+    wait: (p) => `התשובה תופיע אחרי ${p.need} האכלות ב-7 הימים האחרונים. ${soFar(p)}`,
+    how: (merge) => [`כל האכלה ב-7 הימים המלאים האחרונים נבדקת: האם היה בה בקבוק. הנקה ובקבוק בהפרש של עד ${merge} דקות הם האכלה אחת.`],
+    about: () => [
+      { title: 'מה זה', text: 'כמה מההאכלות בשבוע האחרון היה בהן בקבוק (לבד, או אחרי הנקה).' },
+      { title: 'למה כדאי לדעת', text: 'כשמשלבים הנקה ובקבוקים, קל לאבד את התמונה הכללית. הכרטיס מראה אותה במספר אחד, בלי לשפוט: כל דרך האכלה שמתאימה לכם היא בסדר.' },
     ],
   },
   {
@@ -269,7 +329,7 @@ const MORE: Question[] = [
   },
 ];
 
-const ORDER: QuestionId[] = ['feedsToday', 'nextFeed', 'gaps', 'sides', 'cluster', 'night', 'nightTrend', 'sleepDay', 'nightStart', 'lastPoop', 'diapersToday', 'poop', 'unusual'];
+const ORDER: QuestionId[] = ['feedsToday', 'nextFeed', 'gaps', 'bottlesToday', 'bottleSize', 'bottleShare', 'sides', 'cluster', 'night', 'nightTrend', 'sleepDay', 'nightStart', 'lastPoop', 'diapersToday', 'poop', 'unusual'];
 /** Every question, in the order they are shown inside their topic. */
 export const QUESTIONS: Question[] = ORDER.map((id) => [...FIRST, ...MORE].find((q) => q.id === id)!);
 
@@ -280,9 +340,15 @@ export const IF_WORRIED = { title: 'אם משהו מדאיג', text: 'אם מש�
 export const NOT_MEDICAL =
   'כל ההשוואות הן רק מול מה שנרשם אצלכם עד עכשיו, לא מול נורמות או ערכים רפואיים. זו לא המלצה ולא ייעוץ רפואי: בכל שאלה או דאגה פנו לרופא או לטיפת חלב.';
 
-/** Whether the question has enough data, and whether it is shown (by hand, or automatically once ready). */
+/** Whether the question has enough data, and whether it is shown (by hand, or automatically once ready, unless by hand only). */
 export function questionState(q: Question, a: AllData, choice: 'on' | 'off' | undefined): { ready: boolean; shown: boolean } {
   const p = q.prog(a);
   const ready = p.have >= p.need;
-  return { ready, shown: choice === 'on' || (choice === undefined && ready) };
+  return { ready, shown: choice === 'on' || (choice === undefined && ready && !q.manualOnly) };
+}
+
+/** (F18) The questions for this family's kinds of feeding, in their words ("ההאכלה הבאה" once there are bottles). */
+export function questionsFor(f: Feeding): Question[] {
+  const bottles = bottleKindsOn(f).length > 0;
+  return QUESTIONS.filter((q) => !q.for || q.for(f)).map((q) => (bottles && q.qBottles ? { ...q, q: q.qBottles } : q));
 }

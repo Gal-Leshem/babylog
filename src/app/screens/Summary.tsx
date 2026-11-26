@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { type DailySummary, dailySummary } from '../../shared/domain';
 import { type Medicine, dosesOf } from '../../shared/medicines';
 import { addDays, localDate } from '../../shared/tz';
@@ -11,10 +12,25 @@ import { Week } from './Week';
 
 type Row = [label: string, value: (s: DailySummary) => string];
 
-const ROWS: Row[] = [
-  ['הנקות (האכלות)', (s) => String(s.feeds.count)],
-  ['רווח רגיל בין האכלות', (s) => (s.feeds.gapMin === null ? '—' : hm(s.feeds.gapMin))],
-  ['שמאל / ימין', (s) => `${s.feeds.left} / ${s.feeds.right}`],
+/**
+ * (owner, F18) The feeding rows: nursing only keeps "הנקות (האכלות)"; with bottles the feedings (all), the nursings (only when
+ * the family nurses), the bottles and the ml eaten from them. Left / right only with nursing.
+ */
+function feedRows(nursing: boolean, bottles: boolean): Row[] {
+  const gap: Row = ['רווח רגיל בין האכלות', (s) => (s.feeds.gapMin === null ? '—' : hm(s.feeds.gapMin))];
+  const sides: Row = ['שמאל / ימין', (s) => `${s.feeds.left} / ${s.feeds.right}`];
+  if (!bottles) return [['הנקות (האכלות)', (s) => String(s.feeds.count)], gap, sides];
+  return [
+    ['האכלות', (s) => String(s.feeds.count)],
+    ...(nursing ? [['הנקות', (s: DailySummary) => String(s.feeds.nursing)] as Row] : []),
+    ['בקבוקים', (s) => String(s.feeds.bottles)],
+    ['מ״ל בבקבוקים', (s) => (s.feeds.bottles ? String(s.feeds.bottleMl) : '—')],
+    gap,
+    ...(nursing ? [sides] : []),
+  ];
+}
+
+const OTHER_ROWS: Row[] = [
   // "פיפי + קקי" is one pee AND one poop (owner), as in "תובנות": no row of its own
   [KIND_LABEL.wet, (s) => String(s.diapers.wet + s.diapers.both)],
   [KIND_LABEL.poop, (s) => String(s.diapers.poop + s.diapers.both)],
@@ -69,6 +85,11 @@ function DaySummary() {
   const prev = addDays(date, -1);
   const a = dailySummary(events, date, now, settings.mergeWindowMin);
   const b = dailySummary(events, prev, now, settings.mergeWindowMin);
+  // the rows follow the family's feeding settings, and the two days shown (a bottle given before they were turned off)
+  const feeding = feedingOf(settings);
+  const withBottles = bottleKindsOn(feeding).length > 0 || a.feeds.bottles + b.feeds.bottles > 0;
+  const withNursing = feeding.breast || a.feeds.nursing + b.feeds.nursing > 0;
+  const rows = [...feedRows(withNursing, withBottles), ...OTHER_ROWS];
   // a row per medicine that is active, or was given on one of the two days (an archived one keeps its history here)
   const meds = settings.medicines.filter((m) => m.status === 'active' || dosesOf(m, events).some((e) => [date, prev].includes(e.start.slice(0, 10))));
 
@@ -84,7 +105,7 @@ function DaySummary() {
           </tr>
         </thead>
         <tbody>
-          {ROWS.map(([label, value]) => (
+          {rows.map(([label, value]) => (
             <tr key={label} data-testid={`sum-${label}`}>
               <th scope="row">{label}</th>
               <td>{value(a)}</td>
@@ -102,7 +123,9 @@ function DaySummary() {
           ))}
         </tbody>
       </table>
-      <p class="muted">שינה שחוצה חצות מתחלקת בין שני הימים. הנקות בהפרש של עד {settings.mergeWindowMin} דקות נספרות כהאכלה אחת. {KIND_LABEL.both} נספר גם כפיפי וגם כקקי.</p>
+      <p class="muted">
+        שינה שחוצה חצות מתחלקת בין שני הימים. {withBottles ? (withNursing ? 'הנקות ובקבוקים' : 'בקבוקים') : 'הנקות'} בהפרש של עד {settings.mergeWindowMin} דקות {withBottles ? 'נספרים' : 'נספרות'} כהאכלה אחת. {KIND_LABEL.both} נספר גם כפיפי וגם כקקי.
+      </p>
     </div>
   );
 }

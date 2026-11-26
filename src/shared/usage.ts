@@ -36,6 +36,9 @@ const LABELS = {
   'seen.diapersToday': 'נצפתה: פיפי וקקי היום',
   'seen.poop': 'נצפתה: קקי אחרי האכלה',
   'seen.unusual': 'נצפתה: היום חריג',
+  'seen.bottlesToday': 'נצפתה: בקבוקים היום',
+  'seen.bottleSize': 'נצפתה: כמה בבקבוק',
+  'seen.bottleShare': 'נצפתה: האכלות עם בקבוק',
   'history.day': 'היסטוריה: יום-יום',
   'history.24h': 'היסטוריה: 24 שעות',
   'history.filter': 'היסטוריה: סינון',
@@ -69,6 +72,8 @@ const LABELS = {
   'log.bottle': 'רישום: בקבוק',
   'bottle.window': 'חלון בקבוק',
   'toast.amount': 'טוסט: כמות בקבוק',
+  'bottle.defaultYes': 'בקבוק: ברירת מחדל עודכנה מההצעה',
+  'bottle.defaultNo': 'בקבוק: לא עכשיו להצעה',
 } as const;
 
 export type UsageName = keyof typeof LABELS;
@@ -92,6 +97,9 @@ export const USAGE_QUESTIONS = {
   diapersToday: 'פיפי וקקי היום',
   poop: 'קקי אחרי האכלה',
   unusual: 'היום חריג',
+  bottlesToday: 'בקבוקים היום',
+  bottleSize: 'כמה בבקבוק',
+  bottleShare: 'האכלות עם בקבוק',
 } as const;
 export type UsageQuestion = keyof typeof USAGE_QUESTIONS;
 export const QUESTION_STATES = { shown: 'מוצגת', on: 'הודלקה ידנית', off: 'כובתה ידנית', waiting: 'ממתינה לנתונים' } as const;

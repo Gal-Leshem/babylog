@@ -4,6 +4,7 @@
  * with the same hour of the 7 full days before it. A trend is 'more' / 'less' only when the difference is clear; the screen
  * words it as "more / less than usual for you", never as good or bad.
  */
+import { BOTTLE_KINDS, type BottleKind, eaten, parseBottle } from './bottle';
 import { dailySummary, feedGroups, live } from './domain';
 import { INSIGHT_DAYS, MIN_GAPS, MIN_POOPS, type Progress, type Spread, feedGapInsight, feedGaps, insightWindow, isNightHour, nightsOf, poopTimes, quantile, spread } from './insights';
 import { addDays, dayStart, localDate, localHour, parseLocal } from './tz';
@@ -45,7 +46,8 @@ export interface TodayVsUsual {
 }
 
 export interface MoreAnswers {
-  feedsToday: TodayVsUsual | null;
+  /** (F18) `withBottle`: today's feedings that had a bottle in them */
+  feedsToday: (TodayVsUsual & { withBottle: number }) | null;
   sides: { left: number; right: number } | null;
   /**
    * cluster feeding over the 7 full days: which days had a run (oldest first), and the usual hours of the runs (minutes after
@@ -78,8 +80,18 @@ export interface MoreAnswers {
   lastPoop: { last: number; sinceMin: number; gap: Spread; trend: Trend } | null;
   diapersToday: { wet: TodayVsUsual; poop: TodayVsUsual } | null;
   /** what is clearly different today (or last night) from the usual, as short keys the screen words */
-  unusual: { notes: { what: 'feeds' | 'wet' | 'poop' | 'night'; trend: Exclude<Trend, 'same'> }[] } | null;
-  progress: Record<'feedsToday' | 'sides' | 'cluster' | 'nextFeed' | 'sleepDay' | 'nightStart' | 'nightTrend' | 'lastPoop' | 'diapersToday' | 'unusual', Progress>;
+  unusual: { notes: { what: 'feeds' | 'wet' | 'poop' | 'night' | 'bottleMl'; trend: Exclude<Trend, 'same'> }[] } | null;
+  /** (F18) bottles today and ml eaten from them, against a usual day by this hour */
+  bottlesToday: { count: TodayVsUsual; ml: TodayVsUsual } | null;
+  /**
+   * (F18) per bottle kind (a top-up of expressed milk and a formula bottle are different sizes): the usual amount eaten from a
+   * bottle on each of the 7 full days that had bottles of that kind (oldest first), the last 3 days against the days before;
+   * the kind with the most bottles first. Only kinds with enough days.
+   */
+  bottleSize: { kind: BottleKind; byDay: { date: string; ml: number }[]; usual: number; recent: number; before: number; trend: Trend }[] | null;
+  /** (F18) feedings in the 7 full days with a bottle in them */
+  bottleShare: { withBottle: number; total: number } | null;
+  progress: Record<'feedsToday' | 'sides' | 'cluster' | 'nextFeed' | 'sleepDay' | 'nightStart' | 'nightTrend' | 'lastPoop' | 'diapersToday' | 'unusual' | 'bottlesToday' | 'bottleSize' | 'bottleShare', Progress>;
 }
 
 /** For each of the 7 full days: how many of `times` fell before the same time of day as now; the days that had any at all. */
@@ -98,6 +110,24 @@ function byTimeOfDay(times: readonly number[], days: readonly string[], nowEpoch
   return { byNow, whole };
 }
 
+/** Like `todayVsUsual`, for a sum (ml) instead of a count: today so far against the usual sum by this hour. */
+function sumVsUsual(items: readonly { t: number; v: number }[], days: readonly string[], nowEpoch: number): TodayVsUsual & { days: number } {
+  const tod = nowEpoch - dayStart(localDate(nowEpoch));
+  const byNow: number[] = [];
+  const whole: number[] = [];
+  for (const d of days) {
+    const a = dayStart(d);
+    const inDay = items.filter((x) => x.t >= a && x.t < dayStart(addDays(d, 1)));
+    if (!inDay.length) continue;
+    whole.push(inDay.reduce((n, x) => n + x.v, 0));
+    byNow.push(inDay.filter((x) => x.t < a + tod).reduce((n, x) => n + x.v, 0));
+  }
+  const t0 = dayStart(localDate(nowEpoch));
+  const today = items.filter((x) => x.t >= t0 && x.t <= nowEpoch).reduce((n, x) => n + x.v, 0);
+  const usualByNow = whole.length ? Math.round(median(byNow)) : 0;
+  return { today, usualByNow, usualDay: whole.length ? Math.round(median(whole)) : 0, trend: trendOf(today, usualByNow, 30, 0.25), days: whole.length };
+}
+
 function todayVsUsual(times: readonly number[], days: readonly string[], nowEpoch: number): TodayVsUsual & { days: number } {
   const { byNow, whole } = byTimeOfDay(times, days, nowEpoch);
   const today = times.filter((t) => t >= dayStart(localDate(nowEpoch)) && t <= nowEpoch).length;
@@ -105,15 +135,47 @@ function todayVsUsual(times: readonly number[], days: readonly string[], nowEpoc
   return { today, usualByNow, usualDay: whole.length ? Math.round(median(whole)) : 0, trend: trendOf(today, usualByNow, 2, 0.25), days: whole.length };
 }
 
-export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, mergeWindowMin: number): MoreAnswers {
+/**
+ * `nursing` (F18): whether the family nurses; without nursing, the ml eaten from bottles is one of the things "היום חריג" looks
+ * at (with nursing it is left out: a bottle day says little when most feeds are at the breast).
+ */
+export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, mergeWindowMin: number, opts: { nursing?: boolean } = {}): MoreAnswers {
   const w = insightWindow(nowEpoch);
   const days: string[] = [];
   for (let d = w.from; d <= w.to; d = addDays(d, 1)) days.push(d);
   const evs = live(events);
-  const feedStarts = feedGroups(evs, mergeWindowMin).map((g) => g.start);
+  const groups = feedGroups(evs, mergeWindowMin);
+  const feedStarts = groups.map((g) => g.start);
 
-  // feeds today against a usual day by this hour
+  // feeds today against a usual day by this hour (a nursing and a bottle in one merge window are one feeding)
   const ft = todayVsUsual(feedStarts, days, nowEpoch);
+  const todayFrom = dayStart(localDate(nowEpoch));
+  const withBottleToday = groups.filter((g) => g.start >= todayFrom && g.start <= nowEpoch && g.events.some((e) => e.type === 'bottle')).length;
+
+  // bottles: how many and how much was eaten, today against a usual day; the usual amount per bottle, day by day
+  const bottles = evs
+    .filter((e) => e.type === 'bottle' && e.start)
+    .map((e) => ({ t: parseLocal(e.start), b: parseBottle(e.detail) }))
+    .filter((x): x is { t: number; b: NonNullable<ReturnType<typeof parseBottle>> } => x.b !== null);
+  const bCount = todayVsUsual(bottles.map((x) => x.t), days, nowEpoch);
+  const bMl = sumVsUsual(bottles.map((x) => ({ t: x.t, v: eaten(x.b) })), days, nowEpoch);
+  const sizeKinds = BOTTLE_KINDS.map((kind) => {
+    const mine = bottles.filter((x) => x.b.kind === kind);
+    const byDay = days
+      .map((d) => ({ date: d, list: mine.filter((x) => x.t >= dayStart(d) && x.t < dayStart(addDays(d, 1))).map((x) => eaten(x.b)) }))
+      .filter((d) => d.list.length > 0)
+      .map((d) => ({ date: d.date, ml: Math.round(median(d.list) / 5) * 5 }));
+    const sizes = byDay.map((d) => d.ml);
+    const recent = byDay.length ? Math.round(median(sizes.slice(-3))) : 0;
+    const before = byDay.length > 3 ? Math.round(median(sizes.slice(0, -3))) : recent;
+    const n = mine.filter((x) => x.t >= w.lo && x.t < w.hi).length;
+    return { kind, n, byDay, usual: byDay.length ? Math.round(median(sizes) / 5) * 5 : 0, recent, before, trend: trendOf(recent, before, 10, 0.1) };
+  });
+  const sizeReady = sizeKinds.filter((k) => k.byDay.length >= MIN_DAYS).sort((a, b) => b.n - a.n);
+  const bottleSize = sizeReady.length ? sizeReady.map(({ n: _n, ...k }) => k) : null;
+  const sizeDays = Math.max(0, ...sizeKinds.map((k) => k.byDay.length));
+  const inWindow = groups.filter((g) => g.start >= w.lo && g.start < w.hi);
+  const withBottleWeek = inWindow.filter((g) => g.events.some((e) => e.type === 'bottle')).length;
 
   // left / right presses in the window
   const presses = evs.filter((e) => e.type === 'feed' && e.start && (e.detail === 'left' || e.detail === 'right')).filter((e) => {
@@ -246,6 +308,8 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
     if (ft.trend !== 'same') notes.push({ what: 'feeds', trend: ft.trend });
     if (diapersToday && wet.trend !== 'same') notes.push({ what: 'wet', trend: wet.trend });
     if (diapersToday && poop.trend !== 'same') notes.push({ what: 'poop', trend: poop.trend });
+    // (owner) the ml eaten from bottles only when the family does not nurse
+    if (opts.nursing === false && bMl.days >= MIN_DAYS && bMl.trend !== 'same') notes.push({ what: 'bottleMl', trend: bMl.trend });
     if (per.length >= 4) {
       const lastNight = per[0]!.longest;
       const t = trendOf(lastNight, median(per.slice(1).map((n) => n.longest)), 45, 0.2);
@@ -255,7 +319,10 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
   }
 
   return {
-    feedsToday: ft.days >= MIN_DAYS ? { today: ft.today, usualByNow: ft.usualByNow, usualDay: ft.usualDay, trend: ft.trend } : null,
+    feedsToday: ft.days >= MIN_DAYS ? { today: ft.today, usualByNow: ft.usualByNow, usualDay: ft.usualDay, trend: ft.trend, withBottle: withBottleToday } : null,
+    bottlesToday: bCount.days >= MIN_DAYS ? { count: bCount, ml: bMl } : null,
+    bottleSize,
+    bottleShare: inWindow.length >= MIN_SIDES && bottles.length > 0 ? { withBottle: withBottleWeek, total: inWindow.length } : null,
     sides: presses.length >= MIN_SIDES ? { left, right } : null,
     cluster,
     nextFeed,
@@ -277,6 +344,9 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
       lastPoop: { have: poopsIn.length, need: MIN_POOPS },
       diapersToday: { have: anyDiaperDays, need: MIN_DAYS },
       unusual: { have: ft.days, need: MIN_DAYS },
+      bottlesToday: { have: bCount.days, need: MIN_DAYS },
+      bottleSize: { have: sizeDays, need: MIN_DAYS },
+      bottleShare: { have: inWindow.length, need: MIN_SIDES },
     },
   };
 }

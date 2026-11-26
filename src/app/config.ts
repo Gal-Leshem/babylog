@@ -28,6 +28,8 @@ export interface Prefs {
   questions: Record<string, 'on' | 'off'>;
   /** (owner, F18) the bottle kind picked last in the bottle window on this phone (chosen again next time) */
   bottleKind?: 'expressed' | 'formula';
+  /** (F18) the amount per bottle kind for which this parent said "לא עכשיו" to updating the default */
+  declined?: Partial<Record<'expressed' | 'formula', number>>;
 }
 
 export const DEFAULT_PREFS: Prefs = { nightMode: 'auto', nightTint: 'amber', summaryView: 'day', historyView: 'day', questions: {} };

@@ -7,7 +7,8 @@ import { Usage, type UsageKV } from './usage';
 import type { QuestionStateName, UsageName } from '../shared/usage';
 import { insights } from '../shared/insights';
 import { moreAnswers } from '../shared/questions-data';
-import { QUESTIONS, questionState } from './questions';
+import { questionState, questionsFor } from './questions';
+import { feedingOf } from '../shared/bottle';
 
 export const engine = new Engine({ storage: browserStorage, onRequest: countRequest });
 /** (owner) every request to the server and the entries it carries, for the shared daily quota (adds to counts in memory only) */
@@ -33,11 +34,14 @@ export const count = (name: UsageName): void => usage.count(name);
 function questionStates(): Record<string, QuestionStateName> {
   const { events, settings } = engine.getState();
   const now = Date.now();
-  const a = { ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin) };
+  const feeding = feedingOf(settings);
+  const a = { ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin, { nursing: feeding.breast }) };
   const out: Record<string, QuestionStateName> = {};
-  for (const q of QUESTIONS) {
+  // (F18) only the questions this family's kinds of feeding offer
+  for (const q of questionsFor(feeding)) {
     const c = prefs.questions[q.id];
-    out[q.id] = c ?? (questionState(q, a, undefined).ready ? 'shown' : 'waiting');
+    if (!c && q.manualOnly) continue; // by hand only, and not turned on: neither shown nor waiting
+    out[q.id] = c ?? (questionState(q, a, undefined).shown ? 'shown' : 'waiting');
   }
   return out;
 }
@@ -80,6 +84,9 @@ export const setQuestion = (id: string, v: 'on' | 'off' | undefined): void => {
   setPrefs({ questions });
 };
 export const setBottleKind = (k: 'expressed' | 'formula'): void => setPrefs({ bottleKind: k });
+/** (F18) "לא עכשיו" to updating the default: not asked again on this phone for that kind and amount */
+export const declineDefault = (k: 'expressed' | 'formula', ml: number): void => setPrefs({ declined: { ...prefs.declined, [k]: ml } });
+export const getPrefs = (): Prefs => prefs;
 export const usePrefs = (): Prefs =>
   useSyncExternalStore(
     (fn) => {
@@ -90,6 +97,13 @@ export const usePrefs = (): Prefs =>
   );
 
 // ---------- toast with undo ----------
+
+/** (owner, F18) "the last five bottles were 120 ml: make it the default?" */
+export interface Suggest {
+  text: string;
+  yes: () => void;
+  no: () => void;
+}
 
 export interface Toast {
   id: number;
@@ -114,7 +128,7 @@ export interface Toast {
    * null when it could not). Such a toast stays while it is used (`sticky`): a tap gives it a fresh short time, not the
    * moment of TOAST_DONE_MS, so the amount and "היה לפני" can both be set.
    */
-  amount?: { ml: number; step: (deltaMl: number) => { text: string; ml: number } | null };
+  amount?: { ml: number; step: (deltaMl: number) => { text: string; ml: number; suggest: Suggest | null } | null; suggest?: Suggest | null };
   sticky?: boolean;
 }
 

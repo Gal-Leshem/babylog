@@ -9,7 +9,8 @@ const hhmm = (t: number) => formatLocal(t).slice(11, 16);
 import { addDays } from '../../shared/tz';
 import { hm } from '../labels';
 import { durationHe } from '../../shared/speech';
-import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, QUESTIONS, questionState } from '../questions';
+import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, questionState, questionsFor } from '../questions';
+import { type Feeding, bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
 import { overlay } from '../overlay';
@@ -185,15 +186,16 @@ function todayBar(today: number, byNow: number, whole: number): JSX.Element {
   );
 }
 
-const UNUSUAL: Record<'feeds' | 'wet' | 'poop' | 'night', [string, string]> = {
+const UNUSUAL: Record<'feeds' | 'wet' | 'poop' | 'night' | 'bottleMl', [string, string]> = {
   feeds: ['יותר האכלות מהרגיל עד עכשיו', 'פחות האכלות מהרגיל עד עכשיו'],
   wet: ['יותר פיפי מהרגיל עד עכשיו', 'פחות פיפי מהרגיל עד עכשיו'],
   poop: ['יותר קקי מהרגיל עד עכשיו', 'פחות קקי מהרגיל עד עכשיו'],
   night: ['הרצף הארוך בלילה האחרון ארוך מהרגיל', 'הרצף הארוך בלילה האחרון קצר מהרגיל'],
+  bottleMl: ['יותר מ״ל בבקבוקים מהרגיל עד עכשיו', 'פחות מ״ל בבקבוקים מהרגיל עד עכשיו'],
 };
 
 /** The answer of a newer question that has enough data (stage B). */
-function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX.Element {
+function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords, feeding: Feeding): JSX.Element {
   switch (q.id) {
     case 'feedsToday': {
       const f = m.feedsToday!;
@@ -202,6 +204,12 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
           <div class="qa">
             {f.today} <small>עד עכשיו</small>
           </div>
+          {/* (owner) only when the family both nurses and gives bottles (sensitive: not every mother can nurse) */}
+          {feeding.breast && bottleKindsOn(feeding).length > 0 && f.today > 0 && (
+            <div class="qs" data-testid="q-feedsToday-bottles">
+              {f.withBottle === 0 ? 'אף אחת עם בקבוק' : f.withBottle === 1 ? 'מתוכן אחת עם בקבוק' : `מתוכן ${f.withBottle} עם בקבוק`}
+            </div>
+          )}
           {todayBar(f.today, f.usualByNow, f.usualDay)}
           <div class="qf">{chip(toneOf(f.trend), more(f.trend, 'יותר מהרגיל אצלכם עד עכשיו', 'פחות מהרגיל אצלכם עד עכשיו', 'כמו ביום רגיל אצלכם'), 'q-feedsToday-trend')}</div>
         </>
@@ -382,13 +390,74 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords): JSX
         </>
       );
     }
+    case 'bottlesToday': {
+      const b = m.bottlesToday!;
+      const notes = [b.count.trend !== 'same' && chip('note', more(b.count.trend, 'יותר בקבוקים מהרגיל עד עכשיו', 'פחות בקבוקים מהרגיל עד עכשיו', ''), 'q-bottles-trend'), b.ml.trend !== 'same' && chip('note', more(b.ml.trend, 'יותר מ״ל מהרגיל עד עכשיו', 'פחות מ״ל מהרגיל עד עכשיו', ''), 'q-bottleMl-trend')].filter(Boolean);
+      return (
+        <>
+          <div class="qa">
+            {b.count.today} {b.count.today === 1 ? 'בקבוק' : 'בקבוקים'} · {b.ml.today} מ״ל <small>עד עכשיו</small>
+          </div>
+          <div class="qs">
+            יום רגיל, עד שעה כזו: {b.count.usualByNow} {b.count.usualByNow === 1 ? 'בקבוק' : 'בקבוקים'} · {b.ml.usualByNow} מ״ל
+          </div>
+          <div class="qs">ביום שלם: {b.ml.usualDay} מ״ל</div>
+          <div class="qf wrap">{notes.length ? notes : chip('same', 'כמו ביום רגיל אצלכם', 'q-bottlesToday-trend')}</div>
+        </>
+      );
+    }
+    case 'bottleSize': {
+      // (F18) per bottle kind: a top-up of expressed milk and a formula bottle are different sizes
+      const list = m.bottleSize!;
+      const name = (k: string) => (k === 'formula' ? 'תמ״ל' : 'חלב שאוב');
+      // the bars show a kind whose size changed, if any (a steady top-up says little), else the kind with the most bottles
+      const main = list.find((b) => b.trend !== 'same') ?? list[0]!;
+      const max = Math.max(...main.byDay.map((d) => d.ml), 1);
+      return (
+        <>
+          {list.map((b) => (
+            <div class="qa" key={b.kind} data-testid={`q-bottleSize-${b.kind}`}>
+              {b.usual} מ״ל <small>בדרך כלל, {name(b.kind)}</small>
+            </div>
+          ))}
+          <div class="spark" aria-hidden="true">
+            {main.byDay.map((d, i) => (
+              <div class={i === main.byDay.length - 1 ? 'last' : ''} key={d.date}>
+                <span style={{ height: `${Math.max(4, Math.round((d.ml / max) * 100))}%` }} />
+              </div>
+            ))}
+          </div>
+          {list
+            .filter((b) => b.trend !== 'same')
+            .map((b) => (
+              <div class="qf" key={b.kind}>
+                {chip('note', `${b.trend === 'more' ? '↗' : '↘'} ${name(b.kind)}: בימים האחרונים כ-${b.recent} מ״ל, ${b.trend === 'more' ? 'יותר' : 'פחות'} מקודם (${b.before})`, `q-bottleSize-trend-${b.kind}`)}
+              </div>
+            ))}
+          <div class="qbasis">
+            העמודות: {name(main.kind)}, לפי {main.byDay.length} ימים, הישן ביותר מימין
+          </div>
+        </>
+      );
+    }
+    case 'bottleShare': {
+      const b = m.bottleShare!;
+      return (
+        <>
+          <div class="qa">
+            {b.withBottle} מתוך {b.total} <small>האכלות ב-7 ימים</small>
+          </div>
+          <div class="qbasis">הנקה ובקבוק קרובים זה לזה הם האכלה אחת</div>
+        </>
+      );
+    }
     default:
       return <div class="qs">אין תשובה כרגע</div>;
   }
 }
 
 const FIRST_IDS = new Set<QuestionId>(['gaps', 'night', 'poop']);
-const answer = (q: Question, a: AllData, now: number, w: BabyWords) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins, a.more, now) : answerMore(q, a.more, now, w));
+const answer = (q: Question, a: AllData, now: number, w: BabyWords, f: Feeding) => (FIRST_IDS.has(q.id) ? answerFirst(q, a.ins, a.more, now) : answerMore(q, a.more, now, w, f));
 
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
 function waiting(q: Question, a: AllData): JSX.Element {
@@ -430,7 +499,12 @@ export function Insights() {
   const choices = usePrefs().questions;
   const now = useNow(60_000);
   // Recomputed only when the events change or a minute passes (the engine keeps `events` the same object while nothing changed).
-  const a = useMemo<AllData>(() => ({ ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin) }), [events, now, settings.mergeWindowMin]);
+  const feeding = feedingOf(settings);
+  const a = useMemo<AllData>(
+    () => ({ ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin, { nursing: feeding.breast }) }),
+    [events, now, settings.mergeWindowMin, feeding.breast],
+  );
+  const questions = questionsFor(feeding);
   const r = a.ins;
   const [mode, setMode] = useState<'cards' | 'pick' | 'suggest'>('cards');
   const [menu, setMenu] = useState<QuestionId | null>(null);
@@ -468,7 +542,7 @@ export function Insights() {
   };
   if (mode === 'suggest') return <Feedback onBack={() => setMode('cards')} start={{ kind: 'idea', text: 'שאלה מוצעת: ' }} backLabel="חזרה לתובנות" />;
 
-  const states = QUESTIONS.map((q) => ({ q, ...questionState(q, a, choices[q.id]) }));
+  const states = questions.map((q) => ({ q, ...questionState(q, a, choices[q.id]) }));
 
   if (mode === 'pick') {
     return (
@@ -491,7 +565,7 @@ export function Insights() {
                 <div class="prow" key={q.id} data-testid={`pick-${q.id}`}>
                   <div class="t">
                     <b>{q.q}</b>
-                    <small>{!shown && !ready && choices[q.id] === undefined ? 'תופיע לבד כשיהיו מספיק נתונים' : q.desc}</small>
+                    <small>{!shown && q.manualOnly && choices[q.id] === undefined ? `${q.desc}. מוצגת רק כשמדליקים אותה` : !shown && !ready && choices[q.id] === undefined ? 'תופיע לבד כשיהיו מספיק נתונים' : q.desc}</small>
                   </div>
                   <button
                     type="button"
@@ -522,7 +596,7 @@ export function Insights() {
     setQuestion(id, 'off');
     showToast({ text: 'השאלה הוסתרה. אפשר להחזיר אותה ב"בחירת שאלות"', undo: () => setQuestion(id, before) }, 4_500);
   };
-  const howQ = QUESTIONS.find((q) => q.id === how);
+  const howQ = questions.find((q) => q.id === how);
   const openHow = (id: QuestionId) => {
     setMenu(null);
     count('questions.how');
@@ -584,7 +658,7 @@ export function Insights() {
                     <bdi>{q.term}</bdi>
                   </div>
                 )}
-                {ready ? answer(q, a, now, babyWords(settings.babySex)) : waiting(q, a)}
+                {ready ? answer(q, a, now, babyWords(settings.babySex), feeding) : waiting(q, a)}
                 {q.about && (
                   <button type="button" class="qabout" data-testid={`q-${q.id}-about`} onClick={() => openHow(q.id)}>
                     <span class="emo">ℹ️</span> מה זה אומר?

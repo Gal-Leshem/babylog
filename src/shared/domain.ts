@@ -1,3 +1,4 @@
+import { eaten, parseBottle } from './bottle';
 import { addDays, dayStart, formatLocal, localDate, parseLocal } from './tz';
 import type { BabyEvent } from './types';
 
@@ -26,11 +27,12 @@ export interface FeedGroup {
 
 /**
  * Groups nursing presses into feedings: a press within `windowMin` minutes of the
- * previous press (any side) belongs to the same feeding.
+ * previous press (any side) belongs to the same feeding. (owner, F18) A bottle is a press too: a bottle within the window of a
+ * nursing or of another bottle is the same feeding (a top-up after nursing is one feeding, not two).
  */
 export function feedGroups(events: readonly BabyEvent[], windowMin: number): FeedGroup[] {
   const feeds = live(events)
-    .filter((e) => e.type === 'feed' && e.start)
+    .filter((e) => (e.type === 'feed' || e.type === 'bottle') && e.start)
     .sort(byTimeAsc);
   const groups: FeedGroup[] = [];
   let lastPress = -Infinity;
@@ -137,7 +139,16 @@ export function median(values: readonly number[]): number | null {
 export interface DailySummary {
   date: string;
   /** gapMin: the median gap between feeds that day (owner: a forgotten entry must not skew it, as a mean would) */
-  feeds: { count: number; gapMin: number | null; left: number; right: number };
+  feeds: {
+    count: number;
+    gapMin: number | null;
+    left: number;
+    right: number;
+    /** (F18) feedings with nursing in them, bottles given, and ml eaten from them */
+    nursing: number;
+    bottles: number;
+    bottleMl: number;
+  };
   diapers: { wet: number; poop: number; both: number };
   sleep: { totalMin: number; longestMin: number };
   vitaminD: boolean;
@@ -159,6 +170,7 @@ export function dailySummary(
   const gaps: number[] = [];
   for (let i = 1; i < groups.length; i++) gaps.push((groups[i]!.start - groups[i - 1]!.start) / MIN);
   const dayFeeds = evs.filter((e) => e.type === 'feed' && e.start && inRange(parseLocal(e.start), from, to));
+  const dayBottles = evs.filter((e) => e.type === 'bottle' && e.start && inRange(parseLocal(e.start), from, to)).map((e) => parseBottle(e.detail)).filter((b) => b !== null);
 
   const dayDiapers = evs.filter((e) => e.type === 'diaper' && e.start && inRange(parseLocal(e.start), from, to));
 
@@ -185,6 +197,9 @@ export function dailySummary(
       gapMin: median(gaps),
       left: dayFeeds.filter((e) => e.detail === 'left').length,
       right: dayFeeds.filter((e) => e.detail === 'right').length,
+      nursing: groups.filter((g) => g.events.some((e) => e.type === 'feed')).length,
+      bottles: dayBottles.length,
+      bottleMl: dayBottles.reduce((n, b) => n + eaten(b), 0),
     },
     diapers: {
       wet: dayDiapers.filter((e) => e.detail === 'wet').length,
