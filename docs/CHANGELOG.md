@@ -657,6 +657,9 @@ No names, addresses or secrets in this file (the repository is public).
   in the tile, and with the toast going after a tap). Next (stage 2): one feeding and the next side, Summary, questions, the
   default-update suggestion.
 
+- Bottles **(owner)**: the "בקבוק" button is on the left of the nursing buttons (was on the right). Browser test (failed on the
+  old order).
+
 ## Performance session (in parallel with the features and families sessions)
 - The owner's third sync log, read (26 November, one phone, a morning; `REFACTOR_PLAN.md` section 8): checks 1.0 to 1.8 s with
   the server at 0.0 (the phone network's floor); each "אין חיבור" on a return was the page reloading for a new app version (five
