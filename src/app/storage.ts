@@ -47,3 +47,22 @@ export function memoryStorage(): KV & { data: Map<string, string> } {
     remove: (k) => void data.delete(k),
   };
 }
+
+/**
+ * Whether this phone keeps what the app saves. A home-screen app on iPhone shares Safari's settings: with "Block All Cookies"
+ * on, saving throws, the app still works in memory, and the connection is gone at the next opening (a family saw the setup
+ * screen on every opening, November 2026). Checked once; the screens then say so instead of forgetting silently.
+ */
+let works: boolean | null = null;
+export function storageWorks(): boolean {
+  if (works !== null) return works;
+  try {
+    localStorage.setItem('bl.probe', '1');
+    works = localStorage.getItem('bl.probe') === '1';
+    localStorage.removeItem('bl.probe');
+  } catch {
+    works = false;
+  }
+  return works;
+}
+

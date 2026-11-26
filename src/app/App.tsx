@@ -4,7 +4,8 @@ import type { BabyEvent } from '../shared/types';
 import { EventForm, type Moment } from './screens/EventForm';
 import { History } from './screens/History';
 import { Home } from './screens/Home';
-import { Install } from './screens/Install';
+import { Install, storageBlocked } from './screens/Install';
+import { storageWorks } from './storage';
 import { Settings } from './screens/Settings';
 import { MedsWindow } from './screens/MedsWindow';
 import { Summary } from './screens/Summary';
@@ -41,6 +42,13 @@ function Banner() {
     return (
       <div class="banner err" role="alert" data-testid="banner-auth">
         המפתח לא תקין. ב״הגדרות״ אפשר להתנתק ולהתחבר מחדש עם קוד חדש.
+      </div>
+    );
+  }
+  if (!storageWorks()) {
+    return (
+      <div class="banner err" role="alert" data-testid="banner-storage">
+        {storageBlocked()}
       </div>
     );
   }
