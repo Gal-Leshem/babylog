@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "d5d9535",
+  "sha": "5836348",
   "ref": "main",
-  "at": "2026-11-27T09:33:11.778Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45973672578",
+  "at": "2026-11-27T17:34:17.872Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46042117212",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -19,15 +19,15 @@
       "computing gzip size...",
       "dist/registerSW.js                0.13 kB",
       "dist/manifest.webmanifest         0.46 kB",
-      "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
-      "dist/assets/index-DRTIvmSI.css   30.31 kB │ gzip:  6.31 kB",
-      "dist/assets/index-DXE4DDF5.js   219.44 kB │ gzip: 68.91 kB",
+      "dist/index.html                   1.77 kB │ gzip:  0.84 kB",
+      "dist/assets/index-CSI_I7vg.css   30.47 kB │ gzip:  6.35 kB",
+      "dist/assets/index-Ba72cIrG.js   221.08 kB │ gzip: 69.46 kB",
       "",
-      "✓ built in 123ms",
+      "✓ built in 97ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (245.76 KiB)",
+      "precache  10 entries (247.53 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -38,7 +38,7 @@
       "+ bash -c gh api -X POST \"repos/$GITHUB_REPOSITORY/pages\" -f \"source[branch]=gh-pages\" -f \"source[path]=/\" --silent && echo \"pages enabled\" || echo \"could not enable pages automatically\"",
       "gh: Resource not accessible by integration (HTTP 403)",
       "could not enable pages automatically",
-      "took 1s"
+      "took 0s"
     ],
     "install": [
       "+ npm ci",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 7s"
+      "took 5s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -69,25 +69,20 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 1s"
+      "took 0s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published d5d9535 to gh-pages",
-      "took 1s"
+      "published 5836348 to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 1bd4343, waiting for d5d9535",
-      "attempt 2: serves 1bd4343, waiting for d5d9535",
-      "attempt 3: serves 1bd4343, waiting for d5d9535",
-      "attempt 4: serves 1bd4343, waiting for d5d9535",
-      "attempt 5: serves 1bd4343, waiting for d5d9535",
-      "attempt 6: serves 1bd4343, waiting for d5d9535",
-      "attempt 7: serves 1bd4343, waiting for d5d9535",
-      "attempt 8: serves 1bd4343, waiting for d5d9535",
-      "site is live and serves d5d9535",
-      "took 81s"
+      "attempt 1: serves d5d9535, waiting for 5836348",
+      "attempt 2: serves d5d9535, waiting for 5836348",
+      "attempt 3: serves d5d9535, waiting for 5836348",
+      "site is live and serves 5836348",
+      "took 31s"
     ]
   }
 }
