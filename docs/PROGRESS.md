@@ -34,12 +34,11 @@ Everything built is live; the three parallel sessions are closed and their knowl
 `dev` is ahead of `main` by guides and docs only; they reach `main` with the next app change (owner: docs alone are not shipped).
 
 Waiting for the owner (ask when it fits, do not build before):
-1. **Performance, slowing the 5-minute full list** in an app left untouched: offered, no answer yet (`performance` skill).
-2. **Families, F15 option B**: reading more of a family's "שימוש" tab than the day totals, in the app with the admin code
+1. **Families, F15 option B**: reading more of a family's "שימוש" tab than the day totals, in the app with the admin code
    (`docs/BACKLOG.md`). Not built; the owner wants to be asked.
-3. **Families, consent at install**: an explicit "קראתי ומסכים/ה" for a new family, and a lawyer's reading of the privacy page
+2. **Families, consent at install**: an explicit "קראתי ומסכים/ה" for a new family, and a lawyer's reading of the privacy page
    before a wider opening.
-4. **Families, "move the sheet to my Drive"**: wanted later, not built (ownership transfer between free accounts is untested).
+3. **Families, "move the sheet to my Drive"**: wanted later, not built (ownership transfer between free accounts is untested).
 
 Waiting for something from the owner's daily use:
 5. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה", soon after a slow opening or a tap): it decides the script

@@ -86,7 +86,7 @@ export function domainSkills(guides: Guide[]): DomainSkill[] {
 
 /** What `close-task` itself writes on every task: never a reason to review a domain skill. */
 export const isHandoff = (file: string) =>
-  file === 'CLAUDE.md' || file.startsWith('.claude/') || file === 'docs/CHANGELOG.md' || file === 'docs/PROGRESS.md';
+  file === 'CLAUDE.md' || file.startsWith('.claude/') || file === 'docs/CHANGELOG.md' || file === 'docs/PROGRESS.md' || file === 'docs/ARCHITECTURE.md';
 
 const owned = (file: string, entry: string) => (entry.endsWith('/') ? file.startsWith(entry) : file === entry);
 

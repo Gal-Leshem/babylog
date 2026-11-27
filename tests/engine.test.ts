@@ -1,6 +1,6 @@
 import { DEFAULT_VITAMIN_D } from '../src/shared/medicines';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ACTIVE_FOR_MS, Engine, TOUCH_CHECK_DELAY_MS, pollDelay } from '../src/app/engine';
+import { ACTIVE_FOR_MS, Engine, FULL_REFRESH_MS, TOUCH_CHECK_DELAY_MS, fullRefreshDelay, pollDelay } from '../src/app/engine';
 import { memoryStorage } from '../src/app/storage';
 import { type Deps, handle } from '../src/server/core';
 import { MemoryStore } from '../src/server/memory-store';
@@ -1043,6 +1043,58 @@ describe('pace', () => {
     await idle();
     await idle();
     expect(syncs()).toHaveLength(1);
+  });
+
+  // owner (27 Nov 2026): the safety-net full list slows down with the checks in an app left untouched; a touch brings it back
+  it('the full list comes every 5 minutes, every 15 after 10 minutes untouched and every 30 after 30', async () => {
+    const min = 60_000;
+    expect(fullRefreshDelay(0)).toBe(5 * min);
+    expect(fullRefreshDelay(10 * min - 1)).toBe(5 * min);
+    expect(fullRefreshDelay(10 * min)).toBe(15 * min);
+    expect(fullRefreshDelay(30 * min - 1)).toBe(15 * min);
+    expect(fullRefreshDelay(30 * min)).toBe(30 * min);
+    const e = makeEngine();
+    e.touched(); // (start() marks the opening as activity)
+    await e.returned(); // opened: a full list is due 5 minutes later
+    clock += 4 * min;
+    expect(e.fullDue()).toBe(false);
+    clock += 1 * min;
+    expect(e.fullDue(), 'still in the usual pace: 5 minutes').toBe(true);
+    const e2 = makeEngine();
+    e2.touched();
+    await e2.returned();
+    clock += 12 * min;
+    expect(e2.fullDue(), '12 minutes untouched: every 15').toBe(false);
+    clock += 3 * min;
+    expect(e2.fullDue()).toBe(true);
+  });
+
+  it('a touch when a full list is overdue by the usual 5 minutes makes the full list now; right after one, nothing', async () => {
+    const min = 60_000;
+    const e = makeEngine();
+    e.touched();
+    await e.returned();
+    await e.pollOnce();
+    clock += 12 * min; // untouched: the full list slowed down to every 15 minutes, so it has not come yet
+    expect(e.fullDue()).toBe(false);
+    seen = [];
+    timers.length = 0;
+    e.touched();
+    expect(timers.map((t) => t.ms)).toEqual([TOUCH_CHECK_DELAY_MS]);
+    timers.shift()!.fn();
+    await idle();
+    expect(syncs()).toHaveLength(1);
+    expect(syncs()[0]!.rev, 'the whole list, not a check against our revision').toBeUndefined();
+    expect(e.syncLog()[0]!.why).toBe('touch');
+    expect(e.syncLog()[0]!.list).toBe(true);
+
+    seen = [];
+    clock += 5_000;
+    e.touched(); // a fresh full list and a fresh check: nothing to do
+    expect(timers).toHaveLength(0);
+    clock += FULL_REFRESH_MS - 5_000;
+    expect(e.fullDue(), 'after a touch the usual 5 minutes again').toBe(true);
+    expect(syncs()).toHaveLength(0);
   });
 
   it('spreads retries by up to a fifth, so two phones do not come back in step', async () => {

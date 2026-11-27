@@ -794,6 +794,14 @@ No names, addresses or secrets in this file (the repository is public).
   was yesterday, so today's Summary had one feeding. Both Summary bottle tests now pin the page's day and seed fixed times
   (`pinPageDay`). The old test failed when run at 01:17; the new ones pass 10 of 10 then, and against the slow server. Not an app bug.
 
+## 27 November 2026 (one conversation)
+- Safety-net full list **(owner)**: in an app left open untouched the full list slows down with the checks: every 15 minutes
+  after 10 minutes untouched and every 30 after 30 (was every 5 minutes for as long as it stayed open). A touch when one is due
+  by the usual 5 minutes makes the touch's check that full list (owner's idea: someone is looking, so the data is made whole
+  now); a touch that logs something keeps its one request, and the full list follows within 30 s. An hour open untouched: 4 full
+  lists instead of 12 (about 118 requests instead of 126). Same bundle on the server (app only). Tests: engine (the delays; the
+  touch's full list; each failed with its part broken), unit and browser suites normal and with `MOCK_DELAY=250`.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

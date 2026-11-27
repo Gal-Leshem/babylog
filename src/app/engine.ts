@@ -140,8 +140,17 @@ export const pollDelay = (sinceActiveMs: number, sinceTouchMs = 0): number =>
   sinceActiveMs < ACTIVE_FOR_MS ? POLL_ACTIVE_MS : sinceTouchMs < UNTOUCHED_SLOW_MS ? POLL_IDLE_MS : sinceTouchMs < UNTOUCHED_SLOWER_MS ? POLL_UNTOUCHED_MS : POLL_LONG_UNTOUCHED_MS;
 /** A touch waits this long before its check, so that a tap that logs something carries the check itself (one request, not two). */
 export const TOUCH_CHECK_DELAY_MS = 400;
-/** Full refresh even without a reported change, to catch edits made directly in the sheet. */
+/** Full refresh even without a reported change: the safety net behind the revision and the journal. */
 export const FULL_REFRESH_MS = 5 * 60_000;
+/**
+ * (owner) In an app left open untouched the full refresh slows down with the checks: every 15 minutes after 10 minutes untouched,
+ * every 30 after 30. The next touch brings it back at once when one is due by the usual 5 minutes (`Engine.touched`).
+ */
+export const FULL_REFRESH_UNTOUCHED_MS = 15 * 60_000;
+export const FULL_REFRESH_LONG_UNTOUCHED_MS = 30 * 60_000;
+/** `sinceTouchMs` as in `pollDelay`. */
+export const fullRefreshDelay = (sinceTouchMs: number): number =>
+  sinceTouchMs < UNTOUCHED_SLOW_MS ? FULL_REFRESH_MS : sinceTouchMs < UNTOUCHED_SLOWER_MS ? FULL_REFRESH_UNTOUCHED_MS : FULL_REFRESH_LONG_UNTOUCHED_MS;
 /** How often the full-refresh clock is looked at (a look that comes much later than this means timers were frozen). */
 const FULL_CHECK_MS = 30_000;
 /** A sync that has been running this long is considered dead and no longer blocks new ones. */
@@ -778,19 +787,33 @@ export class Engine {
     return pollDelay(now - this.lastActive, now - Math.max(this.lastActive, this.lastTouch));
   }
 
+  /** Whether the safety-net full list is due: FULL_REFRESH_MS after the last one, slower in an app left untouched. */
+  fullDue(now = this.now()): boolean {
+    return now - this.fullAt >= fullRefreshDelay(now - Math.max(this.lastActive, this.lastTouch));
+  }
+
   /**
    * (owner, performance session) The screen was touched: the slow pace of an untouched app ends, and if the last check is older
    * than TOUCH_STALE_MS one is made now, shown like the check on opening ("מתעדכן…"). It waits a moment first: a touch that logs
    * something starts its own exchange, which carries the check (one request, not two).
+   * (owner) When the full list is due by the usual FULL_REFRESH_MS (it slowed down while nobody touched the screen), the touch's
+   * check is that full list: someone is looking, so the data is made whole now.
    */
   touched(): void {
     const at = this.now();
     const wasSlow = this.nextCheckIn() > POLL_IDLE_MS;
     this.lastTouch = at;
     if (wasSlow) this.emit(false); // the screens drop "עדכני לשעה" at once
-    if (!this.config || at - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
+    if (!this.config) return;
+    const fullOverdue = () => this.now() - this.fullAt >= FULL_REFRESH_MS;
+    if (!fullOverdue() && at - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
     this.setTimer(() => {
       if (this.syncStartedAt >= at) return; // something else asked the server meanwhile (a tap): that answer is as fresh
+      if (fullOverdue()) {
+        this.fullAt = this.now();
+        void this.sync('full', true, 'touch');
+        return;
+      }
       if (this.now() - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
       void this.sync('rev', true, 'touch');
     }, TOUCH_CHECK_DELAY_MS);
@@ -838,7 +861,7 @@ export class Engine {
 
   /**
    * Keeps the app current while it is open and visible: a cheap check every few seconds (`pollDelay`), a full refresh every
-   * FULL_REFRESH_MS, and an immediate check whenever the app comes back to the foreground or the network returns
+   * FULL_REFRESH_MS (slower while untouched, `fullRefreshDelay`), and an immediate check whenever the app comes back to the foreground or the network returns
    * (the several events one return fires count as one). Nothing runs while the app is hidden. Returns a stop function.
    */
   start(): () => void {
@@ -881,7 +904,7 @@ export class Engine {
       const late = now - lastLook > FULL_CHECK_MS * 2;
       lastLook = now;
       if (late) this.fullAt = Math.max(this.fullAt, now);
-      else if (visible() && this.config && now - this.fullAt >= FULL_REFRESH_MS) {
+      else if (visible() && this.config && this.fullDue(now)) {
         this.fullAt = now;
         void this.sync('full', false, 'full');
       }

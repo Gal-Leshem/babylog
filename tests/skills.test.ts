@@ -53,7 +53,7 @@ describe('skills-lib', () => {
       { name: 'x', path: '', owns: ['src/app/screens/'], fallback: true },
     ];
     const m = skillsFor(
-      ['src/server/core.ts', 'src/app/screens/Home.tsx', 'scripts/ship.sh', 'CLAUDE.md', '.claude/skills/x/SKILL.md', 'docs/CHANGELOG.md'],
+      ['src/server/core.ts', 'src/app/screens/Home.tsx', 'scripts/ship.sh', 'CLAUDE.md', '.claude/skills/x/SKILL.md', 'docs/CHANGELOG.md', 'docs/ARCHITECTURE.md'],
       skills,
     );
     expect(Object.fromEntries(m)).toEqual({
