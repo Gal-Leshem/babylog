@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { dailySummary } from '../../shared/domain';
-import { type TimelineRow, insightWindow, timeline } from '../../shared/insights';
+import { TIMELINE_DAY_START_HOUR, type TimelineRow, insightWindow, timeline } from '../../shared/insights';
 import { addDays, localDate } from '../../shared/tz';
 import { count, engine, useEngine, useNow } from '../state';
 
@@ -23,6 +23,9 @@ interface Split {
   names: [string, string];
 }
 
+/** Where midnight falls in a row that runs from 06:00 to 06:00 (a fraction of the row). */
+const MIDNIGHT_AT = (24 - TIMELINE_DAY_START_HOUR) / 24;
+
 /** One day from 06:00 to 06:00; time runs right to left like the text. */
 function timelineRow(r: TimelineRow, today: string): JSX.Element {
   const label = r.date === today ? 'היום' : r.date === addDays(today, -1) ? 'אתמול' : `${weekdayOf(r.date)} ${shortDate(r.date)}`;
@@ -31,6 +34,8 @@ function timelineRow(r: TimelineRow, today: string): JSX.Element {
       <span class="tl-day">{label}</span>
       <div class="rib">
         {r.until < 1 && <div class="rest" style={{ right: pct(r.until), width: pct(1 - r.until) }} />}
+        {/* (owner, feedback #3) midnight: where the daily counts below and the day table start a new day */}
+        <div class="mid" data-testid="tl-midnight" style={{ right: pct(MIDNIGHT_AT) }} />
         {r.sleeps.map((s) => (
           <div key={`s${s.from}`} class="s" data-testid="tl-sleep" style={{ right: pct(s.from), width: pct(s.to - s.from) }} />
         ))}
@@ -135,7 +140,10 @@ export function Week() {
 
   return (
     <div class="week" data-testid="week">
-      <h3>ציר זמן, מ-06:00 עד 06:00</h3>
+      <h3>ציר זמן</h3>
+      <p class="muted wk-sub" data-testid="tl-note">
+        כל שורה: מ-06:00 עד 06:00 למחרת, כדי שכל לילה יופיע שלם. הקו הדק הוא חצות.
+      </p>
       <div class="tl-axis" aria-hidden="true">
         {['06', '12', '18', '24', '06'].map((h, i) => (
           <span key={i} style={{ right: pct(i / 4) }}>
@@ -163,6 +171,9 @@ export function Week() {
       </div>
 
       <h3>ספירות יומיות</h3>
+      <p class="muted wk-sub" data-testid="cnt-note">
+        לפי יממה, מחצות עד חצות, כמו בטבלה של הסיכום.
+      </p>
       <div class="cnts" ref={barsRef}>
         {countCard('feeds', 'האכלות', countDays, sums.map((s) => s.feeds.count), today)}
         {countCard('wet', 'פיפי (כולל פיפי + קקי)', countDays, sums.map((s) => s.diapers.wet + s.diapers.both), today)}

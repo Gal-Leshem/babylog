@@ -118,6 +118,25 @@ describe('asleep / awake', () => {
     expect(store.all()[0]).toMatchObject({ start: '2026-11-14 10:35', end: '2026-11-14 12:00' });
   });
 
+  // owner (feedback #4): a wake-up marked by the other parent showed the name of who marked falling asleep
+  it('keeps who marked the wake-up when it is the other parent; nothing when the same parent did', () => {
+    ok(asleep('2026-11-14 09:00'));
+    expect(ok(awake('2026-11-14 10:00', { user: 'Parent 2' })).event).toMatchObject({ user: 'Parent 1', detail: 'woke:Parent 2' });
+    ok(asleep('2026-11-14 10:30'));
+    expect(ok(awake('2026-11-14 11:00')).event).toMatchObject({ user: 'Parent 1', detail: '' });
+  });
+
+  it('a sleep open again forgets who woke it; an edit keeps it; a detail other than the waker is refused', () => {
+    ok(asleep('2026-11-14 09:00'));
+    const s = ok(awake('2026-11-14 10:00', { user: 'Parent 2' })).event!;
+    const edited = ok(call({ action: 'update', id: s.id, patch: { start: '2026-11-14 08:50', detail: s.detail } })).event!;
+    expect(edited.detail).toBe('woke:Parent 2');
+    expect(ok(call({ action: 'update', id: s.id, patch: { end: '' } })).event).toMatchObject({ end: '', detail: '' });
+    // an open sleep has no wake-up: a waker sent with it is dropped
+    expect(ok(call({ action: 'update', id: s.id, patch: { detail: 'woke:Parent 2' } })).event).toMatchObject({ end: '', detail: '' });
+    expect(call({ action: 'update', id: s.id, patch: { end: '2026-11-14 10:00', detail: 'left' } })).toMatchObject({ ok: false, error: 'invalid_event' });
+  });
+
   it('does not open a second sleep', () => {
     ok(asleep('2026-11-14 10:35'));
     const again = ok(asleep('2026-11-14 11:00'));

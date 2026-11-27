@@ -234,3 +234,14 @@ export function clock(epochMs: number): string {
 export function todayDate(nowEpoch: number): string {
   return localDate(nowEpoch);
 }
+
+/**
+ * (owner, feedback #4) A sleep is one row with one parent: who marked falling asleep. When another parent marks the wake-up,
+ * their name is kept in the sleep's detail ("woke:<name>"; no new column), so the "התעורר" row can show who marked it.
+ */
+export const WOKE_PREFIX = 'woke:';
+/** Who marked the wake-up of a sleep (the sleep's own parent when nobody else did). */
+export const wokeBy = (e: Pick<BabyEvent, 'type' | 'detail' | 'user'>): string =>
+  e.type === 'sleep' && e.detail.startsWith(WOKE_PREFIX) ? e.detail.slice(WOKE_PREFIX.length) : e.user;
+/** The sleep's detail after `wakeBy` marked its wake-up: empty when it is the same parent who marked falling asleep. */
+export const wokeDetail = (asleepBy: string, wakeBy: string): string => (wakeBy && wakeBy !== asleepBy ? WOKE_PREFIX + wakeBy : '');

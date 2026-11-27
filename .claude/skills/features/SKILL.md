@@ -74,6 +74,10 @@ is reviewed against every skill that owns the file.
   made "90 ml", a bottle nobody gave).
 
 ## Owner decisions in force (newest first; history in `docs/CHANGELOG.md`, F15-F18 rounds in `docs/BACKLOG.md`)
+- Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every
+  question is listed in "בחירת שאלות" for every family, the unfit ones off (nursing questions too for bottles only: this
+  replaces the F18 "only with nursing" listing rule; cards still need a parent to turn them on); the timeline stays 06:00 to
+  06:00 with a midnight line and notes.
 - Age: explanations in "תובנות" that mention an age stay; nothing disappears by itself with the age (the parents hide it).
 - Age above Summary / "תובנות" and a quiet line at the top of Home's recent list on each whole month (girl / boy wording).
 - Bottles (F18), all live:
@@ -88,7 +92,7 @@ is reviewed against every skill that owns the file.
   - Summary rows with bottles: "האכלות", "הנקות" (only with nursing), "בקבוקים", "מ״ל בבקבוקים"; nursing only keeps
     "הנקות (האכלות)". The week: no bottle count; one ml card, split formula / expressed when both were given.
   - Questions: "מתוכן X עם בקבוק" only with nursing AND bottles (sensitive: not every mother can nurse); "כמה מההאכלות עם
-    בקבוק?" only by hand; sides and cluster only with nursing; "היום חריג" counts bottle ml only without nursing.
+    בקבוק?" only by hand; sides and cluster shown by themselves only with nursing (listed off otherwise, 27 Nov); "היום חריג" counts bottle ml only without nursing.
   - Out of scope: pumping, stash, discard timers, volume targets, a mixed bottle, solids.
 - Summary gap between feeds is the median ("רווח רגיל בין האכלות"), never a mean.
 - Questions (F16) replaced insight cards: a question shows by itself once it has enough data (off until then), each parent
@@ -118,6 +122,10 @@ is reviewed against every skill that owns the file.
 - Three-digit numbers overflowed half-width bar cards at 360 -> such a card spans the full width.
 - A test titled "14 days by default" passed with any default against an empty store -> a test that claims a default seeds data
   on both sides of the boundary.
+- A sleep is one row with one parent; the other parent's wake-up lost its name -> two moments of one row may need their own
+  author: keep it in the detail (`woke:<name>`), and clear it when the moment is cleared.
+- An old browser test encoded an owner rule the owner later replaced (bottle-only families saw no nursing questions) -> when a
+  decision replaces an earlier one, find the tests of the old rule and say in them which decision replaced it.
 - Mockups: a temporary `e2e/zz-*.spec.ts` that injects markup into the real app and screenshots to the scratchpad; delete it after.
 - Mock server `delay` of 10 s or more makes regular checks time out -> slow only the taps with `opsDelay`.
 
@@ -130,4 +138,4 @@ or timing also `MOCK_DELAY=250` and the three heights. Screenshots of the change
 - F11 Siri shortcuts: built and signed; the owner's test on the phones is on hold (owner).
 - F8: which questions get used (usage counts per question in the "שימוש" tab).
 
-Last reviewed: 26 November 2026 (enriched by the features session's handoff: owns, rules, decisions, traps).
+Last reviewed: 27 November 2026 (feedback round: wake-up name, every question listed, timeline midnight line).

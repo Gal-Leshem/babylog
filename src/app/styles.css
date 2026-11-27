@@ -375,6 +375,8 @@ input, textarea, select {
 .rib .d.w, .tl-legend .d.w, .rib .d.b, .tl-legend .d.b { background: transparent; border: 2px solid var(--pee); }
 .rib .d.p, .tl-legend .d.p { background: var(--poop); border: 0; }
 .rib .d.b::after, .tl-legend .d.b::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--poop); }
+.rib .mid { position: absolute; top: 0; bottom: 0; width: 0; border-right: 1px dashed var(--muted); opacity: 0.55; pointer-events: none; }
+.wk-sub { font-size: 11px; margin: -4px 0 6px; }
 .tl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--muted); margin: 6px 0 4px; }
 .tl-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .tl-legend i { position: relative !important; display: inline-block; top: auto !important; bottom: auto !important; margin: 0 !important; }

@@ -51,6 +51,8 @@ export interface Question {
   qBottles?: string;
   /** (owner, F18) never shown by itself: only when a parent turns it on */
   manualOnly?: boolean;
+  /** (owner, feedback #5) false when this family's kinds of feeding do not offer it (`allQuestions`): listed, off until turned on */
+  fits?: boolean;
 }
 
 const soFar = (p: Progress) => `עד עכשיו ${p.have}.`;
@@ -344,11 +346,14 @@ export const NOT_MEDICAL =
 export function questionState(q: Question, a: AllData, choice: 'on' | 'off' | undefined): { ready: boolean; shown: boolean } {
   const p = q.prog(a);
   const ready = p.have >= p.need;
-  return { ready, shown: choice === 'on' || (choice === undefined && ready && !q.manualOnly) };
+  return { ready, shown: choice === 'on' || (choice === undefined && ready && !q.manualOnly && q.fits !== false) };
 }
 
-/** (F18) The questions for this family's kinds of feeding, in their words ("ההאכלה הבאה" once there are bottles). */
-export function questionsFor(f: Feeding): Question[] {
+/**
+ * Every question, in this family's words ("ההאכלה הבאה" once there are bottles). (owner, feedback #5) All of them are listed in
+ * "בחירת שאלות" for every family; one its kinds of feeding do not offer (F18) has `fits: false`: off until a parent turns it on.
+ */
+export function allQuestions(f: Feeding): Question[] {
   const bottles = bottleKindsOn(f).length > 0;
-  return QUESTIONS.filter((q) => !q.for || q.for(f)).map((q) => (bottles && q.qBottles ? { ...q, q: q.qBottles } : q));
+  return QUESTIONS.map((q) => ({ ...(bottles && q.qBottles ? { ...q, q: q.qBottles } : q), fits: !q.for || q.for(f) }));
 }

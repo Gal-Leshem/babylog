@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { bottleKindsOn, feedingOf } from '../../shared/bottle';
-import { byTimeDesc, clock, elapsedHM, eventTime, forgottenWake, lastBottle, lastFeed, nextSide, openSleep, sleepState } from '../../shared/domain';
+import { byTimeDesc, clock, elapsedHM, eventTime, forgottenWake, lastBottle, lastFeed, nextSide, openSleep, sleepState, wokeBy } from '../../shared/domain';
 import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
@@ -24,6 +24,8 @@ interface RecentRow {
   at: string;
   icon: string;
   label: string;
+  /** who marked this moment (feedback #4: a wake-up can be marked by the other parent) */
+  who: string;
 }
 
 /**
@@ -35,9 +37,9 @@ function recentRows(events: readonly BabyEvent[], meds: readonly Medicine[], w: 
   // walk the newest entries first: the sort below is stable, so rows in the same minute stay newest-entered first
   for (const e of [...events].reverse()) {
     if (e.type === 'sleep') {
-      if (e.start) rows.push({ key: `${e.id}:s`, e, at: e.start, icon: '🌙', label: w.fellAsleep });
-      if (e.end) rows.push({ key: `${e.id}:e`, e, at: e.end, icon: '☀️', label: w.wokeUp });
-    } else rows.push({ key: e.id, e, at: e.start, icon: eventIcon(e, meds), label: eventLabel(e, meds) });
+      if (e.start) rows.push({ key: `${e.id}:s`, e, at: e.start, icon: '🌙', label: w.fellAsleep, who: e.user });
+      if (e.end) rows.push({ key: `${e.id}:e`, e, at: e.end, icon: '☀️', label: w.wokeUp, who: wokeBy(e) });
+    } else rows.push({ key: e.id, e, at: e.start, icon: eventIcon(e, meds), label: eventLabel(e, meds), who: e.user });
   }
   return rows.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 10);
 }
@@ -290,14 +292,14 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
             <span class="emo">🎉</span> היום {settings.babyName} {settings.babySex === 'girl' ? 'בת' : 'בן'} {monthDay}
           </li>
         )}
-        {recent.map(({ key, e, at, icon, label }) => (
+        {recent.map(({ key, e, at, icon, label, who }) => (
           <li key={key}>
             <button type="button" class={`rrow ${isNew(e.id) ? 'new' : ''}`} data-testid="recent-row" onClick={() => onEdit(e, key.endsWith(':e') ? 'end' : key.endsWith(':s') ? 'start' : undefined)}>
               <span class="ri emo">{icon}</span>
               <span class="rl">{label}</span>
               <span class="rt">{timeOf(at)}</span>
               <span class="rm">
-                {e.user}
+                {who}
                 {e.source === 'siri' ? ' 🎙' : ''}
               </span>
             </button>

@@ -1,4 +1,4 @@
-import { byTimeAsc, eventTime, lastBottle, lastFeed, live, nextSide, openSleep, vitaminDOnDate } from '../shared/domain';
+import { byTimeAsc, eventTime, lastBottle, lastFeed, live, nextSide, openSleep, vitaminDOnDate, WOKE_PREFIX, wokeDetail } from '../shared/domain';
 import type { Change, Since } from './journal';
 import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
 import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
@@ -125,7 +125,10 @@ export function validateEvent(e: BabyEvent, now: number): void {
   if (!EVENT_TYPES.includes(e.type)) fail('invalid_event', 'unknown type');
   if (e.type === 'feed' && !(FEED_DETAILS as readonly string[]).includes(e.detail)) fail('invalid_event', 'feed needs left or right');
   if (e.type === 'diaper' && !(DIAPER_DETAILS as readonly string[]).includes(e.detail)) fail('invalid_event', 'diaper needs wet, poop or both');
-  if ((e.type === 'sleep' || e.type === 'vitamin_d') && e.detail !== '') fail('invalid_event', 'this type has no detail');
+  if (e.type === 'vitamin_d' && e.detail !== '') fail('invalid_event', 'this type has no detail');
+  // (owner, feedback #4) a sleep's detail holds only who marked its wake-up, when another parent did
+  if (e.type === 'sleep' && e.detail !== '' && !(e.detail.startsWith(WOKE_PREFIX) && e.detail.length > WOKE_PREFIX.length && e.detail.length <= 64 && e.end))
+    fail('invalid_event', 'sleep detail is only who woke it');
   if (e.type === 'medicine' && (e.detail === '' || e.detail.length > 64)) fail('invalid_event', 'medicine needs the id of a medicine');
   if (e.type === 'bottle' && !parseBottle(e.detail)) fail('invalid_event', 'bottle needs its kind and amounts');
   if (e.note.length > 200) fail('invalid_event', 'note too long');
@@ -639,7 +642,7 @@ function awake(o: Obj, deps: Deps, now: number): ApiResponse {
   const recent = store.recent(RECENT_ROWS);
   const open = openSleep(recent);
   if (open) {
-    const closed = { ...open, end };
+    const closed = { ...open, end, detail: wokeDetail(open.user, optString(o, 'user', 20)) };
     validateEvent(closed, now);
     store.replace(closed);
     return { ok: true, event: closed, speech: voiceOf(o, store).awake(sleepMinutes(closed)) };
@@ -731,6 +734,7 @@ function update(o: Obj, deps: Deps, now: number): ApiResponse {
   if (!base) return fail('not_found');
   // the version before this edit is kept with the event (one step back), so it can be restored later (owner)
   const next = { ...applyPatch(base, parsePatch(o.patch)), edited: stamp(now), prev: JSON.stringify(coreOf(base)) };
+  if (next.type === 'sleep' && !next.end) next.detail = ''; // a sleep open again has no wake-up, so nobody woke it
   validateEvent(next, now);
   if (next.type === 'medicine' && next.detail !== base.detail) checkMedicineKnown(next, store);
   if (next.type === 'sleep' && next.start && !next.end && !base.deleted) {

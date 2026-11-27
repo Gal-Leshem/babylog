@@ -821,3 +821,18 @@ test('the toast after a one-tap log stays 3 seconds (5 while the baby is marked 
   await expect(page.getByTestId('btn-poop')).toBeEnabled();
   await timeToast(() => page.getByTestId('btn-poop').click(), 5); // while asleep
 });
+
+// Owner (feedback #4): the other parent marked falling asleep, this parent marks the wake-up: the "התעורר" row says who did.
+test('a wake-up marked on this phone shows this parent on the "התעורר" row, the falling asleep keeps the other parent', async ({ page, request }) => {
+  await resetServer(request);
+  const d = await pinPageDay(page);
+  await seed(request, [{ id: 'sl', type: 'sleep', start: `${d} 10:00`, user: 'Parent Two' }]);
+  await install(page); // this phone is "Parent One"
+  await expect(page.getByTestId('btn-sleep')).toContainText('התעורר');
+  await page.getByTestId('btn-sleep').click();
+  await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
+  const row = (label: string) => page.getByTestId('recent-row').filter({ hasText: label });
+  await expect(row('התעורר').locator('.rm')).toHaveText('Parent One');
+  await expect(row('נרדם').locator('.rm')).toHaveText('Parent Two');
+  await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'sl')?.detail).toBe('woke:Parent One');
+});

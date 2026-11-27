@@ -282,7 +282,7 @@ test('questions with nursing and bottles: bottle questions, "מתוכן X עם �
   await expect(page.getByTestId('q-bottleShare')).toContainText('56 מתוך 56');
 });
 
-test('questions without nursing: no left / right, no cluster feeding, no share; "היום חריג" can speak of ml', async ({ page, request }) => {
+test('questions without nursing: no left / right, no cluster feeding, no share by themselves (listed off, feedback #5); "היום חריג" can speak of ml', async ({ page, request }) => {
   await feeding(request, { breast: false, formula: true });
   await seed(request, mixedWeek().filter((e) => e.type === 'bottle'));
   await page.clock.setFixedTime(QNOW);
@@ -291,8 +291,10 @@ test('questions without nursing: no left / right, no cluster feeding, no share; 
   await page.getByTestId('view-insights').click();
   await expect(page.getByTestId('q-bottlesToday')).toBeVisible();
   await expect(page.getByTestId('q-feedsToday-bottles')).toHaveCount(0); // only when the family both nurses and gives bottles
+  for (const id of ['sides', 'cluster', 'bottleShare']) await expect(page.getByTestId(`q-${id}`)).toHaveCount(0);
   await page.getByTestId('q-pick').click();
-  for (const id of ['sides', 'cluster', 'bottleShare']) await expect(page.getByTestId(`pick-${id}`)).toHaveCount(0);
+  // (owner, feedback #5, replaces the F18 rule that left them out) every question is listed; these are off
+  for (const id of ['sides', 'cluster', 'bottleShare']) await expect(page.getByTestId(`pick-${id}-switch`)).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByTestId('pick-nextFeed')).toContainText('מתי ההאכלה הבאה צפויה?');
 });
 
@@ -341,3 +343,27 @@ test('the week with one bottle kind: whole bars, no key', async ({ page, request
   await expect(page.getByTestId('bar-split')).toHaveCount(0);
   await expect(page.getByTestId('cnt-bottleMl-key')).toHaveCount(0);
 });
+
+// Owner (feedback #5): "בחירת שאלות" lists every question for every family; one its kinds of feeding do not offer is off,
+// and turned on it says that there is not enough data yet (nothing breaks).
+for (const [name, f, unfit] of [
+  ['nursing only', {}, ['bottlesToday', 'bottleSize', 'bottleShare']],
+  ['bottles only', { breast: false, formula: true }, ['sides', 'cluster', 'bottleShare']],
+] as const) {
+  test(`every question is listed in "בחירת שאלות", the unsuitable ones off and safe to turn on (${name})`, async ({ page, request }) => {
+    await feeding(request, f);
+    await install(page);
+    await page.getByTestId('tab-summary').click();
+    await page.getByTestId('view-insights').click();
+    await page.getByTestId('q-pick').click();
+    await expect(page.locator('[data-testid^="pick-"][data-testid$="-switch"]')).toHaveCount(16);
+    for (const id of unfit) {
+      await expect(page.getByTestId(`pick-${id}-switch`)).toHaveAttribute('aria-checked', 'false');
+      await expect(page.getByTestId(`pick-${id}`)).toContainText('כבויה: לא בסוגי ההאכלה שבהגדרות');
+      await page.getByTestId(`pick-${id}-switch`).click();
+      await expect(page.getByTestId(`pick-${id}-switch`)).toHaveAttribute('aria-checked', 'true');
+    }
+    await page.getByTestId('pick-back').click();
+    for (const id of unfit) await expect(page.getByTestId(`q-${id}-wait`)).toContainText('עוד אין מספיק נתונים');
+  });
+}

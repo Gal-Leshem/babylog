@@ -6,6 +6,11 @@ dev, green CI, main, live version check. Sizes: S = one session, M = one or two 
 No names or private details here (public repository).
 
 ## Track 1: fixes and quality of life
+- Feedback list of 27 Nov 2026 **(owner)**: #4 (a wake-up marked by the other parent showed who marked falling asleep) fixed,
+  the "התעורר" row in the recent list names who marked it (History unchanged); #5 every question listed in "בחירת שאלות" for
+  every family, the ones its kinds of feeding do not offer off (nursing questions too for a family that gives bottles only:
+  replaces the F18 rule that left them out); #3 the timeline keeps 06:00 to 06:00 rows (a night stays whole) with a midnight
+  line and notes on both sections; #2 already handled (F15, F16, F17, the age line) and cleared.
 Add items here as the owner reports them (date, what was seen, screenshot/recording studied). Move done items to `CHANGELOG.md`.
 - In progress **(owner, November 2026)**: (a) done: "undo edit". (b) done: "earlier" buttons in the toast. (c) done: the sleep improvements (forgotten wake-up, length, since when, overlap). (d) done: the wording ("שעת ההתעוררות לפני שעת ההירדמות").
 - Slow sync and performance **(owner report)**: diagnosis and a phased plan in `docs/REFACTOR_PLAN.md` (owner: the full plan).

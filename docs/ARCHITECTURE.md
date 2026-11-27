@@ -183,7 +183,8 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
 - **Medicines window:** under a medicine just marked, the same "היה לפני" minutes and "בטל" as the toast (`earlierFor` on the
   `Mark`), in its own row because the row itself is a button.
 - **Recent list** columns: icon 40px, label, time 48px, name 76px (cut with "…"), so the time never moves with a name.
-- **Recent list** (`recentRows` in `Home.tsx`): sleeps appear as two moments, "נרדם" and "התעורר"; same-minute rows keep entry order
+- **Recent list** (`recentRows` in `Home.tsx`): sleeps appear as two moments, "נרדם" and "התעורר" (the "התעורר" row names who
+  marked the wake-up: `wokeBy`, kept in the sleep's detail as `woke:<name>` when another parent marked it; owner, feedback #4); same-minute rows keep entry order
   (newest entered first). History shows one row per event.
 - **Home is a fixed screen.** `.main.fixed` has no scrolling and no overscroll, the button grid shrinks (never scrolls) on short
   screens, and only the recent-events list (last 10, about 3.5 rows visible) scrolls in its own box. iOS let a scrollable Home get dragged
@@ -252,14 +253,17 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
 - **Summary tab:** a switch between "סיכום" (the day table, then the week at a glance: timeline and daily counts, `Week.tsx`)
   and "תובנות" (questions, `Insights.tsx` + `src/app/questions.ts`), remembered per phone (`summaryView`). A question is
   automatic (shown once `insights().progress` says it has enough data) unless the parent turned it on or off by hand on this
-  phone (`prefs.questions`); "⋯" hides it or explains it ("איך זה מחושב?", with the non-medical note `NOT_MEDICAL`); answers
+  phone (`prefs.questions`; "בחירת שאלות" lists every question for every family, those its kinds of feeding do not offer
+  off until turned on: `allQuestions`, owner, feedback #5); "⋯" hides it or explains it ("איך זה מחושב?", with the non-medical note `NOT_MEDICAL`); answers
   compare only with what this family logged, never with norms. New questions: add the insight's numbers and `progress`, then a
   `Question` (wording neutral or from `words.ts`).
   Both count "פיפי + קקי" as one pee and one poop; neither shows it as a count of its own (owner).
   Insights are pure functions in `src/shared/insights.ts` over the last 7 full days (today left out): medians and the middle half
   (never means), a minimum amount of data per card (otherwise no card), "after a feed" patterns only when at least 20 points more often
   than chance, night = 19:00-07:00, a long stretch = 3 hours or more. Write ranges in words, never "a–b" (reads backwards in RTL).
-  Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00, positioned with `right: %` so time runs right to left) and daily count
+  Below the cards: a timeline (`timeline()`, rows 06:00 to 06:00 so each night is whole, with a dashed midnight line and a note
+  saying so; the counts say they run midnight to midnight like the table; owner, feedback #3; positioned with `right: %` so time
+  runs right to left) and daily count
   bars (oldest on the right; then today so far, apart and lighter, labelled "היום"; owner), plain CSS. Pee is a ring (`--pee`), poop a filled dot (`--poop`), "both" the ring with the dot inside: shape, not only colour.
 - **App update:** a new version never reloads the page while the app is on screen (owner's sync log 3: that aborted the
   return's check, about 2 s per opening after a deploy): it is applied when the app is hidden (usage counts kept first) or, if

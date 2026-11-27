@@ -186,7 +186,8 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     const { type, detail: kindDetail } = fromKind(kind);
     const bk = bottleKindOf(kind);
     const bottle = bk ? { kind: bk, given, left: Math.min(left, given) } : null;
-    const detail = kind === 'medicine' ? medId! : bottle ? bottleDetail(bottle) : kindDetail;
+    // (feedback #4) a sleep keeps who marked its wake-up through an edit (the server clears it when the sleep is open again)
+    const detail = kind === 'medicine' ? medId! : bottle ? bottleDetail(bottle) : type === 'sleep' && event?.type === 'sleep' ? event.detail : kindDetail;
     const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : bottle ? `${KIND_LABEL[kind]} · ${bottleAmountText(bottle)}` : KIND_LABEL[kind];
     const me = engine.getConfig()?.me ?? '?';
     const res =

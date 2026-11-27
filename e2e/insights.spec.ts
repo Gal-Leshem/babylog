@@ -103,6 +103,14 @@ test('summary: under the day table, a timeline row per day from 06:00, right to 
   const fromRight = (rib.x + rib.width - (firstSleep.x + firstSleep.width)) / rib.width;
   expect(fromRight).toBeGreaterThan(16 / 24 - 0.02);
   expect(fromRight).toBeLessThan(16 / 24 + 0.02);
+  // (owner, feedback #3) a thin line at midnight in every row (18/24 from the right), and both sections say how they cut days
+  const mid = await box(rows.nth(1).getByTestId('tl-midnight'));
+  const midFromRight = (rib.x + rib.width - mid.x) / rib.width;
+  expect(midFromRight).toBeGreaterThan(18 / 24 - 0.01);
+  expect(midFromRight).toBeLessThan(18 / 24 + 0.01);
+  await expect(page.getByTestId('tl-midnight')).toHaveCount(7);
+  await expect(page.getByTestId('tl-note')).toHaveText('כל שורה: מ-06:00 עד 06:00 למחרת, כדי שכל לילה יופיע שלם. הקו הדק הוא חצות.');
+  await expect(page.getByTestId('cnt-note')).toHaveText('לפי יממה, מחצות עד חצות, כמו בטבלה של הסיכום.');
   expect(await rows.nth(1).getByTestId('tl-feed').count()).toBeGreaterThanOrEqual(8);
   expect(await rows.nth(1).getByTestId('tl-diaper').count()).toBeGreaterThanOrEqual(6);
   // daily counts: the 7 full days, oldest on the right, and then today (owner), so 8 bars each

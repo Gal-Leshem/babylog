@@ -192,7 +192,7 @@ export function toggleSleep(): void {
   count('log.awake');
   // If an open sleep was closed, undo reopens it; if an end-only row was created, undo deletes it.
   const sleepId = res.event?.id ?? id;
-  const inverse: ApiRequest = sleepId !== id ? { action: 'update', id: sleepId, patch: { end: '' } } : { action: 'delete', id };
+  const inverse: ApiRequest = sleepId !== id ? { action: 'update', id: sleepId, patch: { end: '', detail: '' } } : { action: 'delete', id };
   // (owner) the wake-up toast also says how long the sleep was
   const slept = res.event?.start ? parseLocal(res.event.start) : NaN;
   const text = (t: string) => savedText(W().wokeUp, timeOf(t), offline) + (Number.isNaN(slept) ? '' : ` · ${W().slept} ${hm((parseLocal(t) - slept) / 60_000)}`);
@@ -226,10 +226,10 @@ export function deleteEvent(e: BabyEvent): void {
  * Returns the error when the server rules refuse it (another sleep is open), so the form can show it.
  */
 export function deleteWake(e: BabyEvent): { error: string } | null {
-  const res = engine.dispatch({ action: 'update', id: e.id, patch: { end: '' } });
+  const res = engine.dispatch({ action: 'update', id: e.id, patch: { end: '', detail: '' } });
   if (!res.ok) return { error: errorText(res.error, res.detail) };
   count('form.deleteWake');
-  showToast({ text: `רישום ההתעוררות נמחק · ${W().stillAsleep}`, undo: () => undoOp(res.opId, { action: 'update', id: e.id, patch: { end: e.end } }) });
+  showToast({ text: `רישום ההתעוררות נמחק · ${W().stillAsleep}`, undo: () => undoOp(res.opId, { action: 'update', id: e.id, patch: { end: e.end, detail: e.detail } }) });
   return null;
 }
 

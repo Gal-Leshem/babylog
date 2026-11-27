@@ -7,7 +7,7 @@ import { Usage, type UsageKV } from './usage';
 import type { QuestionStateName, UsageName } from '../shared/usage';
 import { insights } from '../shared/insights';
 import { moreAnswers } from '../shared/questions-data';
-import { questionState, questionsFor } from './questions';
+import { allQuestions, questionState } from './questions';
 import { feedingOf } from '../shared/bottle';
 
 export const engine = new Engine({ storage: browserStorage, onRequest: countRequest });
@@ -37,10 +37,10 @@ function questionStates(): Record<string, QuestionStateName> {
   const feeding = feedingOf(settings);
   const a = { ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin, { nursing: feeding.breast }) };
   const out: Record<string, QuestionStateName> = {};
-  // (F18) only the questions this family's kinds of feeding offer
-  for (const q of questionsFor(feeding)) {
+  for (const q of allQuestions(feeding)) {
     const c = prefs.questions[q.id];
-    if (!c && q.manualOnly) continue; // by hand only, and not turned on: neither shown nor waiting
+    // by hand only, or not for this family's kinds of feeding (F18), and not turned on: neither shown nor waiting
+    if (!c && (q.manualOnly || q.fits === false)) continue;
     out[q.id] = c ?? (questionState(q, a, undefined).shown ? 'shown' : 'waiting');
   }
   return out;

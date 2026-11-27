@@ -828,6 +828,22 @@ No names, addresses or secrets in this file (the repository is public).
   the pace and the touch check work as built. First request counts: 2% of the shared daily quota (the owner's server and the
   first family's). Script cache stage 1: not now **(owner)**, in `BACKLOG.md` to look at again.
 
+- The owner's feedback list (four items) **(owner)**:
+  - #4, bug: a wake-up marked by the other parent showed the name of who marked falling asleep (a sleep is one row with one
+    parent). Now the wake-up's parent is kept in the sleep's detail (`woke:<name>`, only when it is the other parent; no new
+    column) and the "התעורר" row in the recent list shows it (History unchanged, owner). An open sleep has no waker (cleared
+    when the wake-up is deleted or undone); an edit keeps it. Only wake-ups from now on carry it. Tests: server (stored only for
+    the other parent, kept by an edit, cleared when open again, any other sleep detail refused) and browser (the two names
+    on the two rows); each failed with its part broken.
+  - #5: "בחירת שאלות" lists every question for every family; one its kinds of feeding do not offer is off ("כבויה: לא בסוגי
+    ההאכלה שבהגדרות. אפשר להדליק"), and turned on says there is not enough data yet. Nursing questions are listed for a family
+    that gives bottles only too (owner; replaces the F18 rule that left them out). Tests: unit (the list, never shown by
+    itself even with data) and browser (both kinds of family, every unfit question turned on); each failed when broken.
+  - #3: the timeline keeps 06:00 to 06:00 rows so each night is whole (owner, as recommended), with a dashed midnight line in
+    every row and a note under each title ("כל שורה: מ-06:00 עד 06:00 למחרת…" / "לפי יממה, מחצות עד חצות…"). Browser test
+    (the line at 18/24 of the row, the notes; failed with the line moved); screenshots day, night and 360 x 560.
+  - #2 (ideas of 23 Nov): already handled earlier (F15, F16, F17 parked, the age line); nothing new.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

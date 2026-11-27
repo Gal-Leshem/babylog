@@ -9,7 +9,7 @@ const hhmm = (t: number) => formatLocal(t).slice(11, 16);
 import { addDays } from '../../shared/tz';
 import { hm } from '../labels';
 import { durationHe } from '../../shared/speech';
-import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, questionState, questionsFor } from '../questions';
+import { type AllData, CATEGORIES, IF_WORRIED, NOT_MEDICAL, type Question, type QuestionId, allQuestions, questionState } from '../questions';
 import { type Feeding, bottleKindsOn, feedingOf } from '../../shared/bottle';
 import { count, engine, hideToast, setQuestion, showToast, useEngine, useNow, usePrefs } from '../state';
 import { Feedback } from './Feedback';
@@ -504,7 +504,7 @@ export function Insights() {
     () => ({ ins: insights(events, now, settings.mergeWindowMin), more: moreAnswers(events, now, settings.mergeWindowMin, { nursing: feeding.breast }) }),
     [events, now, settings.mergeWindowMin, feeding.breast],
   );
-  const questions = questionsFor(feeding);
+  const questions = allQuestions(feeding);
   const r = a.ins;
   const [mode, setMode] = useState<'cards' | 'pick' | 'suggest'>('cards');
   const [menu, setMenu] = useState<QuestionId | null>(null);
@@ -565,7 +565,15 @@ export function Insights() {
                 <div class="prow" key={q.id} data-testid={`pick-${q.id}`}>
                   <div class="t">
                     <b>{q.q}</b>
-                    <small>{!shown && q.manualOnly && choices[q.id] === undefined ? `${q.desc}. מוצגת רק כשמדליקים אותה` : !shown && !ready && choices[q.id] === undefined ? 'תופיע לבד כשיהיו מספיק נתונים' : q.desc}</small>
+                    <small>
+                      {!shown && q.fits === false && choices[q.id] === undefined
+                        ? `${q.desc}. כבויה: לא בסוגי ההאכלה שבהגדרות. אפשר להדליק`
+                        : !shown && q.manualOnly && choices[q.id] === undefined
+                          ? `${q.desc}. מוצגת רק כשמדליקים אותה`
+                          : !shown && !ready && choices[q.id] === undefined
+                            ? 'תופיע לבד כשיהיו מספיק נתונים'
+                            : q.desc}
+                    </small>
                   </div>
                   <button
                     type="button"
