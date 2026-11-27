@@ -796,11 +796,15 @@ No names, addresses or secrets in this file (the repository is public).
 
 ## 27 November 2026 (one conversation)
 - Safety-net full list **(owner)**: in an app left open untouched the full list slows down with the checks: every 15 minutes
-  after 10 minutes untouched and every 30 after 30 (was every 5 minutes for as long as it stayed open). A touch when one is due
-  by the usual 5 minutes makes the touch's check that full list (owner's idea: someone is looking, so the data is made whole
-  now); a touch that logs something keeps its one request, and the full list follows within 30 s. An hour open untouched: 4 full
-  lists instead of 12 (about 118 requests instead of 126). Same bundle on the server (app only). Tests: engine (the delays; the
-  touch's full list; each failed with its part broken), unit and browser suites normal and with `MOCK_DELAY=250`.
+  after 10 minutes untouched and every 30 after 30 (was every 5 minutes for as long as it stayed open). A touch after such a
+  slowdown, when one is due by the usual 5 minutes, makes the touch's check that full list (owner's idea: someone is looking, so
+  the data is made whole now). In normal use nothing changes: the interval brings it unseen, a touch never shows "מתעדכן…" for
+  it; a touch that logs something stays one request and the full list follows within 30 s. An hour open untouched: 3 or 4 full
+  lists instead of 12 (about 118 requests instead of 126). App only; the server is unchanged. The interval's look is now an
+  engine method (`fullLook`) so the unit tests reach it. Tests: engine (the delays, the interval's looks and a late look, the
+  touch's full list, one request for a tap after a long while, none from a touch in normal use; each failed with its part
+  broken), unit and browser suites normal and with `MOCK_DELAY=250`. The `change-reviewer` agent found the missing tap and
+  interval tests and the "מתעדכן…" in normal use before the push.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

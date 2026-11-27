@@ -1097,6 +1097,97 @@ describe('pace', () => {
     expect(syncs()).toHaveLength(0);
   });
 
+  it('after a long untouched while, a touch that logs something is still one request (the full list follows from the interval)', async () => {
+    const min = 60_000;
+    const e = makeEngine();
+    e.touched();
+    await e.returned();
+    e.fullLook(); // start()
+    for (let i = 0; i < 24; i++) {
+      clock += 30_000; // the interval looks every 30 s: 12 minutes untouched (a full list came at 5)
+      e.fullLook();
+      await idle();
+    }
+    seen = [];
+    timers.length = 0;
+    e.touched();
+    let release!: () => void;
+    gate = new Promise<void>((r) => (release = r));
+    e.dispatch(feed('tap'));
+    await idle();
+    gate = null;
+    clock += 2_000;
+    timers.find((t) => t.ms === TOUCH_CHECK_DELAY_MS)!.fn();
+    release();
+    await idle();
+    await idle();
+    expect(syncs(), 'the tap carries the check').toHaveLength(1);
+    clock += 30_000;
+    e.fullLook();
+    await idle();
+    expect(syncs(), 'then the full list, by the usual 5 minutes after the touch').toHaveLength(2);
+    expect(syncs()[1]!.rev).toBeUndefined();
+  });
+
+  it('in normal use a touch never runs the full list (no "updating" for it); the interval brings it unseen', async () => {
+    const e = makeEngine();
+    e.touched();
+    await e.returned();
+    e.fullLook(); // start()
+    for (let i = 0; i < 9; i++) {
+      clock += 30_000; // used all along, the interval looking every 30 s: 4.5 minutes
+      e.touched();
+      e.fullLook();
+      await idle();
+    }
+    clock += 25_000;
+    e.fullLook(); // 4:55, not due yet
+    await idle();
+    clock += 20_000; // 5:15: due, the interval looks again only at 5:25
+    await e.pollOnce(); // a fresh check
+    seen = [];
+    timers.length = 0;
+    e.touched(); // due by 5 minutes, but the full list never slowed down
+    expect(timers.filter((t) => t.ms === TOUCH_CHECK_DELAY_MS)).toHaveLength(0);
+    clock += 10_000;
+    const states: boolean[] = [];
+    const off = e.subscribe(() => states.push(e.getState().checking));
+    e.fullLook();
+    await idle();
+    off();
+    expect(syncs()).toHaveLength(1);
+    expect(syncs()[0]!.rev).toBeUndefined();
+    expect(states.includes(true), 'the interval\'s full list shows nothing').toBe(false);
+  });
+
+  it('the interval looks every 30 s: the full list after 5 minutes in use, not before 15 untouched; a late look counts as a return', async () => {
+    const min = 60_000;
+    const e = makeEngine();
+    e.touched();
+    await e.returned();
+    const looks = async (n: number) => {
+      for (let i = 0; i < n; i++) {
+        clock += 30_000;
+        e.fullLook();
+        await idle();
+      }
+    };
+    e.fullLook(); // start() looks first at once
+    seen = [];
+    await looks(10); // 5 minutes
+    expect(syncs().filter((x) => x.rev === undefined), 'one full list at 5 minutes').toHaveLength(1);
+    seen = [];
+    await looks(14); // to 12 minutes untouched: the next is due 15 minutes after the last (at 20)
+    expect(syncs().filter((x) => x.rev === undefined), 'none while untouched under 15 minutes').toHaveLength(0);
+    await looks(16); // to 20 minutes
+    expect(syncs().filter((x) => x.rev === undefined)).toHaveLength(1);
+    seen = [];
+    clock += 40 * min; // timers frozen (hidden): the next look is late
+    e.fullLook();
+    await idle();
+    expect(syncs(), 'a late look is a return, not a second download').toHaveLength(0);
+  });
+
   it('spreads retries by up to a fifth, so two phones do not come back in step', async () => {
     offline = true;
     const e = new Engine({ storage, fetchImpl, now: () => clock, newId: () => `op${++n}`, setTimer: (fn, ms) => timers.push({ fn, ms }), clearTimer: () => undefined, random: () => 0.5 });

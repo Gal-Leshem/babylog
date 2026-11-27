@@ -54,7 +54,7 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
   CI after the fix: server 0.8 to 1.3 s, `sheet` (Events tab lookup + row count, where the spreadsheet loads) 0.24 to 0.83 s.
 - Daily quota shared by every server (one Google account): 50,000 properties calls. Estimate per server = requests + 2 x
   operations (`src/shared/quota.ts`). Capacity: about 20 to 35 families at 75% (about 10 if heavy users).
-- An hour open untouched: about 118 requests, 4 of them full lists (pace: 5 s for 2 minutes after a use, then 15 s, 30 s after
+- An hour open untouched: about 118 requests, 3 or 4 of them full lists (pace: 5 s for 2 minutes after a use, then 15 s, 30 s after
   10 minutes, 60 s after 30; full list 5 / 15 / 30 minutes).
 - Script cache stage 0 (`cacheProbe` rows in TIMING): a properties read 8 to 103 ms (about 40), a cache read that hits 5 to 65 ms
   (about 35), a miss 7 to 71, writing three values 42 to 148: no speed change for a check; a write would add about 0.1 s.
@@ -70,8 +70,9 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
   a touch checks at once when the last check is older than 15 s and brings back 15 s.
 - Sync mark (owner): "מתעדכן… · עודכן לאחרונה HH:MM" when the last update is over a minute old; "עדכני לשעה HH:MM" (no dot) while
   the pace is slower than 15 s; one line at 360 x 560, muted colour at night (features' conditions).
-- Full list (owner, 27 Nov): every 5 minutes, 15 after 10 minutes untouched, 30 after 30 (`fullRefreshDelay`); a touch when one
-  is due by the usual 5 minutes makes the touch's check a full list. Keep it with the checks' pace if either changes.
+- Full list (owner, 27 Nov): every 5 minutes, 15 after 10 minutes untouched, 30 after 30 (`fullRefreshDelay`); a touch after
+  such a slowdown, when one is due by the usual 5 minutes, makes the touch's check a full list; never in normal use (no
+  "מתעדכן…" for it). Keep it with the checks' pace if either changes.
 - Options kept for later, only if the owner asks: a second request when the first is slow; a read copy outside Google.
 - Docs-only changes go to `dev` without `ship.sh`: every push to `main` is a new app version that the phones reload into.
 - The owner wants the final report of each piece of work in Hebrew under the heading "סיכום", apart from progress notes.
@@ -98,6 +99,10 @@ and no check right after a tap; then the cache recommendation with the request c
 - A test that slows every request can let a regular check time out first; slow only the requests with entries (`opsDelay` on the mock).
 - A test that moves the clock must stop the server answering meanwhile, or a check in between makes the data fresh.
 - The mock server must end open connections when it closes (a browser's spare connection held a test 29 s).
+- A new branch in `touched()` passed every test with the tap guard (`syncStartedAt >= at`) removed -> every branch of the touch's
+  check needs a tap-after-touch test that reaches it (one request a tap).
+- What the intervals in `start()` decide was untested (reverting the slowdown kept every test green) -> put it in an engine
+  method the tests call (`fullLook`), and simulate the interval's 30 s looks: one big step counts as a late look (a return).
 - A clock jump in a browser test counts as a frozen-timer return (`late` in `start()`) and resets the full-list clock -> test the
   full list's timing in the engine tests (`fullDue`), not by jumping the page clock.
 - Right after a deploy Google can answer from the previous version: the live test waits for three answers from this build.

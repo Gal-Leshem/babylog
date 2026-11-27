@@ -787,6 +787,25 @@ export class Engine {
     return pollDelay(now - this.lastActive, now - Math.max(this.lastActive, this.lastTouch));
   }
 
+  /** When the safety-net clock was last looked at (`fullLook`). */
+  private lastLook = -Infinity;
+
+  /**
+   * The safety net, looked at every FULL_CHECK_MS by `start()`: the whole list when `fullDue`. (owner's sync log) iOS freezes timers
+   * while the app is hidden and fires them on return, which fetched the whole list a second time right after the return's own
+   * check: a look that comes far later than planned counts as a return instead.
+   */
+  fullLook(visible = true): void {
+    const now = this.now();
+    const late = now - this.lastLook > FULL_CHECK_MS * 2;
+    this.lastLook = now;
+    if (late) this.fullAt = Math.max(this.fullAt, now);
+    else if (visible && this.config && this.fullDue(now)) {
+      this.fullAt = now;
+      void this.sync('full', false, 'full');
+    }
+  }
+
   /** Whether the safety-net full list is due: FULL_REFRESH_MS after the last one, slower in an app left untouched. */
   fullDue(now = this.now()): boolean {
     return now - this.fullAt >= fullRefreshDelay(now - Math.max(this.lastActive, this.lastTouch));
@@ -796,16 +815,18 @@ export class Engine {
    * (owner, performance session) The screen was touched: the slow pace of an untouched app ends, and if the last check is older
    * than TOUCH_STALE_MS one is made now, shown like the check on opening ("מתעדכן…"). It waits a moment first: a touch that logs
    * something starts its own exchange, which carries the check (one request, not two).
-   * (owner) When the full list is due by the usual FULL_REFRESH_MS (it slowed down while nobody touched the screen), the touch's
-   * check is that full list: someone is looking, so the data is made whole now.
+   * (owner) When the full list had slowed down because nobody touched the screen and is due by the usual FULL_REFRESH_MS, the
+   * touch's check is that full list: someone is looking, so the data is made whole now. In normal use the interval brings it as
+   * before (unseen), so a touch never shows "מתעדכן…" for it.
    */
   touched(): void {
     const at = this.now();
     const wasSlow = this.nextCheckIn() > POLL_IDLE_MS;
+    const fullSlowed = fullRefreshDelay(at - Math.max(this.lastActive, this.lastTouch)) > FULL_REFRESH_MS;
     this.lastTouch = at;
     if (wasSlow) this.emit(false); // the screens drop "עדכני לשעה" at once
     if (!this.config) return;
-    const fullOverdue = () => this.now() - this.fullAt >= FULL_REFRESH_MS;
+    const fullOverdue = () => fullSlowed && this.now() - this.fullAt >= FULL_REFRESH_MS;
     if (!fullOverdue() && at - (this.p.lastSync ?? -Infinity) < TOUCH_STALE_MS) return;
     this.setTimer(() => {
       if (this.syncStartedAt >= at) return; // something else asked the server meanwhile (a tap): that answer is as fresh
@@ -898,17 +919,8 @@ export class Engine {
     // The safety net: the whole list after FULL_REFRESH_MS of the app being open since the last list, opening or return.
     // (owner's sync log) iOS freezes timers while the app is hidden and fires them on return, which fetched the whole list a
     // second time right after the return's own check: a look that comes far later than planned counts as a return instead.
-    let lastLook = this.now();
-    const full = setInterval(() => {
-      const now = this.now();
-      const late = now - lastLook > FULL_CHECK_MS * 2;
-      lastLook = now;
-      if (late) this.fullAt = Math.max(this.fullAt, now);
-      else if (visible() && this.config && this.fullDue(now)) {
-        this.fullAt = now;
-        void this.sync('full', false, 'full');
-      }
-    }, FULL_CHECK_MS);
+    this.lastLook = this.now();
+    const full = setInterval(() => this.fullLook(visible()), FULL_CHECK_MS);
     window.addEventListener('online', online);
     window.addEventListener('focus', resume);
     window.addEventListener('pageshow', resume);
