@@ -64,7 +64,7 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
 
 ## Owner decisions in force
 - Script cache: stage 0 (measure only, `cacheProbe`) built. Stage 1 recommended NO after log 4 (27 Nov: 2% of the quota, the
-  busiest server about 520 calls a day); owner's answer pending. Look again when a family is added or a day goes above about
+  busiest server about 520 calls a day); owner: not now, in `docs/BACKLOG.md` to look at again. Look again when a family is added or a day goes above about
   20% ("עומס על השרתים (אתמול)"). Stage 1 = `src/server/gas.ts` only (design and risks in `docs/REFACTOR_PLAN.md` section 8,
   "Proposal: the script cache"), with a fake cache that can evict and fail.
 - Pace (owner chose the full option): 5 s for 2 min after open / return / tap, 15 s, 30 s after 10 min untouched, 60 s after 30;

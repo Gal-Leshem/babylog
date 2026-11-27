@@ -95,6 +95,9 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
   2 Home button, window and tile, without warnings **done** (with the owner's changes to vitamin D, units, icons and "until a date"); 3 warnings and confirmation **done**; 4 history, summary and add-after-the-fact **done**. F7 is complete; next changes come from use.
 
 ### Later or needs a decision
+- Script cache, stage 1 **(owner, 27 Nov 2026: not now, look again later)**: the per-request properties read from the script
+  cache (`REFACTOR_PLAN.md` section 8, "Proposal: the script cache"). At 2% of the shared daily quota it saves nothing that
+  matters and makes nothing faster. Look again when a family is added or "עומס על השרתים (אתמול)" goes above about 20%.
 - F11 Siri / Shortcuts quick logging **(owner, November 2026: wanted, for logging hands-free while nursing)**: built in English and
   Hebrew with alternative names, an asking shortcut ("יומן תינוק" / "Baby log") and "which side next"; answers in the phone's Siri
   language. Signed on the owner's Mac (58 shortcuts); waiting for the owner's test on the phones.

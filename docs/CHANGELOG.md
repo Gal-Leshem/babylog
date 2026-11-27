@@ -826,7 +826,7 @@ No names, addresses or secrets in this file (the repository is public).
 - The owner's fourth sync log, read (`REFACTOR_PLAN.md` section 8, log 4): every part of a tap is timed now ("לא מדוד" gone;
   finding the Events tab and its rows is about half to two thirds of a tap's server time), no return was cut by a new version,
   the pace and the touch check work as built. First request counts: 2% of the shared daily quota (the owner's server and the
-  first family's). Script cache stage 1: recommended no for now.
+  first family's). Script cache stage 1: not now **(owner)**, in `BACKLOG.md` to look at again.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
