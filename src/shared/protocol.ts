@@ -64,6 +64,11 @@ export type ApiRequest =
    * The owner's admin key on a family's server, or the owner's own key on the owner's server; a family's own key gets `send_only`.
    */
   | { action: 'usageTotals'; days?: number }
+  /**
+   * (owner, F15 option B) Every phone's usage counts and question states per day for the last `days` days (today included), with
+   * the parents as "הורה 1" / "הורה 2" (never their names) and the phones as numbers. Same keys as `usageTotals`.
+   */
+  | { action: 'usageDays'; days?: number }
   | { action: 'usage'; user: string; install: string; version?: string; days: { date: string; counts: Record<string, number>; states?: Record<string, string> }[] }
   /** `ids`: only these items (the ones the owner has seen); without it, all of them. */
   | { action: 'feedbackClear'; ids?: string[] }
@@ -78,6 +83,19 @@ export interface UsageTotal {
   requests: number;
   ops: number;
   phones: number;
+}
+/** (owner, F15 option B) One phone's day as `usageDays` hands it out: no names, no phone ids. */
+export interface UsageDayRow {
+  date: string;
+  /** "הורה 1" / "הורה 2" by the order of the parents in Settings; "הורה" for a name no longer in Settings */
+  parent: string;
+  /** 1, 2, ...: the phones of this server in the order they first appear */
+  phone: number;
+  version: string;
+  /** counter name (`USAGE_LABELS`) -> how many times */
+  counts: Record<string, number>;
+  /** question id (`USAGE_QUESTIONS`) -> state name (`QUESTION_STATES`) */
+  states?: Record<string, string>;
 }
 export const FEEDBACK_KINDS: readonly FeedbackKind[] = ['bug', 'idea', 'other'];
 /** Longest feedback text, and longest attached sync log (characters). */
@@ -142,6 +160,8 @@ export interface ApiOk {
   feedback?: FeedbackItem[];
   /** `usageTotals`: one entry per day, oldest first. */
   usageTotals?: UsageTotal[];
+  /** `usageDays`: one entry per phone and day, oldest first. */
+  usageDays?: UsageDayRow[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */
   unchanged?: true;
   /**

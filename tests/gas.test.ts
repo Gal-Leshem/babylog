@@ -654,6 +654,24 @@ describe('the bundle built for a family (--family)', () => {
     expect(post({ key, action: 'usageTotals' }).error).toBe('send_only');
   });
 
+  it('the admin key reads every phone\'s usage days back from the usage tab, parents as "הורה 1" / "הורה 2" (F15 option B)', () => {
+    const { rt, g, post } = bootFam();
+    g.setup!();
+    const key = rt.props.get('API_KEY')!;
+    const admin = rt.props.get('ADMIN_KEY')!;
+    const today = post({ key, action: 'ping' }).serverNow.slice(0, 10);
+    expect(post({ key, action: 'settings', set: { parents: ['Parent A', 'Parent B'] } }).ok).toBe(true);
+    expect(post({ key, action: 'usage', user: 'Parent B', install: 'i2', version: 'v2', days: [{ date: today, counts: { 'log.wet': 4, 'sync.requests': 30 }, states: { gaps: 'off' } }] }).ok).toBe(true);
+    expect(post({ key, action: 'usage', user: 'Parent A', install: 'i1', version: 'v2', days: [{ date: today, counts: { 'log.feed_left': 2 } }] }).ok).toBe(true);
+    const r = post({ key: admin, action: 'usageDays', days: 1 });
+    expect(r.usageDays).toEqual([
+      { date: today, parent: 'הורה 2', phone: 1, version: 'v2', counts: { 'log.wet': 4, 'sync.requests': 30 }, states: { gaps: 'off' } },
+      { date: today, parent: 'הורה 1', phone: 2, version: 'v2', counts: { 'log.feed_left': 2 } },
+    ]);
+    expect(JSON.stringify(r)).not.toMatch(/Parent A|Parent B|"i1"|"i2"/);
+    expect(post({ key, action: 'usageDays' }).error).toBe('send_only');
+  });
+
   it("the owner's build has no admin key: setup makes none and prints no admin code", () => {
     const { rt, g } = boot();
     g.setup!();

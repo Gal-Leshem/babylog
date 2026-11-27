@@ -74,6 +74,8 @@ const LABELS = {
   'toast.amount': 'טוסט: כמות בקבוק',
   'bottle.defaultYes': 'בקבוק: ברירת מחדל עודכנה מההצעה',
   'bottle.defaultNo': 'בקבוק: לא עכשיו להצעה',
+  // (owner, F15 option B) the owner copied every server's usage days
+  'feedback.usageCopy': 'משוב: העתקת נתוני שימוש',
 } as const;
 
 export type UsageName = keyof typeof LABELS;

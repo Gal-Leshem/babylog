@@ -123,7 +123,10 @@ One round trip (`sync`, API 0.4.0; plan and reasons in `REFACTOR_PLAN.md`):
   (with `ids`: only those items). The owner's phone keeps the family servers it reads (`bl.families.v1`: private label, address,
   admin key) and shows them under "משפחות נוספות" in the feedback screen; the feedback screen learns "send only" from the
   answer to its list. The admin key also reads `usageTotals` (numbers only), shown on the owner's phone as "עומס על השרתים"
-  against the shared daily quota (`src/shared/quota.ts`).
+  against the shared daily quota (`src/shared/quota.ts`). And `usageDays` (owner, F15 option B): every phone's counts and question states
+  per day, parents as "הורה 1" / "הורה 2" by their order in Settings and phones as numbers (`usageDays` in `core.ts` hides the
+  names and ids); the owner's phone copies all servers' 14 days at once ("העתקת נתוני שימוש"; the text is handed to the
+  clipboard as a promise, since iOS allows a copy only inside the tap).
 
 ## Security
 Every request carries a secret key (a script property). The web app is anonymous-accessible (Siri cannot sign

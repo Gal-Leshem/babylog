@@ -1,6 +1,6 @@
 import type { FeedbackItem, UsageTotal } from '../shared/protocol';
 import { DEFAULT_SETTINGS, type BabyEvent, type Settings } from '../shared/types';
-import type { Store } from './core';
+import type { Store, UsageStored } from './core';
 import type { UsageDay } from '../shared/usage';
 
 /** One stored usage row (tests and the mock server read them). */
@@ -90,6 +90,11 @@ export class MemoryStore implements Store {
       const sum = (k: string) => rows.reduce((a, r) => a + (r.counts[k] ?? 0), 0);
       return { date, requests: sum('sync.requests'), ops: sum('sync.ops'), phones: new Set(rows.map((r) => r.install)).size };
     });
+  }
+  usageRows(dates: readonly string[]): UsageStored[] {
+    return this.usage
+      .filter((r) => dates.includes(r.date))
+      .map((r) => ({ date: r.date, user: r.user, install: r.install, version: r.version, counts: { ...r.counts }, ...(r.states ? { states: { ...r.states } } : {}) }));
   }
   usageAll(): UsageRow[] {
     return this.usage.map((r) => ({ ...r, counts: { ...r.counts } }));

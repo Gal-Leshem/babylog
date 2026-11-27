@@ -35,29 +35,27 @@ Everything built is live; the three parallel sessions are closed and their knowl
 shipped). Last ship: the slowed full list (27 Nov), with every guide and doc waiting until then.
 
 Waiting for the owner (ask when it fits, do not build before):
-1. **Families, F15 option B**: reading more of a family's "שימוש" tab than the day totals, in the app with the admin code
-   (`docs/BACKLOG.md`). Not built; the owner wants to be asked.
-2. **Families, consent at install**: an explicit "קראתי ומסכים/ה" for a new family, and a lawyer's reading of the privacy page
-   before a wider opening.
-3. **Families, "move the sheet to my Drive"**: wanted later, not built (ownership transfer between free accounts is untested).
+1. **Families, consent at install**: on hold until the owner's legal research (`docs/BACKLOG.md`).
+
+Decided not now (owner, 27 Nov): moving a family's sheet to its own Drive (only when a family asks).
 
 Waiting for something from the owner's daily use:
-5. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה", soon after a slow opening or a tap): it decides the script
+2. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה", soon after a slow opening or a tap): it decides the script
    cache stage 1 (with the `cacheProbe` numbers and the first request counts in "עומס על השרתים"); what it should show is in the
    `performance` skill. Options kept only if the owner asks: a second request when the first is slow; a read copy outside Google.
-6. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
+3. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
    Adding another: the `families` skill ("Adding a family, end to end") and `INSTALL.he.md` "משפחה נוספת".
-7. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.
-8. **Which questions get used** (F8 / F16): the per-question usage counts in each sheet's "שימוש" tab.
+4. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.
+5. **Which questions get used** (F8 / F16): the per-question usage counts in each sheet's "שימוש" tab.
 9. A tap that went through a disappearing toast was fixed (tap shield); "could not get back" was never reproduced: ask for a
    screenshot if it happens again.
 
 On hold by the owner:
-10. **Siri shortcuts (F11)**: 58 shortcuts signed on the Mac; the test on the phones is on hold. When resumed: AirDrop English
+6. **Siri shortcuts (F11)**: 58 shortcuts signed on the Mac; the test on the phones is on hold. When resumed: AirDrop English
     (owner) and עברית (the other parent), try open and locked, report seconds until Siri answers, Face ID, Hebrew names.
     Not verified on a real iPhone: Show Result spoken, the asking shortcut by voice in Hebrew, network from a locked phone.
     Lessons from the Mac: Google answers a POST with a redirect that takes only GET; `shortcuts sign` needs the `.shortcut` extension.
-11. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
+7. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
 
 Owner-only steps still open: see "Owner-only actions" below (second parent's phone, an optional second `rotateKey`).
 

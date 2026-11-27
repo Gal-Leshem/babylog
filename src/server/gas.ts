@@ -6,7 +6,7 @@ import { QUESTION_STATES, USAGE_LABELS, USAGE_QUESTIONS, type UsageDay, question
 import { TZ_NAME, formatLocal, parseLocal } from '../shared/tz';
 import { type BabyEvent, DEFAULT_SETTINGS, type EventType, type Settings, type Source } from '../shared/types';
 import { encodeAdminCode, encodeInstallCode, makeCheckKey } from './auth';
-import { type Deps, type Store, handle } from './core';
+import { type Deps, type Store, type UsageStored, handle } from './core';
 import { type Change, type Since, parseJournal, record, since } from './journal';
 import { README_ROWS } from './readme';
 
@@ -362,6 +362,35 @@ class SheetStore implements Store {
       (phones.get(date) ?? phones.set(date, new Set()).get(date)!).add(String(r[2] ?? ''));
     }
     for (const d of out) d.phones = phones.get(d.date)?.size ?? 0;
+    return out;
+  }
+  /** (owner, F15 option B) The usage rows of these dates, read back into counter and question keys (`handle` hides the names). */
+  usageRows(dates: readonly string[]): UsageStored[] {
+    const sh = this.ss.getSheetByName(USAGE);
+    const last = sh ? sh.getLastRow() : 0;
+    if (!sh || last < 2) return [];
+    const values = timed('read', () => sh.getRange(1, 1, last, sh.getLastColumn()).getValues());
+    const header = values[0]!.map((h) => String(h ?? ''));
+    const byLabel = new Map(Object.entries(USAGE_LABELS).map(([k, label]) => [label, k]));
+    const byQuestion = new Map(Object.keys(USAGE_QUESTIONS).map((k) => [questionColumn(k), k]));
+    const stateOf = new Map(Object.entries(QUESTION_STATES).map(([k, label]) => [label as string, k]));
+    const out: UsageStored[] = [];
+    for (const r of values.slice(1)) {
+      const date = String(r[0] ?? '').replace(/^'/, '');
+      if (!dates.includes(date)) continue;
+      const counts: Record<string, number> = {};
+      const states: Record<string, string> = {};
+      header.forEach((h, i) => {
+        if (i < USAGE_FIXED.length) return;
+        const v = r[i];
+        const k = byLabel.get(h);
+        if (k !== undefined && typeof v === 'number' && v > 0) counts[k] = v;
+        const q = byQuestion.get(h);
+        const st = q !== undefined ? stateOf.get(String(v ?? '')) : undefined;
+        if (q !== undefined && st) states[q] = st;
+      });
+      out.push({ date, user: String(r[1] ?? ''), install: String(r[2] ?? ''), version: String(r[3] ?? ''), counts, ...(Object.keys(states).length ? { states } : {}) });
+    }
     return out;
   }
   /** No lock: each phone writes only its own rows (date, parent, phone), and a beacon is never waited for. */

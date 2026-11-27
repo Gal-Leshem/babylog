@@ -139,3 +139,31 @@ test("the owner sees yesterday's load of his server and each family's, and a war
     await a.server.close();
   }
 });
+
+// Owner (F15 option B, 27 Nov 2026): the owner copies every server's usage of the last 14 days at once, parents as "הורה 1" / "הורה 2".
+test('the owner copies the usage days of his server and each family\'s at once, with no names', async ({ page, context, request }) => {
+  const a = await family('a');
+  try {
+    const today = todayLocal();
+    const post = (url: string, body: object) => fetch(url, { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
+    expect((await post(a.url, { key: a.key, action: 'settings', set: { parents: ['Parent A', 'Parent B'] } })).ok).toBe(true);
+    expect((await post(a.url, { key: a.key, action: 'usage', user: 'Parent B', install: 'a-phone', version: 'v9', days: [{ date: today, counts: { 'log.wet': 4 }, states: { gaps: 'off' } }] })).ok).toBe(true);
+    await install(page);
+    expect((await post(`${MOCK}/`, { key: 'test-key', action: 'usage', user: 'Parent One', install: 'o-phone', version: 'v9', days: [{ date: today, counts: { 'log.feed_left': 2 } }] })).ok).toBe(true);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.getByTestId('tab-settings').click();
+    await page.getByTestId('open-feedback').click();
+    await page.getByTestId('fam-add-open').click();
+    await page.getByTestId('fam-label').fill('משפחה א');
+    await page.getByTestId('fam-code').fill(encodeAdminCode(a.url, a.admin));
+    await page.getByTestId('fam-add').click();
+    await page.getByTestId('usage-copy').click();
+    await expect(page.getByTestId('fam-msg')).toHaveText('נתוני השימוש הועתקו (14 ימים)');
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toContain(`== שלנו ==\n${today} · הורה 1 · טלפון 1 · גרסה v9\nרישום: הנקה שמאל 2`);
+    expect(copied).toContain(`== משפחה א ==\n${today} · הורה 2 · טלפון 1 · גרסה v9\nרישום: פיפי 4\nשאלות: כל כמה זמן מאכילים: כובתה ידנית`);
+    expect(copied).not.toMatch(/Parent A|Parent B|Parent One|a-phone|o-phone/);
+  } finally {
+    await a.server.close();
+  }
+});

@@ -126,7 +126,6 @@ or timing also `MOCK_DELAY=250` and the three heights. Screenshots of the change
 ## Open (keep current; details in `docs/PROGRESS.md` "Where we are")
 - F17 visit journal: parked at low priority by the owner, open decisions in `docs/BACKLOG.md`; mockups before building.
 - F11 Siri shortcuts: built and signed; the owner's test on the phones is on hold (owner).
-- F15 option B (every family's usage in the app with the admin code): for families; not built.
 - F8: which questions get used (usage counts per question in the "שימוש" tab).
 
 Last reviewed: 26 November 2026 (enriched by the features session's handoff: owns, rules, decisions, traps).

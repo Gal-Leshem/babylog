@@ -53,13 +53,17 @@ Shared: in `src/server/core.ts` / `src/server/gas.ts` this skill means `familySe
   it hidden when asked; ownership transfer between two free accounts from a script is untested.
 - Families only send feedback; the owner reads and deletes from the owner's phone; no e-mail. The admin section also shows on
   the other parent's phone in the owner's family (owner: fine).
-- The admin key may read numbers only (`usageTotals`: requests, operations, phones per day; no names, no texts). Approved.
+- The admin key may read numbers only: `usageTotals` (requests, operations, phones per day) and, since 27 Nov, `usageDays`
+  (every phone's counts and question states per day, F15 option B) with parents as "הורה 1" / "הורה 2" and phones as numbers;
+  never names, phone ids or texts. The owner copies all servers' 14 days at once ("העתקת נתוני שימוש").
+- Consent checkbox at install: on hold, needs more legal research first (owner, 27 Nov; `docs/BACKLOG.md`).
+- "Move the sheet to my Drive": not now, only when a family asks (owner, 27 Nov).
 - No family test server: the owner skipped a test family; behaviour is proven by tests, the real creation by the first family.
 - Siri for families later (Siri itself is not yet tried on the owner's phones).
 
 ## Waiting for the owner (ask, do not build)
-- Anything more from a family's "שימוש" tab than the day totals (full F15 option B).
-- An explicit "קראתי ומסכים/ה" at install for a new family, and a lawyer's reading of the privacy page before a wider opening.
+- An explicit "קראתי ומסכים/ה" at install for a new family: on hold until the owner's legal research; a lawyer's reading of the
+  privacy page before a wider opening.
 - A "disabled" state (the pipeline switches a family's server off without deleting its data): offered, not wanted for 2 to 3 families.
 
 ## Adding a family, end to end (and where it fails)
@@ -101,4 +105,4 @@ After shipping: `scripts/ship.sh` prints one line per family ("answers from this
 ## Open
 - First family live (November 2026): hear how it goes; its feedback reaches the owner's phone through the admin code.
 
-Last reviewed: 26 November 2026 (enriched by the families session's handoff).
+Last reviewed: 27 November 2026 (F15 option B built; consent and moving the sheet decided: not now).

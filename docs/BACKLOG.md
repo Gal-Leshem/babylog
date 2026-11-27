@@ -110,14 +110,15 @@ events (type `medicine`, which medicine, time, who, dose note, given/skipped). O
 ### From the owner's ideas (feedback #2, November 2026)
 - **F15 Usage measurement (owner: wanted, with conditions)**: per parent (not per family); no cost to the app's speed (if there
   is any doubt, no measurement); the founder sees everyone's numbers, families included. **Option A built** (counts per parent,
-  phone and day in each family's "שימוש" tab; every family's sheet is in the owner's Drive). **Option B, for the families
-  session: ask the owner before building** (owner, November 2026): read every family's usage inside the app, under "משפחות
-  נוספות" next to their feedback, with each family's admin code (`ADMIN_ACTIONS` would gain a read of the "שימוש" tab), and
-  copy all of it at once. Not built; the owner wants to be asked about it.
-- **For the families session, ask the owner (November 2026):** an explicit "קראתי ומסכים/ה" to the privacy and terms page at
-  install for a new family (the privacy law since Amendment 13 may treat consent taken only from use as doubtful); and a
-  lawyer's reading of the page before a wider opening. "בלי התחייבות" was removed by the owner; back if the app goes
-  commercial.
+  phone and day in each family's "שימוש" tab; every family's sheet is in the owner's Drive). **Option B built (owner, 27 Nov 2026)**: the owner's phone copies every
+  server's usage of the last 14 days at once ("העתקת נתוני שימוש" under "משפחות נוספות"; action `usageDays`, the admin code on
+  a family's server), parents as "הורה 1" / "הורה 2" and phones as numbers, never names.
+- **Consent at install: on hold (owner, 27 Nov 2026: needs more legal research first).** Proposed: an explicit "קראתי
+  ומסכים/ה" to the privacy and terms page at install, required before "התחברות", with the date and page version saved in the
+  family's sheet (the privacy law since Amendment 13 may treat consent taken only from use as doubtful); and a lawyer's reading
+  of the page before a wider opening. "בלי התחייבות" was removed by the owner; back if the app goes commercial.
+- **Move a family's sheet to its own Drive: not now (owner, 27 Nov 2026).** Little privacy gain (the server keeps the owner's
+  access), untested between free accounts; look into it only when a family asks.
 - **F16 Questions instead of insight cards (owner: liked)**: every insight is a question with a short answer, grouped by topic
   (feeding, sleep, diapers, general, visit); each parent picks the questions that interest them ("בחירת שאלות", "לא להציג
   יותר"), and a "הציעו שאלה" link sends a suggestion through the feedback. Mockups shown (owner liked the design).

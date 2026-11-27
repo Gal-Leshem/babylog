@@ -3,7 +3,7 @@ import { FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKi
 import { parseLocal } from '../../shared/tz';
 import { NetworkError, callApi } from '../api';
 import { decodeAdminCode } from '../config';
-import { type FamilySource, loadFamilies, saveFamilies } from '../families';
+import { type FamilySource, type UsageGroup, loadFamilies, saveFamilies, usageText } from '../families';
 import { DAILY_PROPS_QUOTA, propsEstimate, quotaCheck } from '../../shared/quota';
 import { errorText } from '../labels';
 import { count, engine } from '../state';
@@ -170,6 +170,24 @@ function FamiliesFeedback() {
     store(list.filter((x) => x.url !== f.url));
   };
   const groups = list.map((f) => ({ label: f.label, items: loaded[f.url]?.items ?? [] }));
+  // (owner, F15 option B) every server's usage of the last 14 days, parents as "הורה 1" / "הורה 2", as one text
+  const copyUsage = () => {
+    const read = (r: Awaited<ReturnType<typeof engine.ask>>): UsageGroup['rows'] => (r.ok ? (r.usageDays ?? []) : r.error === 'unknown_action' ? 'old' : 'error');
+    const text = Promise.all([
+      engine.ask({ action: 'usageDays' }).then(read, (): UsageGroup['rows'] => 'error').then((rows) => ({ label: 'שלנו', rows })),
+      ...list.map((f) => callApi(f, { action: 'usageDays' }).then(read, (): UsageGroup['rows'] => 'error').then((rows) => ({ label: f.label, rows }))),
+    ]).then(usageText);
+    setMsg('אוסף נתוני שימוש…');
+    // iOS allows the copy only in the tap itself: the text is handed over as a promise that the requests fill in later
+    const done = typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write
+      ? navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then((t) => new Blob([t], { type: 'text/plain' })) })])
+      : text.then((t) => navigator.clipboard.writeText(t));
+    count('feedback.usageCopy');
+    void done.then(
+      () => setMsg('נתוני השימוש הועתקו (14 ימים)'),
+      () => setMsg('לא ניתן להעתיק'),
+    );
+  };
   const copy = () => {
     void navigator.clipboard?.writeText(familiesText(groups)).then(
       () => setMsg('הועתק'),
@@ -244,6 +262,9 @@ function FamiliesFeedback() {
               העתקה של כולם
             </button>
           )}
+          <button type="button" data-testid="usage-copy" onClick={copyUsage}>
+            העתקת נתוני שימוש
+          </button>
         </div>
       )}
       {msg && (
