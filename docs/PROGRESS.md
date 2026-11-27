@@ -85,7 +85,8 @@ Owner-only steps still open: see "Owner-only actions" below (second parent's pho
 ## Owner-only actions (status)
 - Done: GitHub Pages enabled; `setup` run in both Apps Script projects; production key rotated once (`rotateKey`) and a working `/exec` setup code used;
   app installed on the owner's phone and used daily.
-- Pending / optional: install on the second parent's phone (send the setup code privately, never in a group chat; names are prefilled);
+- Done (seen in the usage days, 27 Nov): the app runs on both parents' phones.
+- Pending / optional:
   share the sheet (Viewer) with the second parent's Google account only if they want to read it or use their AI assistant on it;
   optionally run `rotateKey` once more when everything works (the setup code was pasted into a chat during setup), then reinstall the code on both phones.
 - Siri shortcuts: signed on the MacBook (done); AirDrop each parent the folder of their Siri language (owner English, the other parent Hebrew), then delete the folder from the Mac.
