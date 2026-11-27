@@ -709,6 +709,9 @@ test.describe('sleep on Home', () => {
     await expect(page.getByTestId('btn-sleep')).toContainText('נרדם');
     await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'long')!.end).not.toBe('');
     await expect(tile).not.toHaveClass(/\bwarn\b/);
+    // (feedback #4) the sleep was the other parent's; the wake-up recorded here names this parent
+    await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'long')!.detail).toBe('woke:Parent One');
+    await expect(page.getByTestId('recent-row').filter({ hasText: 'התעורר' }).locator('.rm')).toHaveText('Parent One');
   });
 
   test('an ordinary nap is not flagged', async ({ page, request }) => {
@@ -835,4 +838,27 @@ test('a wake-up marked on this phone shows this parent on the "התעורר" row
   await expect(row('התעורר').locator('.rm')).toHaveText('Parent One');
   await expect(row('נרדם').locator('.rm')).toHaveText('Parent Two');
   await expect.poll(async () => (await serverEvents(request)).find((e) => e.id === 'sl')?.detail).toBe('woke:Parent One');
+});
+
+// Owner (feedback #4): who marked the wake-up survives an edit of the sleep, and comes back when deleting the wake-up is undone.
+test('an edit of the wake-up keeps who marked it; deleting the wake-up and "בטל" puts the name back', async ({ page, request }) => {
+  await resetServer(request);
+  const d = await pinPageDay(page);
+  await seed(request, [{ id: 'sl', type: 'sleep', start: `${d} 09:00`, end: `${d} 10:00`, detail: 'woke:Parent One', user: 'Parent Two' }]);
+  await install(page);
+  const detail = async () => (await serverEvents(request)).find((e) => e.id === 'sl')!;
+  const wakeRow = page.getByTestId('recent-row').filter({ hasText: 'התעורר' });
+  await expect(wakeRow.locator('.rm')).toHaveText('Parent One');
+  await wakeRow.click();
+  await page.getByTestId('end-back-10').click();
+  await page.getByTestId('save').click();
+  await expect.poll(async () => (await detail()).end).not.toBe(`${d} 10:00`);
+  expect((await detail()).detail).toBe('woke:Parent One');
+  await expect(wakeRow.locator('.rm')).toHaveText('Parent One');
+  await wakeRow.click();
+  await page.getByTestId('delete').click();
+  await expect.poll(async () => [(await detail()).end, (await detail()).detail]).toEqual(['', '']);
+  await page.getByTestId('toast-undo').click();
+  await expect.poll(async () => (await detail()).detail).toBe('woke:Parent One');
+  await expect(wakeRow.locator('.rm')).toHaveText('Parent One');
 });

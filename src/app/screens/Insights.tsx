@@ -66,8 +66,8 @@ function partsGrid(parts: NonNullable<MoreAnswers['feedParts']>, cur: number): J
 const WEEKDAY_LETTER = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const weekdayOf = (d: string) => WEEKDAY_LETTER[new Date(`${d}T12:00:00Z`).getUTCDay()]!;
 /** A card's "מה זה אומר?" parts, closed by the common "אם משהו מדאיג" unless it has its own. */
-const aboutOf = (q: Question, w: BabyWords) => {
-  const parts = q.about?.(w) ?? [];
+const aboutOf = (q: Question, w: BabyWords, f: Feeding) => {
+  const parts = q.about?.(w, f) ?? [];
   return parts.some((p) => p.title === IF_WORRIED.title) ? parts : [...parts, IF_WORRIED];
 };
 /** (owner) a gap with its unit, so "2:50" cannot be read as minutes: "2:50 שעות", or "45 דק׳" under an hour */
@@ -461,17 +461,22 @@ const answer = (q: Question, a: AllData, now: number, w: BabyWords, f: Feeding) 
 
 /** Not enough data yet (shown only for a question the parent turned on by hand): how much there is and how much is needed. */
 function waiting(q: Question, a: AllData): JSX.Element {
-  const p = q.prog(a);
+  // (owner, feedback #5) a question this family's kinds of feeding do not offer, turned on by hand: no answer from data of
+  // another kind (cluster feeding from bottles, a share of bottles without nursing), only why there is none
+  const unfit = q.fits === false;
+  const p = unfit ? { have: 0, need: 1 } : q.prog(a);
   return (
     <div class="wait" data-testid={`q-${q.id}-wait`}>
-      <div class="ring" style={{ '--p': String(Math.min(100, Math.round((p.have / p.need) * 100))) }}>
-        <bdi>
-          {p.have}/{p.need}
-        </bdi>
-      </div>
+      {!unfit && (
+        <div class="ring" style={{ '--p': String(Math.min(100, Math.round((p.have / p.need) * 100))) }}>
+          <bdi>
+            {p.have}/{p.need}
+          </bdi>
+        </div>
+      )}
       <div class="t">
         עוד אין מספיק נתונים
-        <small>{q.wait(p)}</small>
+        <small>{unfit ? 'השאלה הזו לא בסוגי ההאכלה שבהגדרות (הגדרות > האכלה), ולכן אין לה נתונים מתאימים.' : q.wait(p)}</small>
       </div>
     </div>
   );
@@ -666,7 +671,7 @@ export function Insights() {
                     <bdi>{q.term}</bdi>
                   </div>
                 )}
-                {ready ? answer(q, a, now, babyWords(settings.babySex), feeding) : waiting(q, a)}
+                {ready && q.fits !== false ? answer(q, a, now, babyWords(settings.babySex), feeding) : waiting(q, a)}
                 {q.about && (
                   <button type="button" class="qabout" data-testid={`q-${q.id}-about`} onClick={() => openHow(q.id)}>
                     <span class="emo">ℹ️</span> מה זה אומר?
@@ -697,7 +702,7 @@ export function Insights() {
                 </>
               )}
             </p>
-            {aboutOf(howQ, babyWords(settings.babySex)).map((x) => (
+            {aboutOf(howQ, babyWords(settings.babySex), feeding).map((x) => (
               <div key={x.title} data-testid="q-about-part">
                 <h3>{x.title}</h3>
                 <p>{x.text}</p>

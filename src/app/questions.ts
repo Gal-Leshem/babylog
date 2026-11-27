@@ -44,7 +44,7 @@ export interface Question {
   /** (owner) the common name of the pattern, shown under the question (Latin, isolated) */
   term?: string;
   /** (owner) what it is and why it is worth knowing, shown before the method (every card has its own "מה זה אומר?"); descriptive only: no norms, numbers from elsewhere or instructions */
-  about?: (w: BabyWords) => { title: string; text: string }[];
+  about?: (w: BabyWords, f: Feeding) => { title: string; text: string }[];
   /** (F18) only for families with these kinds of feeding (missing: every family) */
   for?: (f: Feeding) => boolean;
   /** (F18) the question's words when the family uses bottles */
@@ -142,9 +142,15 @@ const MORE: Question[] = [
       'לשעת תחילת ההאכלה האחרונה מוסיפים את הרווח הרגיל אצלכם (ביום או בלילה, לפי שעת ההאכלה), מתוך 7 הימים המלאים האחרונים.',
       'זו הערכה לפי הקצב שהיה עד עכשיו, לא המלצה מתי להאכיל.',
     ],
-    about: (w) => [
+    about: (w, f) => [
       { title: 'מה זה', text: `הערכה מתי סביר ש${w.baby} ${w.hungryAgain}: שעת ההאכלה האחרונה, ועוד הרווח הרגיל אצלכם באותו חלק של היום. בכל חלק של היום (בוקר, צהריים, ערב וכן הלאה) הקצב יכול להיות שונה, ולכן כל חלק נמדד בנפרד.` },
-      { title: 'למה כדאי לדעת', text: 'לתכנן את השעה הקרובה: מקלחת, ארוחה, יציאה מהבית או מי מההורים יהיה זמין. את ההבדלים בין חלקי היום רואים ב"כל כמה שעות מאכילים?". זו הערכה בלבד: תינוקות אוכלים לפי רעב, לא לפי שעון.' },
+      {
+        title: 'למה כדאי לדעת',
+        text:
+          'לתכנן את השעה הקרובה: מקלחת, ארוחה, יציאה מהבית או מי מההורים יהיה זמין. את ההבדלים בין חלקי היום רואים ב"כל כמה שעות מאכילים?". זו הערכה בלבד: תינוקות אוכלים לפי רעב, לא לפי שעון.' +
+          // (owner, 27 Nov 2026) for a family that nurses: a gap longer than usual can lead to engorgement; worded softly, not advice
+          (f.breast ? ' ולמי שמניקה: רווח ארוך מהרגיל בין הנקות עשוי לגרום לתחושת גודש. כשעבר יותר זמן מהרגיל אצלכם, אפשר לשקול להציע הנקה או לשאוב, ובכל שאלה להתייעץ עם יועצת הנקה או טיפת חלב.' : ''),
+      },
     ],
   },
   {

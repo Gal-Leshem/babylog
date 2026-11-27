@@ -76,8 +76,9 @@ is reviewed against every skill that owns the file.
 ## Owner decisions in force (newest first; history in `docs/CHANGELOG.md`, F15-F18 rounds in `docs/BACKLOG.md`)
 - Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every
   question is listed in "בחירת שאלות" for every family, the unfit ones off (nursing questions too for bottles only: this
-  replaces the F18 "only with nursing" listing rule; cards still need a parent to turn them on); the timeline stays 06:00 to
-  06:00 with a midnight line and notes.
+  replaces the F18 "only with nursing" listing rule; turned on, an unsuitable one shows why there is no answer, never an answer
+  from another kind of feeding); the timeline stays 06:00 to 06:00 with a midnight line and notes; the next feed's "למה
+  כדאי לדעת" mentions engorgement softly for nursing families (owner's wording, softened; not advice).
 - Age: explanations in "תובנות" that mention an age stay; nothing disappears by itself with the age (the parents hide it).
 - Age above Summary / "תובנות" and a quiet line at the top of Home's recent list on each whole month (girl / boy wording).
 - Bottles (F18), all live:
@@ -124,6 +125,10 @@ is reviewed against every skill that owns the file.
   on both sides of the boundary.
 - A sleep is one row with one parent; the other parent's wake-up lost its name -> two moments of one row may need their own
   author: keep it in the detail (`woke:<name>`), and clear it when the moment is cleared.
+- A field the server fills from who sent the request (`awake.user`) is never filled by an `update`, which carries no user ->
+  every path that sets the same moment (the button, the form, "שכחתם התעוררות?") fills it; test each path.
+- A detail that starts to carry something for a type that refused any detail makes a phone a version behind refuse patches
+  on such rows until it reopens -> patches leave `detail` out unless they mean to change it, and the report names the window.
 - An old browser test encoded an owner rule the owner later replaced (bottle-only families saw no nursing questions) -> when a
   decision replaces an earlier one, find the tests of the old rule and say in them which decision replaced it.
 - Mockups: a temporary `e2e/zz-*.spec.ts` that injects markup into the real app and screenshots to the scratchpad; delete it after.

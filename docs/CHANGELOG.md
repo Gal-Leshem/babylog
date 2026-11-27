@@ -843,6 +843,16 @@ No names, addresses or secrets in this file (the repository is public).
     every row and a note under each title ("כל שורה: מ-06:00 עד 06:00 למחרת…" / "לפי יממה, מחצות עד חצות…"). Browser test
     (the line at 18/24 of the row, the notes; failed with the line moved); screenshots day, night and 360 x 560.
   - #2 (ideas of 23 Nov): already handled earlier (F15, F16, F17 parked, the age line); nothing new.
+  - The `change-reviewer` agent's findings, fixed before the push: closing a sleep from the form (or "שכחתם התעוררות?")
+    did not name the other parent (now it does); an edit or an undo of a deleted wake-up had no test (now both, each failed
+    when broken); a sleep edit no longer resends the detail (the server keeps it, also a server or phone a version behind);
+    an unsuitable question turned on never answers from data of another kind (cluster feeding from bottles, a share of
+    bottles without nursing): it says why there is no answer; the midnight line follows each row's own length (the two
+    daylight-saving days). Known for a few minutes after the deploy: a phone still on the previous version cannot change the
+    wake-up of a sleep that names its waker (it shows "הנתונים לא תקינים") until it reopens; nothing is lost.
+- Next feed **(owner)**: for a family that nurses, "למה כדאי לדעת" of "מתי ההנקה הבאה צפויה?" adds, softly, that a gap
+  longer than usual can lead to engorgement, so one may consider offering a feed or pumping, and ask a lactation consultant
+  or טיפת חלב. Not for a family that gives bottles only. Browser test (both families; failed with the condition removed).
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

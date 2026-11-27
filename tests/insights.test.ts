@@ -218,4 +218,12 @@ describe('timeline rows (06:00 to 06:00)', () => {
   it('before 06:00 the current row is the one that started yesterday', () => {
     expect(timeline(evs, T('2026-11-15 05:30'), 20, 1)[0]!.date).toBe('2026-11-14');
   });
+
+  // owner (feedback #3): the midnight line sits where the row's own data puts midnight, also on the two daylight-saving days
+  // (a row starts 6 real hours after its midnight: on Oct 25 that is 05:00 and the row lasts 25 hours, on Mar 27 07:00 and 23)
+  it('says where midnight falls in each row: 18 of 24 hours, 19 of 25 on Oct 25, 17 of 23 on Mar 27', () => {
+    expect(timeline([], T('2026-11-15 12:00'), 20, 1)[0]!.midnight).toBeCloseTo(18 / 24, 6);
+    expect(timeline([], T('2026-10-26 12:00'), 20, 2)[1]!.midnight).toBeCloseTo(19 / 25, 6);
+    expect(timeline([], T('2026-03-28 12:00'), 20, 2)[1]!.midnight).toBeCloseTo(17 / 23, 6);
+  });
 });

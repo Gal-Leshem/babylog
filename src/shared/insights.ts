@@ -289,6 +289,8 @@ export interface TimelineRow {
   diapers: { at: number; kind: 'pee' | 'poop' | 'both' }[];
   /** for today's row: how far the row has run (0..1); 1 for past rows */
   until: number;
+  /** (owner, feedback #3) where midnight falls in the row (0.75, or a little off on the two daylight-saving days) */
+  midnight: number;
 }
 
 /** The last `days` rows, newest first; the first row is the one that contains `now` (it runs only until now). */
@@ -325,6 +327,7 @@ export function timeline(events: readonly BabyEvent[], nowEpoch: number, mergeWi
         .map((e) => ({ at: pos(parseLocal(e.start)), kind: e.detail === 'poop' ? ('poop' as const) : e.detail === 'both' ? ('both' as const) : ('pee' as const) }))
         .sort((x, y) => x.at - y.at),
       until: Math.min(1, Math.max(0, pos(nowEpoch))),
+      midnight: pos(dayStart(addDays(date, 1))),
     });
   }
   return rows;

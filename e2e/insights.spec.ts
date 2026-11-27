@@ -401,6 +401,26 @@ test('questions: every card has "מה זה אומר?" with what it is, why it is
   }
 });
 
+// (owner, 27 Nov 2026) for a family that nurses, "למה כדאי לדעת" of the next feed says, softly, that a gap longer than usual
+// can lead to engorgement; a family that gives bottles only does not get that line
+test('questions: the next feed\'s "למה כדאי לדעת" mentions engorgement softly, only for a family that nurses', async ({ page, request }) => {
+  await seed(request, week());
+  await page.clock.setFixedTime(NOW);
+  await install(page);
+  await openInsights(page);
+  await page.getByTestId('q-nextFeed-about').click();
+  const why = page.getByTestId('q-about-part').nth(1);
+  await expect(why).toContainText('ולמי שמניקה: רווח ארוך מהרגיל בין הנקות עשוי לגרום לתחושת גודש');
+  await expect(why).toContainText('אפשר לשקול להציע הנקה או לשאוב, ובכל שאלה להתייעץ עם יועצת הנקה או טיפת חלב');
+  await page.getByTestId('q-how-close').click();
+  await api(request, { action: 'settings', set: { feeding: { breast: false, expressed: false, formula: true, expressedMl: 60, formulaMl: 90 } } });
+  await page.reload();
+  await openInsights(page);
+  await page.getByTestId('q-nextFeed-about').click();
+  await expect(page.getByTestId('q-about-part').nth(1)).toContainText('למה כדאי לדעת');
+  await expect(page.getByTestId('q-about-part').nth(1)).not.toContainText('גודש');
+});
+
 // (owner) the usual gap by part of the day is part of "כל כמה שעות מאכילים?" (the part we are in framed); the next-feed card shows only
 // the estimate and the part of the day it comes from, and comes first
 test('questions: the parts of the day are in the feed-gap card, the next feed only shows its estimate and part, and comes first', async ({ page, request }) => {

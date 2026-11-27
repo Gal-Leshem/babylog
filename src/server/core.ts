@@ -642,7 +642,7 @@ function awake(o: Obj, deps: Deps, now: number): ApiResponse {
   const recent = store.recent(RECENT_ROWS);
   const open = openSleep(recent);
   if (open) {
-    const closed = { ...open, end, detail: wokeDetail(open.user, optString(o, 'user', 20)) };
+    const closed = { ...open, end, detail: wokeDetail(open.user, typeof o.user === 'string' ? o.user.trim().slice(0, 20) : '') };
     validateEvent(closed, now);
     store.replace(closed);
     return { ok: true, event: closed, speech: voiceOf(o, store).awake(sleepMinutes(closed)) };

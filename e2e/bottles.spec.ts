@@ -367,3 +367,22 @@ for (const [name, f, unfit] of [
     for (const id of unfit) await expect(page.getByTestId(`q-${id}-wait`)).toContainText('עוד אין מספיק נתונים');
   });
 }
+
+// (review of feedback #5) with plenty of bottle data, a nursing question turned on by a bottle-only family gives no answer made
+// from bottles (cluster feeding), and "כמה מההאכלות עם בקבוק?" says nothing once nursing is off: only why there is no answer
+test('an unsuitable question turned on never answers from data of another kind of feeding', async ({ page, request }) => {
+  await feeding(request, { breast: false, formula: true });
+  await seed(request, mixedWeek().filter((e) => e.type === 'bottle'));
+  await page.clock.setFixedTime(QNOW);
+  await install(page);
+  await page.getByTestId('tab-summary').click();
+  await page.getByTestId('view-insights').click();
+  await page.getByTestId('q-pick').click();
+  for (const id of ['cluster', 'bottleShare']) await page.getByTestId(`pick-${id}-switch`).click();
+  await page.getByTestId('pick-back').click();
+  for (const id of ['cluster', 'bottleShare']) {
+    await expect(page.getByTestId(`q-${id}-wait`)).toContainText('לא בסוגי ההאכלה שבהגדרות');
+    await expect(page.getByTestId(`q-${id}`)).not.toContainText('מתוך');
+  }
+  await expect(page.getByTestId('q-cluster-days')).toHaveCount(0);
+});

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { openSleep, overlappingSleep } from '../../shared/domain';
+import { openSleep, overlappingSleep, wokeDetail } from '../../shared/domain';
 import { localDate, parseLocal } from '../../shared/tz';
 import { type BabyEvent, type EventCore, coreOf, previousOf } from '../../shared/types';
 import { deleteEvent, deleteWake } from '../actions';
@@ -186,14 +186,17 @@ export function EventForm({ mode, event, focus, wake, onClose }: Props) {
     const { type, detail: kindDetail } = fromKind(kind);
     const bk = bottleKindOf(kind);
     const bottle = bk ? { kind: bk, given, left: Math.min(left, given) } : null;
-    // (feedback #4) a sleep keeps who marked its wake-up through an edit (the server clears it when the sleep is open again)
-    const detail = kind === 'medicine' ? medId! : bottle ? bottleDetail(bottle) : type === 'sleep' && event?.type === 'sleep' ? event.detail : kindDetail;
+    const detail = kind === 'medicine' ? medId! : bottle ? bottleDetail(bottle) : kindDetail;
     const label = medId !== null ? (settings.medicines.find((m) => m.id === medId)?.name ?? KIND_LABEL[kind]) : bottle ? `${KIND_LABEL[kind]} · ${bottleAmountText(bottle)}` : KIND_LABEL[kind];
     const me = engine.getConfig()?.me ?? '?';
+    // (feedback #4) a sleep's detail is who marked its wake-up: closing an open sleep here names this parent when it is the other
+    // one; any other edit of a sleep leaves the detail out, so the server keeps what it has (also a server or phone a version behind)
+    const sleepEdit = type === 'sleep' && event?.type === 'sleep';
+    const sleepDetail = sleepEdit && !event!.end && end ? { detail: wokeDetail(event!.user, me) } : {};
     const res =
       mode === 'add'
         ? engine.dispatch({ action: 'log', id: uid(), type, detail, start, ...(end ? { end } : {}), user: me, source: 'app', note })
-        : engine.dispatch({ action: 'update', id: event!.id, patch: { type, detail, start, end, note } });
+        : engine.dispatch({ action: 'update', id: event!.id, patch: sleepEdit ? { type, ...sleepDetail, start, end, note } : { type, detail, start, end, note } });
     if (!res.ok) return setError(errorText(res.error, res.detail));
     count(mode === 'add' ? 'form.add' : 'form.edit');
     if (mode === 'add') showToast({ text: `נוסף: ${label} ${timeOf(start || end)}` }, FORM_TOAST_MS);
