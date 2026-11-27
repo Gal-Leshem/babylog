@@ -329,6 +329,24 @@ Contents: 3 openings, 4 returns, 6 taps, 47 checks; no full list, no retry, no t
     mark then say when the last update was ("מתעדכן… · עודכן לאחרונה HH:MM" when older than a minute): built with the
     features session's consent (`App.tsx` is theirs; one line at 360 x 560, Israel time, the muted colour at night).
 
+### Log 4, 27 November 2026 (one phone, 08:07 to 11:16, 60 exchanges), with the first day of request counts
+Contents: 1 opening, 9 returns, 2 taps, 1 touch check, 47 checks; no full list, no retry, no timeout, no "אין חיבור"; two
+answers with changes only (1 and 4 events, 0.5 and 1.5 KB); every other answer "nothing changed".
+- **Taps:** server 1.1 and 1.5 s, "לא מדוד" gone: every part is timed now. "לשונית ושורות" (finding the Events tab and its
+  rows, where the spreadsheet loads) is 0.8 and 0.7 s, about half to two thirds of a tap's server time; reading 0.1 to 0.5,
+  writing 0.2, the lock 0.1 to 0.2. Total 2.2 and 2.6 s on the phone (log 3: 2.4 to 5.9).
+- **Checks:** 0.9 to 1.7 s, server 0.0 to 0.1: the phone's floor of about 1.1 s, as in logs 1 and 3.
+- **Returns:** 1.3 to 2.8 s to data (median about 2.2), the opening 3.7 s, all with the server at 0.0 to 0.1: the first request
+  after the phone was idle, as before. No return was cut by a new version (the reload now waits until the app is hidden).
+- **Pace:** 5 s for two minutes after a return (09:40:38 to 09:42:40), 15 s after it (08:07:34 to 08:08:34); no check right
+  after a tap; the touch after a quiet while checked once ("נגיעה במסך", 09:40:26). The slowed full list cannot be judged
+  here: no stretch of 10 minutes open and untouched.
+- **Request counts (yesterday, "עומס על השרתים"):** the owner's server about 524 property calls (424 requests, two phones),
+  the first family's about 338 (264 requests, one phone counting): about 862 of 50,000 a day, 2%.
+- **Script cache stage 1: recommended no.** The threshold set on 26 November (more than about 10 families, or a family above
+  about 2,000 calls a day) is far: the busiest server is at about 520. A cache would not make anything faster (stage 0: a
+  cache read costs about a properties read). Look again when a family is added or a day goes above about 20%.
+
 ### Proposal: the script cache for the per-request read (examined 26 November 2026, at the owner's request; not built)
 Raised by the families session; the owner asked for an orderly proposal (gain, speed, risks) before anything is built.
 - **Facts (Google's pages, read 26 November 2026):** `CacheService.getScriptCache()` is common to all users of one script (so

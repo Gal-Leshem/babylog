@@ -40,9 +40,9 @@ Waiting for the owner (ask when it fits, do not build before):
 Decided not now (owner, 27 Nov): moving a family's sheet to its own Drive (only when a family asks).
 
 Waiting for something from the owner's daily use:
-2. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה", soon after a slow opening or a tap): it decides the script
-   cache stage 1 (with the `cacheProbe` numbers and the first request counts in "עומס על השרתים"); what it should show is in the
-   `performance` skill. Options kept only if the owner asks: a second request when the first is slow; a read copy outside Google.
+2. **The next sync log** (Settings > מתקדם > "יומן סנכרון" > "העתקה"): log 4 (27 Nov, `REFACTOR_PLAN.md` section 8) was
+   read; the next one should include a stretch of more than 10 minutes open and untouched (the slowed full list). Script cache
+   stage 1: recommended no (2% of the quota); the owner's answer is pending.
 3. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
    Adding another: the `families` skill ("Adding a family, end to end") and `INSTALL.he.md` "משפחה נוספת".
 4. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.

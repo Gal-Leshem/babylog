@@ -71,16 +71,28 @@ function ServerLoad({ list }: { list: readonly FamilySource[] }) {
   }, [list.length]);
   const rows: [string, LoadState][] = [['שלנו', own], ...list.map((f): [string, LoadState] => [f.label, fams[f.url] ?? null])];
   const check = quotaCheck(rows.map(([label, s]) => ({ label, calls: s && typeof s === 'object' ? s.calls : null })));
-  const text = (s: LoadState): string =>
+  const loadLine = (s: LoadState): string =>
     s === null ? 'טוען…' : s === 'none' ? 'אין נתונים עדיין' : s === 'old' ? 'השרת עוד לא מעודכן' : s === 'error' ? 'לא ענה' : `כ-${s.calls.toLocaleString('he-IL')} פעולות (${s.requests.toLocaleString('he-IL')} בקשות)`;
   const anyNumber = rows.some(([, s]) => s && typeof s === 'object');
+  const [copied, setCopied] = useState('');
+  // (owner) the block as shown, for pasting into a chat
+  const copy = () => {
+    const total = anyNumber
+      ? `סך הכל: כ-${check.total.toLocaleString('he-IL')} מתוך ${DAILY_PROPS_QUOTA.toLocaleString('he-IL')} ביום (${Math.round(check.share * 100)}%)${check.over ? '. קרוב למכסה היומית המשותפת' : ''}${check.heavy.length ? `. הרבה מעל האחרים: ${check.heavy.join(', ')}` : ''}`
+      : 'אין עדיין מספרים';
+    const text = ['עומס על השרתים (אתמול)', ...rows.map(([label, s]) => `${label}: ${loadLine(s)}`), total].join('\n');
+    void navigator.clipboard?.writeText(text).then(
+      () => setCopied('הועתק'),
+      () => setCopied('לא ניתן להעתיק'),
+    );
+  };
   return (
     <div class="srvload" data-testid="srv-load">
       <h3>עומס על השרתים (אתמול)</h3>
       <ul class="loglist">
         {rows.map(([label, s]) => (
           <li key={label} data-testid="srv-load-row" data-label={label}>
-            <bdi>{label}</bdi>: {text(s)}
+            <bdi>{label}</bdi>: {loadLine(s)}
           </li>
         ))}
       </ul>
@@ -98,6 +110,16 @@ function ServerLoad({ list }: { list: readonly FamilySource[] }) {
         </p>
       )}
       {!anyNumber && <p class="muted">הטלפונים סופרים את הבקשות מהגרסה הנוכחית ושולחים פעם ביום: המספרים יופיעו מחר.</p>}
+      <div class="actions">
+        <button type="button" data-testid="srv-load-copy" onClick={copy}>
+          העתקה
+        </button>
+      </div>
+      {copied && (
+        <p class="muted" role="status" data-testid="srv-load-msg">
+          {copied}
+        </p>
+      )}
     </div>
   );
 }

@@ -109,7 +109,7 @@ test('two families and the owner side by side: each sees only its own log; both 
 });
 
 // Owner (the shared daily quota): yesterday's load of every server, from the phones' own counts, on the owner's feedback screen.
-test("the owner sees yesterday's load of his server and each family's, and a warning near the shared daily quota", async ({ page, request }) => {
+test("the owner sees yesterday's load of his server and each family's, and a warning near the shared daily quota", async ({ page, context, request }) => {
   const a = await family('a');
   try {
     const yesterday = addDaysLocal(todayLocal(), -1);
@@ -130,6 +130,13 @@ test("the owner sees yesterday's load of his server and each family's, and a war
     await expect(row('משפחה א')).toContainText('כ-30,200 פעולות');
     // 960 + 30,200 = 31,160 of 50,000: 62%, no warning yet; the family's load moves above 75% with more requests
     await expect(page.getByTestId('srv-load-total')).toContainText('(62%)');
+    // (owner) the block can be copied as shown, for a chat
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.getByTestId('srv-load-copy').click();
+    await expect(page.getByTestId('srv-load-msg')).toHaveText('הועתק');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      ['עומס על השרתים (אתמול)', 'שלנו: כ-960 פעולות (900 בקשות)', 'משפחה א: כ-30,200 פעולות (30,000 בקשות)', 'סך הכל: כ-31,160 מתוך 50,000 ביום (62%)'].join('\n'),
+    );
     expect((await usage(a.url, a.key, { 'sync.requests': 40_000, 'sync.ops': 100 }, 'a1')).ok).toBe(true);
     await page.getByTestId('tab-settings').click();
     await page.getByTestId('open-feedback').click();

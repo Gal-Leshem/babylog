@@ -56,7 +56,8 @@ Shared: in `src/server/core.ts` / `src/server/gas.ts` this skill means `familySe
   the other parent's phone in the owner's family (owner: fine).
 - The admin key may read numbers only: `usageTotals` (requests, operations, phones per day) and, since 27 Nov, `usageDays`
   (every phone's counts and question states per day, F15 option B) with parents as "הורה 1" / "הורה 2" and phones as numbers;
-  never names, phone ids or texts. The owner copies all servers' 14 days at once ("העתקת נתוני שימוש").
+  never names, phone ids or texts. The owner copies all servers' 14 days at once ("העתקת נתוני שימוש"), and the
+  "עומס על השרתים" block as shown (its own "העתקה", 27 Nov).
 - Consent checkbox at install: on hold, needs more legal research first (owner, 27 Nov; `docs/BACKLOG.md`).
 - "Move the sheet to my Drive": not now, only when a family asks (owner, 27 Nov).
 - No family test server: the owner skipped a test family; behaviour is proven by tests, the real creation by the first family.

@@ -50,9 +50,10 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
   call); after a foreign write with changes only, the same; with the full list 1.0 to 1.4 s (server 0.3 to 0.7).
 - The owner's phone (log 3, 26 Nov): checks 1.0 to 1.8 s (server 0.0 to 0.1): the phone's network floor is about 1.1 s; the first
   request after the phone was idle 0.5 to 1.5 s slower; openings with news 2.3 to 2.5 s (log 2), without news 1.3 to 2.8 s.
-- A tap: phone log 3: 2.4 to 5.9 s total, server 1.1 to 4.2 s of which 0.5 to 2.8 s was untimed then (now timed as `sheet`);
+- A tap: phone log 4: 2.2 to 2.6 s total, server 1.1 to 1.5 s, "לשונית ושורות" 0.7 to 0.8 of it (log 3: 2.4 to 5.9 s, untimed parts);
   CI after the fix: server 0.8 to 1.3 s, `sheet` (Events tab lookup + row count, where the spreadsheet loads) 0.24 to 0.83 s.
-- Daily quota shared by every server (one Google account): 50,000 properties calls. Estimate per server = requests + 2 x
+- Daily quota shared by every server (one Google account): 50,000 properties calls; 26 Nov: owner about 524, first family
+  about 338 (2% together). Estimate per server = requests + 2 x
   operations (`src/shared/quota.ts`). Capacity: about 20 to 35 families at 75% (about 10 if heavy users).
 - An hour open untouched: about 118 requests, 3 or 4 of them full lists (pace: 5 s for 2 minutes after a use, then 15 s, 30 s after
   10 minutes, 60 s after 30; full list 5 / 15 / 30 minutes).
@@ -62,10 +63,10 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
   however many entries; the usage beacon is one request (counted in `sync.requests`).
 
 ## Owner decisions in force
-- Script cache: stage 0 (measure only, `cacheProbe`) built; recommend stage 1 or not only after the owner's next sync log and the
-  first request counts per family ("עומס על השרתים (אתמול)" in the owner's feedback screen). Recommended threshold: more than
-  about 10 families planned, or a family above about 2,000 calls a day. Stage 1 = `src/server/gas.ts` only (design and risks in
-  `docs/REFACTOR_PLAN.md` section 8, "Proposal: the script cache"), with a fake cache that can evict and fail.
+- Script cache: stage 0 (measure only, `cacheProbe`) built. Stage 1 recommended NO after log 4 (27 Nov: 2% of the quota, the
+  busiest server about 520 calls a day); owner's answer pending. Look again when a family is added or a day goes above about
+  20% ("עומס על השרתים (אתמול)"). Stage 1 = `src/server/gas.ts` only (design and risks in `docs/REFACTOR_PLAN.md` section 8,
+  "Proposal: the script cache"), with a fake cache that can evict and fail.
 - Pace (owner chose the full option): 5 s for 2 min after open / return / tap, 15 s, 30 s after 10 min untouched, 60 s after 30;
   a touch checks at once when the last check is older than 15 s and brings back 15 s.
 - Sync mark (owner): "מתעדכן… · עודכן לאחרונה HH:MM" when the last update is over a minute old; "עדכני לשעה HH:MM" (no dot) while
@@ -81,9 +82,9 @@ this skill means the `sync` / `list` paths. `src/app/screens/SyncLog.tsx` with f
 Hand it to the `perf-analyst` agent with the newest section 8 of `docs/REFACTOR_PLAN.md` as the baseline; check its numbers
 against the log yourself before writing a new dated section 8 entry (what it shows, where the time went, comparison, proposals,
 then the owner's decisions).
-The next log (first after 26 Nov) should show: the share of "לשונית ושורות" in a tap's server time and whether "לא מדוד" is
-gone; no "חזרה · אין חיבור" followed by "פתיחה" after a deploy; "נגיעה במסך" entries; checks 30 / 60 s apart in an untouched app
-and no check right after a tap; then the cache recommendation with the request counts.
+Log 4 (27 Nov) showed the timing complete, no reload during a return, the pace and the touch check working, and 2% of the
+quota. The next log should show a stretch of more than 10 minutes open and untouched (the slowed full list: no "רשימה מלאה"
+every 5 minutes there, and a touch then bringing one), and the tap's "לשונית ושורות" share again.
 
 ## Learned (add one line per new trap: what happened -> the rule)
 - A return logged "אין חיבור" followed within 2 s by "פתיחה" was the page reloading for a new version, not the network -> check

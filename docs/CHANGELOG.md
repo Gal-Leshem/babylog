@@ -821,6 +821,13 @@ No names, addresses or secrets in this file (the repository is public).
 - Decided **(owner)**: consent at install ("קראתי ומסכים/ה") on hold until more legal research (`BACKLOG.md`); moving a
   family's sheet to its own Drive not now, only when a family asks.
 
+- "עומס על השרתים" can be copied **(owner)**: a "העתקה" button under the block copies it as shown (each server's line and the
+  total). Browser test (the copied text; failed when the total was left out).
+- The owner's fourth sync log, read (`REFACTOR_PLAN.md` section 8, log 4): every part of a tap is timed now ("לא מדוד" gone;
+  finding the Events tab and its rows is about half to two thirds of a tap's server time), no return was cut by a new version,
+  the pace and the touch check work as built. First request counts: 2% of the shared daily quota (the owner's server and the
+  first family's). Script cache stage 1: recommended no for now.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.
