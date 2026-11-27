@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "1bd4343",
+  "sha": "d5d9535",
   "ref": "main",
-  "at": "2026-11-27T08:00:38.643Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45961758941",
+  "at": "2026-11-27T09:33:11.778Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45973672578",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,13 +21,13 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-DRTIvmSI.css   30.31 kB │ gzip:  6.31 kB",
-      "dist/assets/index-BwkXAsVL.js   218.71 kB │ gzip: 68.78 kB",
+      "dist/assets/index-DXE4DDF5.js   219.44 kB │ gzip: 68.91 kB",
       "",
-      "✓ built in 91ms",
+      "✓ built in 123ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (245.06 KiB)",
+      "precache  10 entries (245.76 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -46,7 +46,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 6s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 5s"
+      "took 7s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -69,20 +69,25 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 0s"
+      "took 1s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 1bd4343 to gh-pages",
-      "took 2s"
+      "published d5d9535 to gh-pages",
+      "took 1s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 0efadcd, waiting for 1bd4343",
-      "attempt 2: serves 0efadcd, waiting for 1bd4343",
-      "attempt 3: serves 0efadcd, waiting for 1bd4343",
-      "site is live and serves 1bd4343",
-      "took 30s"
+      "attempt 1: serves 1bd4343, waiting for d5d9535",
+      "attempt 2: serves 1bd4343, waiting for d5d9535",
+      "attempt 3: serves 1bd4343, waiting for d5d9535",
+      "attempt 4: serves 1bd4343, waiting for d5d9535",
+      "attempt 5: serves 1bd4343, waiting for d5d9535",
+      "attempt 6: serves 1bd4343, waiting for d5d9535",
+      "attempt 7: serves 1bd4343, waiting for d5d9535",
+      "attempt 8: serves 1bd4343, waiting for d5d9535",
+      "site is live and serves d5d9535",
+      "took 81s"
     ]
   }
 }
