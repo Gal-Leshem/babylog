@@ -156,22 +156,26 @@ describe('usage days', () => {
   it('hands out the counts and question states per phone and day, parents as "הורה 1" / "הורה 2", phones as numbers, never names', () => {
     const d = fam();
     ok(handle({ key: KEY, action: 'settings', set: { parents: ['Parent A', 'Parent B'] } }, d));
-    save(d, 'Parent B', 'phone-b', '2026-11-14', { 'log.wet': 2 });
-    save(d, 'Parent A', 'phone-a', '2026-11-13', { 'log.feed_left': 3, 'sync.requests': 40 }, { gaps: 'on', night: 'shown' });
-    save(d, 'Old name', 'phone-c', '2026-11-14', { 'history.day': 1 }); // a name no longer in Settings
-    save(d, 'Parent A', 'phone-a', '2026-11-01', { 'log.wet': 9 }); // too old for the days asked
+    // the server's today is 2026-11-14: two days asked are the 12th and the 13th (phones send only whole past days)
+    save(d, 'Parent B', 'phone-b', '2026-11-13', { 'log.wet': 2 });
+    save(d, 'Parent A', 'phone-a', '2026-11-12', { 'log.feed_left': 3, 'sync.requests': 40 }, { gaps: 'on', night: 'shown' });
+    save(d, 'Old name', 'phone-c', '2026-11-13', { 'history.day': 1 }); // a name no longer in Settings
+    save(d, 'Parent A', 'phone-a', '2026-11-11', { 'log.wet': 9 }); // too old for the days asked
+    save(d, 'Parent A', 'phone-a', '2026-11-14', { 'log.wet': 1 }); // today: not a whole day yet
     const r = ok(handle({ key: ADMIN, action: 'usageDays', days: 2 }, d));
     expect(r.usageDays).toEqual([
-      { date: '2026-11-13', parent: 'הורה 1', phone: 1, version: 'v1', counts: { 'log.feed_left': 3, 'sync.requests': 40 }, states: { gaps: 'on', night: 'shown' } },
-      { date: '2026-11-14', parent: 'הורה 2', phone: 2, version: 'v1', counts: { 'log.wet': 2 } },
-      { date: '2026-11-14', parent: 'הורה', phone: 3, version: 'v1', counts: { 'history.day': 1 } },
+      { date: '2026-11-12', parent: 'הורה 1', phone: 1, version: 'v1', counts: { 'log.feed_left': 3, 'sync.requests': 40 }, states: { gaps: 'on', night: 'shown' } },
+      { date: '2026-11-13', parent: 'הורה 2', phone: 2, version: 'v1', counts: { 'log.wet': 2 } },
+      { date: '2026-11-13', parent: 'הורה', phone: 3, version: 'v1', counts: { 'history.day': 1 } },
     ]);
     expect(JSON.stringify(r)).not.toMatch(/Parent A|Parent B|Old name|phone-/);
   });
 
   it("a family's own key may not read them; the owner's key on the owner's server may; 14 days by default; bad sizes are refused", () => {
     expect(handle({ key: KEY, action: 'usageDays' }, fam())).toEqual({ ok: false, error: 'send_only' });
-    expect(ok(call({ action: 'usageDays' })).usageDays).toEqual([]);
+    const d = fam();
+    for (const date of ['2026-10-30', '2026-10-31', '2026-11-13', '2026-11-14']) save(d, 'P', 'i', date, { 'log.wet': 1 });
+    expect(ok(handle({ key: ADMIN, action: 'usageDays' }, d)).usageDays!.map((r) => r.date), '14 whole days: Oct 31 to Nov 13').toEqual(['2026-10-31', '2026-11-13']);
     expect(call({ action: 'usageDays', days: 15 })).toMatchObject({ ok: false, error: 'bad_request' });
     expect(handle({ key: 'nope', action: 'usageDays' }, fam())).toEqual({ ok: false, error: 'unauthorized' });
   });

@@ -366,8 +366,8 @@ class SheetStore implements Store {
   }
   /** (owner, F15 option B) The usage rows of these dates, read back into counter and question keys (`handle` hides the names). */
   usageRows(dates: readonly string[]): UsageStored[] {
-    const sh = this.ss.getSheetByName(USAGE);
-    const last = sh ? sh.getLastRow() : 0;
+    const sh = timed('read', () => this.ss.getSheetByName(USAGE));
+    const last = sh ? timed('read', () => sh.getLastRow()) : 0;
     if (!sh || last < 2) return [];
     const values = timed('read', () => sh.getRange(1, 1, last, sh.getLastColumn()).getValues());
     const header = values[0]!.map((h) => String(h ?? ''));

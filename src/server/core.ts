@@ -380,8 +380,9 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
       const n = o.days === undefined ? (o.action === 'usageDays' ? 14 : 7) : o.days;
       if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 14) return fail('bad_request', 'days must be 1-14');
       const today = stamp(now).slice(0, 10);
-      const dates = Array.from({ length: n }, (_, i) => addDays(today, i - n + 1));
-      if (o.action === 'usageTotals') return { ok: true, usageTotals: store.usageTotals(dates) };
+      if (o.action === 'usageTotals') return { ok: true, usageTotals: store.usageTotals(Array.from({ length: n }, (_, i) => addDays(today, i - n + 1))) };
+      // the phones send only whole past days: the days end yesterday, so "14 days" holds 14 days of data
+      const dates = Array.from({ length: n }, (_, i) => addDays(today, i - n));
       return { ok: true, usageDays: usageDays(store.usageRows(dates), store.getSettings().parents) };
     }
     case 'feedbackClear':

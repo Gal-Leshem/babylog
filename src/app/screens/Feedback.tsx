@@ -178,11 +178,17 @@ function FamiliesFeedback() {
       ...list.map((f) => callApi(f, { action: 'usageDays' }).then(read, (): UsageGroup['rows'] => 'error').then((rows) => ({ label: f.label, rows }))),
     ]).then(usageText);
     setMsg('אוסף נתוני שימוש…');
-    // iOS allows the copy only in the tap itself: the text is handed over as a promise that the requests fill in later
-    const done = typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write
-      ? navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then((t) => new Blob([t], { type: 'text/plain' })) })])
-      : text.then((t) => navigator.clipboard.writeText(t));
     count('feedback.usageCopy');
+    // iOS allows the copy only in the tap itself: the text is handed over as a promise that the requests fill in later
+    let done: Promise<void>;
+    try {
+      done =
+        typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write
+          ? navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then((t) => new Blob([t], { type: 'text/plain' })) })])
+          : text.then((t) => navigator.clipboard.writeText(t));
+    } catch (e) {
+      done = Promise.reject(e);
+    }
     void done.then(
       () => setMsg('נתוני השימוש הועתקו (14 ימים)'),
       () => setMsg('לא ניתן להעתיק'),

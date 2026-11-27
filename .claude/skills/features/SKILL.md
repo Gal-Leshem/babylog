@@ -116,6 +116,8 @@ is reviewed against every skill that owns the file.
   layout at widths 393 / 375 / 360 too.
 - A longer word in a Home tile wrapped it and squeezed the buttons at 560 -> keep tile values to one line (an emoji, not a word).
 - Three-digit numbers overflowed half-width bar cards at 360 -> such a card spans the full width.
+- A test titled "14 days by default" passed with any default against an empty store -> a test that claims a default seeds data
+  on both sides of the boundary.
 - Mockups: a temporary `e2e/zz-*.spec.ts` that injects markup into the real app and screenshots to the scratchpad; delete it after.
 - Mock server `delay` of 10 s or more makes regular checks time out -> slow only the taps with `opsDelay`.
 

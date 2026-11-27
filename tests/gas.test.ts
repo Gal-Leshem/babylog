@@ -659,7 +659,8 @@ describe('the bundle built for a family (--family)', () => {
     g.setup!();
     const key = rt.props.get('API_KEY')!;
     const admin = rt.props.get('ADMIN_KEY')!;
-    const today = post({ key, action: 'ping' }).serverNow.slice(0, 10);
+    const now = post({ key, action: 'ping' }).serverNow.slice(0, 10);
+    const today = new Date(Date.parse(`${now}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10); // yesterday: a whole day
     expect(post({ key, action: 'settings', set: { parents: ['Parent A', 'Parent B'] } }).ok).toBe(true);
     expect(post({ key, action: 'usage', user: 'Parent B', install: 'i2', version: 'v2', days: [{ date: today, counts: { 'log.wet': 4, 'sync.requests': 30 }, states: { gaps: 'off' } }] }).ok).toBe(true);
     expect(post({ key, action: 'usage', user: 'Parent A', install: 'i1', version: 'v2', days: [{ date: today, counts: { 'log.feed_left': 2 } }] }).ok).toBe(true);

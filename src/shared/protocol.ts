@@ -65,7 +65,8 @@ export type ApiRequest =
    */
   | { action: 'usageTotals'; days?: number }
   /**
-   * (owner, F15 option B) Every phone's usage counts and question states per day for the last `days` days (today included), with
+   * (owner, F15 option B) Every phone's usage counts and question states per day for the last `days` whole days (ending yesterday:
+   * the phones send only whole past days), with
    * the parents as "הורה 1" / "הורה 2" (never their names) and the phones as numbers. Same keys as `usageTotals`.
    */
   | { action: 'usageDays'; days?: number }

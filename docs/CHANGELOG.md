@@ -806,6 +806,21 @@ No names, addresses or secrets in this file (the repository is public).
   broken), unit and browser suites normal and with `MOCK_DELAY=250`. The `change-reviewer` agent found the missing tap and
   interval tests and the "מתעדכן…" in normal use before the push.
 
+- Usage of every server in one tap **(owner, F15 option B)**: under "משפחות נוספות" the owner's phone has "העתקת נתוני
+  שימוש": every phone's counts and question states per day for the last 14 whole days (ending yesterday: the phones send only
+  whole past days), from the owner's server and each family's (through its admin code), as one Hebrew text for a chat. The
+  parents are "הורה 1" / "הורה 2" by their order in Settings ("הורה" for a name no longer there) and the phones are numbers:
+  the server never hands out names or phone ids (new action `usageDays`, admin key only on a family's server, `send_only` for
+  a family's own key; the privacy page already says the maker reads these counts). The copy hands the clipboard a promise
+  (`ClipboardItem`), since iOS allows a copy only inside the tap; a server that does not answer shows "לא ענה" in the text.
+  API: one new action, additive (older apps unaffected); a server change, so every server gets it, the owner's included.
+  Tests: core (names hidden, phones numbered, the 14 whole days and their boundary, the family's key refused), the built
+  bundle in the fake Google runtime (read back from the tab), the text, and a browser test with the owner's server and a
+  family's (each failed with its part broken). The `change-reviewer` agent found no leak; its fixes before the push: the
+  range ended today (13 days of data), the default had no real test, two Google calls untimed, a stale skill line.
+- Decided **(owner)**: consent at install ("קראתי ומסכים/ה") on hold until more legal research (`BACKLOG.md`); moving a
+  family's sheet to its own Drive not now, only when a family asks.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

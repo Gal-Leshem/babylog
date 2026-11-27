@@ -42,7 +42,8 @@ Shared: in `src/server/core.ts` / `src/server/gas.ts` this skill means `familySe
 3. The `families` job runs only after `prod`, in its own concurrency group: a family's deploy never delays or breaks the owner's.
 - Family ids are random (`npx tsx scripts/families.ts new`), never names; nothing about a family (name, address, key) in the repo.
 - On a family server: no sheet link in any answer; the family's key gets `send_only` for reading feedback; the admin key may only
-  `ping`, `feedbackList`, `feedbackClear` (with `ids`) and `usageTotals` (`ADMIN_ACTIONS` in `src/server/core.ts`).
+  `ping`, `feedbackList`, `feedbackClear` (with `ids`), `usageTotals` and `usageDays` (`ADMIN_ACTIONS` in
+  `src/server/core.ts`; change this line together with "Owner decisions in force").
 - The owner's phone keeps the family servers (label, address, admin key) on the phone only (`bl.families.v1`).
 - Every family runs the same bundle as production: a server change for one is a change for all (and for the owner).
 
@@ -97,6 +98,10 @@ Removing: drop the id from `families.json` (no more deploys), the owner deletes 
   Ask for a screen recording first; it showed the difference at once.
 - `decodeAdminCode` / `decodeSetupCode` refuse keys shorter than 8 characters: test keys must be at least that long.
 - `usageTotals` shows numbers only from the day after the phones run the counting version (they send whole past days).
+- "14 days" of `usageDays` first ended today and so held 13 days of data (phones send only whole past days) -> a usage range
+  read from the "שימוש" tab ends yesterday.
+- The labels the owner gives families on the phone may be real names, and they head the copied texts ("== label ==") -> never
+  copy a pasted feedback or usage text's labels into the repository; write "a family".
 
 ## Verify
 `tests/families.test.ts`, `tests/quota.test.ts`, the built `--family` bundle in `tests/gas.test.ts`, `e2e/families.spec.ts`.

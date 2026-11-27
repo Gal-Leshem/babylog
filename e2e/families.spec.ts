@@ -144,7 +144,7 @@ test("the owner sees yesterday's load of his server and each family's, and a war
 test('the owner copies the usage days of his server and each family\'s at once, with no names', async ({ page, context, request }) => {
   const a = await family('a');
   try {
-    const today = todayLocal();
+    const today = addDaysLocal(todayLocal(), -1); // the phones send whole past days; the copy covers the 14 ending yesterday
     const post = (url: string, body: object) => fetch(url, { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
     expect((await post(a.url, { key: a.key, action: 'settings', set: { parents: ['Parent A', 'Parent B'] } })).ok).toBe(true);
     expect((await post(a.url, { key: a.key, action: 'usage', user: 'Parent B', install: 'a-phone', version: 'v9', days: [{ date: today, counts: { 'log.wet': 4 }, states: { gaps: 'off' } }] })).ok).toBe(true);

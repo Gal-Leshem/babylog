@@ -46,16 +46,17 @@ Waiting for something from the owner's daily use:
 3. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
    Adding another: the `families` skill ("Adding a family, end to end") and `INSTALL.he.md` "משפחה נוספת".
 4. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.
-5. **Which questions get used** (F8 / F16): the per-question usage counts in each sheet's "שימוש" tab.
-9. A tap that went through a disappearing toast was fixed (tap shield); "could not get back" was never reproduced: ask for a
+5. **Which questions get used** (F8 / F16): the per-question states in the usage days ("העתקת נתוני שימוש" under "משפחות
+   נוספות": every server's 14 days in one tap).
+6. A tap that went through a disappearing toast was fixed (tap shield); "could not get back" was never reproduced: ask for a
    screenshot if it happens again.
 
 On hold by the owner:
-6. **Siri shortcuts (F11)**: 58 shortcuts signed on the Mac; the test on the phones is on hold. When resumed: AirDrop English
+7. **Siri shortcuts (F11)**: 58 shortcuts signed on the Mac; the test on the phones is on hold. When resumed: AirDrop English
     (owner) and עברית (the other parent), try open and locked, report seconds until Siri answers, Face ID, Hebrew names.
     Not verified on a real iPhone: Show Result spoken, the asking shortcut by voice in Hebrew, network from a locked phone.
     Lessons from the Mac: Google answers a POST with a redirect that takes only GET; `shortcuts sign` needs the `.shortcut` extension.
-7. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
+8. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
 
 Owner-only steps still open: see "Owner-only actions" below (second parent's phone, an optional second `rotateKey`).
 
