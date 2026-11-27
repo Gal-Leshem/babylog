@@ -29,9 +29,10 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   "היה לפני" / "בטל" under a marked medicine in the window; History "24 שעות אחרונות"; feedback in the app (🐞); Siri in Hebrew
   and English (two shortcut sets, an asking shortcut, "which side next"), with two fixes to `sign.sh` found on the owner's Mac.
 
-## Where we are (open items with the owner; one list for every area, 26 November 2026)
+## Where we are (open items with the owner; one list for every area, 27 November 2026)
 Everything built is live; the three parallel sessions are closed and their knowledge is in the skills (`CLAUDE.md`).
-`dev` is ahead of `main` by guides and docs only; they reach `main` with the next app change (owner: docs alone are not shipped).
+`dev` may be ahead of `main` by guides and docs only; they reach `main` with the next app change (owner: docs alone are not
+shipped). Last ship: the slowed full list (27 Nov), with every guide and doc waiting until then.
 
 Waiting for the owner (ask when it fits, do not build before):
 1. **Families, F15 option B**: reading more of a family's "שימוש" tab than the day totals, in the app with the admin code
