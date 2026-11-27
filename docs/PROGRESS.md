@@ -45,7 +45,8 @@ Waiting for something from the owner's daily use:
    stage 1: not now (owner; `BACKLOG.md`, look again when a family is added or a day goes above about 20%).
 3. **The first family** (live, `families.json`): hear how it goes; its feedback reaches the owner's phone through the admin code.
    Adding another: the `families` skill ("Adding a family, end to end") and `INSTALL.he.md` "משפחה נוספת".
-4. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it.
+4. **Feedback list** (Settings > מתקדם > "🐞 משוב"): the owner pastes it when they want; never ask for it. Items #2 to #5 handled and live (27 Nov);
+   the owner clears the list.
 5. **Which questions get used** (F8 / F16): the per-question states in the usage days ("העתקת נתוני שימוש" under "משפחות
    נוספות": every server's 14 days in one tap).
 6. A tap that went through a disappearing toast was fixed (tap shield); "could not get back" was never reproduced: ask for a
