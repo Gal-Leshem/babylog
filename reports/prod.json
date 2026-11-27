@@ -1,10 +1,10 @@
 {
   "job": "prod",
   "status": "success",
-  "sha": "d5d9535",
+  "sha": "5836348",
   "ref": "main",
-  "at": "2026-11-27T09:31:46.362Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/45973672578",
+  "at": "2026-11-27T17:33:55.487Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46042117212",
   "logs": {
     "deploy-prod": [
       "+ npx tsx scripts/deploy-server.ts prod",
@@ -12,13 +12,16 @@
       "using existing prod script",
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
-      "server bundle ready (production, 77 KB)",
-      "server unchanged since 1bd4343: no new version (version 97 stays)",
+      "server bundle ready (production, 78 KB)",
+      "Pushed 2 files at 5:33:51 PM.",
+      "└─ apps-script/dist/appsscript.json",
+      "└─ apps-script/dist/Code.js",
+      "redeployed existing web app deployment (version 98)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=97 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "prod server deployed (unchanged since 1bd4343)",
-      "took 3s"
+      "deployment version=98 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "prod server deployed",
+      "took 11s"
     ],
     "install": [
       "+ npm ci",
