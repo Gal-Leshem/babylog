@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
+import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, endsCourse, medicineToday, todayText } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
 import { EARLIER_MIN, type Mark, archiveMedicine, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
@@ -42,6 +42,14 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
   const now = useNow(15_000);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [pending, setPending] = useState<Medicine | null>(null);
+  // (owner, feedback #6 / #7) a medicine archived from here: its own line with "בטל" (a toast would cover the window's buttons)
+  const [archived, setArchived] = useState<{ name: string; undo: () => void } | null>(null);
+  const archive = (m: Medicine) => {
+    const undo = archiveMedicine(m, false);
+    if (!undo) return;
+    setMarks(marks.filter((k) => k.medicineId !== m.id)); // "ביטול הסימונים" no longer touches its doses
+    setArchived({ name: m.name, undo });
+  };
   const give = (m: Medicine) => {
     const r = logMedicine(m);
     if (r) setMarks([...marks, r]);
@@ -66,6 +74,24 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
     <div class="sheet-backdrop" data-testid="meds-window" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div class="sheet" role="dialog" aria-modal="true" aria-label="תרופות">
         <h2>תרופות</h2>
+        {archived && (
+          <div class="tback medback" data-testid="meds-archived">
+            <span>
+              הועבר לארכיון: <bdi>{archived.name}</bdi>
+            </span>
+            <button
+              type="button"
+              class="undo"
+              data-testid="meds-unarchive"
+              onClick={() => {
+                archived.undo();
+                setArchived(null);
+              }}
+            >
+              בטל
+            </button>
+          </div>
+        )}
         <ul class="medpick">
           {meds.map((m) => {
             const mine = marks.filter((k) => k.medicineId === m.id);
@@ -131,15 +157,13 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
                 )}
-                {latest?.last && (
-                  // (owner, feedback #6) the dose just marked ended the course: archive the medicine from here
-                  <div class="tact medback" data-testid="meds-last">
+                {latest && endsCourse(m, events, now) && (
+                  // (owner, feedback #6) the dose just marked ended the course (still true after "היה לפני"): archive it from here
+                  <div class="tback medback" data-testid="meds-last">
                     <span>זו הייתה המנה האחרונה</span>
-                    <span class="tbtns">
-                      <button type="button" data-testid="meds-archive" onClick={() => archiveMedicine(m)}>
-                        העברה לארכיון
-                      </button>
-                    </span>
+                    <button type="button" data-testid="meds-archive" onClick={() => archive(m)}>
+                      העברה לארכיון
+                    </button>
                   </div>
                 )}
               </li>
@@ -173,7 +197,7 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
             give(pending);
             setPending(null);
           }}
-          onArchive={medicineToday(pending, events, now).course?.done ? () => (setPending(null), archiveMedicine(pending)) : undefined}
+          onArchive={medicineToday(pending, events, now).course?.done ? () => (setPending(null), archive(pending)) : undefined}
         />
       )}
     </div>

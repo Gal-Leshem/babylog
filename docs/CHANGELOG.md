@@ -860,9 +860,15 @@ No names, addresses or secrets in this file (the repository is public).
   האחרונה" with "העברה לארכיון" (6 s), and in the medicines window the same row appears under the medicine. When someone tries
   to give a medicine whose course is over, the confirm ("משך מתן התרופה הסתיים · לרשום בכל זאת?") also offers "העברה
   לארכיון", from Home and from the window. Archived, the medicine leaves Home and the window; its doses stay; the toast's "בטל"
-  or Settings > תרופות brings it back. An "as needed" medicine has no known last dose: only the confirm offers it. Tests: unit
-  (`endsCourse` for each kind of course) and browser (the toast and "בטל", nothing before the last dose, the confirm, the
-  window's row and its confirm); each part failed when broken.
+  or Settings > תרופות brings it back (in the window: a line of its own with "בטל", since a toast would cover the window's
+  buttons). The last dose: the Xth of X doses (an "as needed" medicine too); on the last day of X days or "until", the day's
+  doses complete (every X hours: no further dose fits before midnight). An "as needed" medicine with a course of days or a date
+  has no known last dose: only the confirm offers it. Known limit (as for the course's progress): the phone holds about 15
+  days, so a course of more doses or days than that is never seen to end. Tests: unit (`endsCourse` for every kind of course
+  and schedule) and browser (the toast and "בטל", nothing before the last dose, the confirm, the window's row and its own
+  "בטל", vitamin D on Home); each part failed when broken. The `change-reviewer` agent found before the push: vitamin D on Home
+  (its own logging path) missed the offer; every X hours could offer one dose early; the docs said no offer for "as needed"
+  while X doses rightly gives one; the window's marks and toast after an archive.
 - Tests: "archive and restore" in Settings seeded a dose on a fixed date (14 Nov) that fell out of the 14 days the app loads
   on 28 Nov and failed with no change; it now seeds yesterday.
 

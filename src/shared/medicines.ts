@@ -6,7 +6,7 @@
  * The app gives no medical advice: every number here is what the parents entered, and every field may stay empty.
  */
 import { live } from './domain';
-import { addDays, formatLocal, isDateString, localDate, parseLocal } from './tz';
+import { addDays, dayStart, formatLocal, isDateString, localDate, parseLocal } from './tz';
 import type { BabyEvent } from './types';
 
 export const VITAMIN_D_ID = 'vitamin_d';
@@ -311,18 +311,23 @@ export function todayText(m: Medicine, count: number): string {
 }
 
 /**
- * (owner, feedback #6) The dose just given was the course's last: X doses reached, or on the last day of X days / "until" the
- * day's amount is complete. A medicine given as needed has no known last dose (the confirm offers archiving later instead).
- * `events` already hold the dose; false when there is no course or it was over before.
+ * (owner, feedback #6) The dose just given was the course's last: the Xth of X doses (any schedule, "as needed" included), or
+ * on the last day of X days / "until" the day's doses are complete: once a day given, X times a day reached, or every X hours
+ * with no further dose before midnight. An "as needed" medicine with a course of days or a date has no known last dose (the
+ * confirm offers the archive once the course is over). `events` already hold the dose; false when there is no course or it
+ * was over before. Known limit, as for `courseProgress`: the phone holds about 15 days, so a longer course of doses or days
+ * is never seen to end here.
  */
 export function endsCourse(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): boolean {
   if (m.course === 'none') return false;
   const doses = dosesOf(m, events);
   if (m.course === 'doses') return doses.length === m.courseCount;
-  const perDay = dosesPerDay(m);
-  if (perDay === null || doses.length === 0) return false;
+  if (m.schedule === 'prn' || doses.length === 0) return false;
   const today = localDate(nowEpoch);
   const lastDay = m.course === 'until' ? m.courseUntil : addDays(doses[0]!.start.slice(0, 10), m.courseCount - 1);
   if (today !== lastDay) return false;
-  return doses.filter((e) => e.start.slice(0, 10) === today).length === perDay;
+  const todays = doses.filter((e) => e.start.slice(0, 10) === today);
+  if (todays.length === 0) return false;
+  if (m.schedule === 'interval') return parseLocal(todays[todays.length - 1]!.start) + m.everyHours * 3_600_000 >= dayStart(addDays(today, 1));
+  return todays.length === dosesPerDay(m);
 }

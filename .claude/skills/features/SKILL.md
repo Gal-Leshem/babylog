@@ -76,7 +76,8 @@ is reviewed against every skill that owns the file.
 ## Owner decisions in force (newest first; history in `docs/CHANGELOG.md`, F15-F18 rounds in `docs/BACKLOG.md`)
 - Medicines with a course (feedback #6 / #7, 28 Nov): after the dose that ends the course (`endsCourse`) the toast or the
   window's row offers "העברה לארכיון"; the "course over" confirm offers it too; archived leaves Home and the window, doses stay,
-  "בטל" or Settings brings it back. An "as needed" medicine has no known last dose (only the confirm offers it).
+  "בטל" or Settings brings it back. Last dose: the Xth of X doses (as needed too), or the last day's doses complete; as needed
+  with days / a date has none (only the confirm offers it). Courses longer than the ~15 loaded days are never seen to end.
 - Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every
   question is listed in "בחירת שאלות" for every family, the unfit ones off (nursing questions too for bottles only: this
   replaces the F18 "only with nursing" listing rule; turned on, an unsuitable one shows why there is no answer, never an answer
@@ -122,6 +123,8 @@ is reviewed against every skill that owns the file.
   every path that sets the same moment (the button, the form, "שכחתם התעוררות?") fills it; test each path.
 - A detail that starts to carry something for a type that refused any detail makes a phone a version behind refuse patches
   on such rows until it reopens -> patches leave `detail` out unless they mean to change it, and the report names the window.
+- Vitamin D on Home logs through `quickLog('vitamin_d')`, the window through `logMedicine` -> anything about a medicine dose
+  covers both paths; and every X hours fits more doses a day than floor(24 / X): end a day by "no further dose fits".
 - A browser test seeded a dose on a fixed date; two weeks later it fell out of the 14 days the app loads and the test failed
   on a day with no change -> seed relative to today (`addDaysLocal(todayLocal(), -1)`, `pinPageDay`), never a fixed date.
 - An old browser test encoded an owner rule the owner later replaced (bottle-only families saw no nursing questions) -> when a

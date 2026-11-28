@@ -202,8 +202,19 @@ describe('endsCourse', () => {
     expect(endsCourse(until, [d('2026-11-14 08:00')], NOW)).toBe(true);
     expect(endsCourse(until, [d('2026-11-14 08:00')], T('2026-11-13 12:00')), 'before the last day').toBe(false);
   });
-  it('no course, or as needed: never a known last dose', () => {
+  it('no course, or as needed for days or a date: never a known last dose; as needed for X doses: the Xth', () => {
     expect(endsCourse(med({ schedule: 'daily' }), [d('2026-11-14 08:00')], NOW)).toBe(false);
     expect(endsCourse(med({ schedule: 'prn', course: 'days', courseCount: 1 }), [d('2026-11-14 08:00')], NOW)).toBe(false);
+    expect(endsCourse(med({ schedule: 'prn', course: 'doses', courseCount: 1 }), [d('2026-11-14 08:00')], NOW)).toBe(true);
+  });
+  // (review) every 5 hours fits five doses a day (00, 05, 10, 15, 20), not floor(24 / 5) = 4
+  it('every X hours: the last day ends when no further dose fits before midnight', () => {
+    const m = med({ schedule: 'interval', everyHours: 5, course: 'until', courseUntil: '2026-11-14' });
+    const day = ['00:00', '05:00', '10:00', '15:00'].map((t) => d(`2026-11-14 ${t}`));
+    expect(endsCourse(m, day, T('2026-11-14 15:00')), 'a dose at 20:00 still fits').toBe(false);
+    expect(endsCourse(m, [...day, d('2026-11-14 20:00')], T('2026-11-14 20:00'))).toBe(true);
+    const sixteen = med({ schedule: 'interval', everyHours: 16, course: 'until', courseUntil: '2026-11-14' });
+    expect(endsCourse(sixteen, [d('2026-11-14 01:00')], T('2026-11-14 01:00')), 'a second dose at 17:00 still fits').toBe(false);
+    expect(endsCourse(sixteen, [d('2026-11-14 01:00'), d('2026-11-14 17:00')], T('2026-11-14 17:00'))).toBe(true);
   });
 });

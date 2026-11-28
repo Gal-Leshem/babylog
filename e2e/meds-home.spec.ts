@@ -374,7 +374,7 @@ test('after the last dose of a course the toast offers the archive; archived it 
   await page.getByTestId('btn-med').click();
   await expect(page.getByTestId('toast-offer-text')).toHaveText('זו הייתה המנה האחרונה');
   await page.getByTestId('toast-offer-yes').click();
-  await expect(page.getByTestId('toast-text')).toHaveText('ברזל הועבר לארכיון');
+  await expect(page.getByTestId('toast-text')).toHaveText('הועבר לארכיון: ברזל');
   await expect(page.getByTestId('btn-med')).toHaveCount(0);
   await expect.poll(() => statusOf(request, 'm1')).toBe('archived');
   expect(await doses(request)).toEqual(['m1', 'm1']); // the doses stay
@@ -400,7 +400,7 @@ test('giving a medicine whose course is over: the confirm offers the archive (#7
   await expect(page.getByTestId('confirm-warnings')).toContainText('משך מתן התרופה הסתיים');
   await page.getByTestId('confirm-archive').click();
   await expect(page.getByTestId('confirm-dose')).toHaveCount(0);
-  await expect(page.getByTestId('toast-text')).toHaveText('ברזל הועבר לארכיון');
+  await expect(page.getByTestId('toast-text')).toHaveText('הועבר לארכיון: ברזל');
   await expect.poll(() => statusOf(request, 'm1')).toBe('archived');
   expect(await doses(request)).toEqual(['m1']); // nothing logged
 });
@@ -415,10 +415,28 @@ test('in the medicines window: the last dose offers the archive under its row; a
   await expect(page.getByTestId('meds-last')).toContainText('זו הייתה המנה האחרונה');
   await page.getByTestId('meds-archive').click();
   await expect(row(page, 'm1')).toHaveCount(0);
+  await expect(page.getByTestId('meds-archived')).toContainText('הועבר לארכיון: ברזל');
+  await expect(page.getByTestId('toast')).toHaveCount(0); // no toast over the window's buttons
   await expect.poll(() => statusOf(request, 'm1')).toBe('archived');
+  await page.getByTestId('meds-unarchive').click();
+  await expect(row(page, 'm1')).toBeVisible();
+  await expect.poll(() => statusOf(request, 'm1')).toBe('active');
+  await expect(page.getByTestId('meds-archived')).toHaveCount(0);
   await row(page, 'm2').click(); // its course is over: the confirm
   await page.getByTestId('confirm-archive').click();
   await expect(row(page, 'm2')).toHaveCount(0);
   await expect.poll(() => statusOf(request, 'm2')).toBe('archived');
   await expect(row(page, 'vitamin_d')).toBeVisible();
+});
+
+// (review) vitamin D on Home logs through its own path: its last dose offers the archive too (e.g. "until the first birthday")
+test('vitamin D on Home: the dose on the last day of its course offers the archive', async ({ page, request }) => {
+  const d = await pinPageDay(page);
+  await setMeds(request, [{ ...VIT, course: 'until', courseUntil: d }]);
+  await install(page);
+  await page.getByTestId('btn-vitamin_d').click();
+  await expect(page.getByTestId('toast-offer-text')).toHaveText('זו הייתה המנה האחרונה');
+  await page.getByTestId('toast-offer-yes').click();
+  await expect(page.getByTestId('toast-text')).toHaveText('הועבר לארכיון: ויטמין D');
+  await expect.poll(() => statusOf(request, 'vitamin_d')).toBe('archived');
 });

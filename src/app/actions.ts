@@ -5,7 +5,7 @@ import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
 import type { BabyEvent } from '../shared/types';
 import { KIND_LABEL, errorText, fromKind, hm, kindOf, kindOfBottle, nowLocal, timeOf, type Kind } from './labels';
-import { type Suggest, count, declineDefault, engine, getPrefs as prefs, showToast } from './state';
+import { type Suggest, type Toast, count, declineDefault, engine, getPrefs as prefs, showToast } from './state';
 import { babyWords } from './words';
 
 const W = () => babyWords(engine.getState().settings.babySex);
@@ -92,7 +92,9 @@ export function quickLog(kind: Kind): void {
     // (owner) the offer to mark the wake-up is a row of its own, clearly apart from the confirmation
     return toastFor((t) => savedText(label, timeOf(t), offline), { action: { label: W().markAwake, note: W().stillMarkedAsleep, run: toggleSleep } }, TAP_TOAST_ASLEEP_MS);
   }
-  toastFor((t) => savedText(label, timeOf(t), offline));
+  // (owner, feedback #6) vitamin D on Home logs here, not through logMedicine: its last dose offers the archive too
+  const offer = kind === 'vitamin_d' ? lastDoseOffer(vit, start) : undefined;
+  toastFor((t) => savedText(label, timeOf(t), offline), offer ? { offer } : {}, offer ? OFFER_TOAST_MS : TAP_TOAST_MS);
 }
 
 /** (owner, F18) After this many bottles of a kind in a row with the same amount, other than the default, offer to make it the default. */
@@ -245,8 +247,6 @@ export interface Mark {
   unmove?: () => void;
   /** the minutes picked last, if any */
   chosen?: number;
-  /** (owner, feedback #6) this dose was the course's last: offer to archive the medicine */
-  last?: boolean;
 }
 
 /**
@@ -267,27 +267,34 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
   count(toast ? 'log.medicine' : 'meds.mark');
   const offline = engine.getState().status === 'offline';
   const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
-  const last = endsCourse(m, engine.getState().allEvents, parseLocal(start));
-  const offer = last ? { text: 'זו הייתה המנה האחרונה', label: 'העברה לארכיון', act: () => void archiveMedicine(m) } : undefined;
+  const offer = toast ? lastDoseOffer(m, start) : undefined;
   if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })), ...(offer ? { offer } : {}) }, offer ? OFFER_TOAST_MS : TAP_TOAST_MS);
-  return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove, ...(last ? { last } : {}) };
+  return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove };
 }
 
 /**
  * (owner, feedback #6 / #7) Moves a medicine whose course is over to the archive: it leaves Home and the medicines window; its
  * doses stay, and Settings > תרופות brings it back. The toast's "בטל" makes it active again.
  */
-export function archiveMedicine(m: Medicine): boolean {
+export function archiveMedicine(m: Medicine, toast = true): (() => void) | null {
   const { created: _c, ...rest } = m;
   const withStatus = (status: Medicine['status']): ApiRequest => ({ action: 'settings', set: { medicines: [{ ...rest, status }] } });
   const res = engine.dispatch(withStatus('archived'));
   if (!res.ok) {
     fail(res.error, res.detail);
-    return false;
+    return null;
   }
   count('meds.archive');
-  showToast({ text: `${m.name} הועבר לארכיון`, undo: () => undoOp(res.opId, withStatus('active')) });
-  return true;
+  const undo = () => undoOp(res.opId, withStatus('active'));
+  // (the medicines window shows its own line instead: a toast would cover the window's buttons)
+  if (toast) showToast({ text: `הועבר לארכיון: ${m.name}`, undo });
+  return undo;
+}
+
+/** (owner, feedback #6) The toast's offer after the dose that ended `m`'s course, if it did. */
+function lastDoseOffer(m: Medicine | undefined, start: string): Toast['offer'] | undefined {
+  if (!m || !endsCourse(m, engine.getState().allEvents, parseLocal(start))) return undefined;
+  return { text: 'זו הייתה המנה האחרונה', label: 'העברה לארכיון', act: () => void archiveMedicine(m) };
 }
 
 /** Takes back doses marked by mistake (newest first). */
