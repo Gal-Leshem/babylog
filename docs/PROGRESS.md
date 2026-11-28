@@ -35,8 +35,6 @@ Everything built is live; the three parallel sessions are closed and their knowl
 shipped). Last ship: the slowed full list (27 Nov), with every guide and doc waiting until then.
 
 Waiting for the owner (ask when it fits, do not build before):
-0. **Next feed from the last side?** "מתי ההנקה הבאה צפויה?" counts from the start of the last feeding plus the usual gap
-   (start to start); counting from its last side needs gaps measured end to start. Asked 28 Nov, no answer yet.
 1. **Families, consent at install**: on hold until the owner's legal research (`docs/BACKLOG.md`).
 
 Decided not now (owner, 27 Nov): moving a family's sheet to its own Drive (only when a family asks).

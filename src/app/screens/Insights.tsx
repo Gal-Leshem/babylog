@@ -219,10 +219,11 @@ function answerMore(q: Question, m: MoreAnswers, now: number, w: BabyWords, feed
       // (owner) only the estimate and the part of the day it comes from; the parts side by side live in "כל כמה שעות מאכילים?"
       const n = m.nextFeed!;
       // (owner) about the baby, and the gap in words: "בבוקר (08:00 עד 12:00) התינוק אוכל בדרך כלל כל שעה ו-50 דקות"
+      // (owner, 28 Nov 2026) counted from the last side of the last feeding: the gap is from the end of a feeding to the next one
       const basis =
         n.basis === 'part'
-          ? `${PART_NAMES[n.part]} (${partSpan(n.part)}) ${w.baby} ${w.eats} בדרך כלל כל ${durationHe(n.gapMin)}`
-          : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} ${w.baby} ${w.eats} כל ${durationHe(n.gapMin)} (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
+          ? `${PART_NAMES[n.part]} (${partSpan(n.part)}) ${w.baby} ${w.eats} בדרך כלל ${durationHe(n.gapMin)} אחרי סוף ההאכלה הקודמת`
+          : `${n.basis === 'night' ? 'בלילה' : n.basis === 'day' ? 'ביום' : 'בדרך כלל'} ${w.baby} ${w.eats} ${durationHe(n.gapMin)} אחרי סוף ההאכלה הקודמת (לחלק הזה של היום עוד אין מספיק נתונים משלו)`;
       if (n.last === null) return <div class="qa small">אין האכלה רשומה ב-12 השעות האחרונות</div>;
       return (
         <>

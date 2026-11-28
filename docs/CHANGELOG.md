@@ -897,6 +897,11 @@ No names, addresses or secrets in this file (the repository is public).
   that saves the same kind of course keeps the start. The first dose of a course writes the settings once (about 0.1 to 0.5 s
   more on that one tap). Vitamin D's test now checks the toast of an ordinary medicine.
 
+- Next feed **(owner)**: "מתי ההנקה הבאה צפויה?" counts from the LAST side of the last feeding (left 10:00, right 10:15, left
+  10:30 with a usual gap of 2:30: about 13:00, was 12:30), and its usual gap is measured the same way, from the last side of each
+  feeding to the start of the next, by part of the day; the card says "... בדרך כלל X אחרי סוף ההאכלה הקודמת". "כל כמה זמן
+  מאכילים?" is unchanged (start to start). Test: unit with the owner's example (failed on the old code); browser wording.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

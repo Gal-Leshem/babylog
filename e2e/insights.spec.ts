@@ -438,8 +438,8 @@ test('questions: the parts of the day are in the feed-gap card, the next feed on
   const next = page.getByTestId('q-nextFeed');
   await expect(next.locator('.parts')).toHaveCount(0);
   await expect(next).toContainText(`בסביבות השעה ${formatLocal(n.at).slice(11, 16)}`);
-  // (owner) about the baby, the gap in words ("שעה ו-50 דקות")
-  await expect(next).toContainText(`התינוק אוכל בדרך כלל כל ${durationHe(n.gapMin)}`);
+  // (owner) about the baby, the gap in words ("שעה ו-50 דקות"); since 28 Nov counted from the end of the previous feeding
+  await expect(next).toContainText(`התינוק אוכל בדרך כלל ${durationHe(n.gapMin)} אחרי סוף ההאכלה הקודמת`);
   await page.getByTestId('q-nextFeed-about').click();
   await expect(page.getByTestId('q-about-part').first()).toContainText('הערכה מתי סביר שהתינוק יהיה שוב רעב');
   await page.getByTestId('q-how-close').click();
@@ -447,7 +447,7 @@ test('questions: the parts of the day are in the feed-gap card, the next feed on
   await api(request, { action: 'settings', set: { babySex: 'girl' } });
   await page.reload();
   await openInsights(page);
-  await expect(page.getByTestId('q-nextFeed')).toContainText(`התינוקת אוכלת בדרך כלל כל ${durationHe(n.gapMin)}`);
+  await expect(page.getByTestId('q-nextFeed')).toContainText(`התינוקת אוכלת בדרך כלל ${durationHe(n.gapMin)} אחרי סוף ההאכלה הקודמת`);
   await page.getByTestId('q-nextFeed-about').click();
   await expect(page.getByTestId('q-about-part').first()).toContainText('הערכה מתי סביר שהתינוקת תהיה שוב רעבה');
   const order = await page.locator('.q[data-q]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.q));

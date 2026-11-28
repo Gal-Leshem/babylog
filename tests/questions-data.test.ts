@@ -66,6 +66,14 @@ describe('the newer questions (F16 stage B)', () => {
     expect(thin.nextFeed).toMatchObject({ part: 3, basis: 'day' });
   });
 
+  // owner (28 Nov 2026): a feeding of several sides in a row counts from its LAST side (left 12:00, right 12:15, left 12:30:
+  // the usual 2:30 from 12:30), not from its first (2:30 from 12:00)
+  it('the next feed counts from the last side of a feeding of several sides, with the gap measured from last side to next start', () => {
+    const sides = [ev({ type: 'feed', detail: 'right', start: '2026-11-15 12:15' }), ev({ type: 'feed', detail: 'left', start: '2026-11-15 12:30' })];
+    const r = moreAnswers([...week(), ...sides], NOW, 20);
+    expect(r.nextFeed).toMatchObject({ last: T('2026-11-15 12:30'), part: 3, basis: 'part', gapMin: 150, at: T('2026-11-15 15:00') });
+  });
+
   // (owner) cluster feeding in words a parent can use: on which days and at what hours there were runs of close feeds
   it('cluster feeding: runs of 3 or more feeds at most 75 minutes apart, on which days and at what usual hours', () => {
     const extra: BabyEvent[] = [];

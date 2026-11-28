@@ -234,15 +234,29 @@ export function moreAnswers(events: readonly BabyEvent[], nowEpoch: number, merg
       byPart[Math.floor(localHour(startsIn[i - 1]!) / FEED_PART_HOURS)]!.push(gap);
     }
     const parts = byPart.map((gaps, k) => ({ from: k * FEED_PART_HOURS, to: (k + 1) * FEED_PART_HOURS, median: gaps.length >= MIN_PART_GAPS ? spread(gaps).median : null, n: gaps.length }));
-    const last = [...feedStarts].filter((t) => t <= nowEpoch).pop();
+    feedParts = parts;
+    // (owner, 28 Nov 2026) the next feed counts from the LAST side of the last feeding (several sides in a row are one feeding),
+    // so its usual gap is measured the same way: from the last side of each feeding to the start of the next one
+    const ends = groups.map((gr) => parseLocal(gr.events[gr.events.length - 1]!.start));
+    const endGaps: { at: number; gap: number }[] = [];
+    for (let i = 0; i + 1 < groups.length; i++) {
+      const at = ends[i]!;
+      const next = feedStarts[i + 1]!;
+      if (at < w.lo || next >= w.hi) continue;
+      const gap = (next - at) / MIN;
+      if (gap > 6 * 60) continue; // most likely a feed that was not logged
+      endGaps.push({ at, gap });
+    }
+    const median = (xs: number[], need: number) => (xs.length >= need ? spread(xs).median : null);
+    const last = ends.filter((t) => t <= nowEpoch).pop();
     const recent = last !== undefined && nowEpoch - last <= 12 * 60 * MIN ? last : null;
     const part = Math.floor(localHour(recent ?? nowEpoch) / FEED_PART_HOURS);
     const night = isNightHour(localHour(recent ?? nowEpoch));
-    const own = parts[part]!.median;
-    const half = (night ? g.night : g.day)?.median ?? null;
-    const [gapMin, basis]: [number, 'part' | 'day' | 'night' | 'all'] = own !== null ? [own, 'part'] : half !== null ? [half, night ? 'night' : 'day'] : [g.all.median, 'all'];
+    const own = median(endGaps.filter((x) => Math.floor(localHour(x.at) / FEED_PART_HOURS) === part).map((x) => x.gap), MIN_PART_GAPS);
+    const half = median(endGaps.filter((x) => isNightHour(localHour(x.at)) === night).map((x) => x.gap), MIN_PART_GAPS);
+    const all = median(endGaps.map((x) => x.gap), 1) ?? g.all.median;
+    const [gapMin, basis]: [number, 'part' | 'day' | 'night' | 'all'] = own !== null ? [own, 'part'] : half !== null ? [half, night ? 'night' : 'day'] : [all, 'all'];
     nextFeed = { last: recent, gapMin, at: recent === null ? 0 : recent + gapMin * MIN, basis, part };
-    feedParts = parts;
   }
 
   // sleep per day (the 7 full days that have any sleep logged), and yesterday against them
