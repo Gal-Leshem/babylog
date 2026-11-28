@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "9f8f90e",
+  "sha": "ed22911",
   "ref": "main",
-  "at": "2026-11-28T02:32:40.306Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46098034750",
+  "at": "2026-11-28T05:22:52.505Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46111376719",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -13,17 +13,14 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (family, 81 KB)",
-      "Pushed 2 files at 2:32:35 AM.",
-      "└─ apps-script/dist/appsscript.json",
-      "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 16)",
+      "server unchanged since 9f8f90e: no new version (version 16 stays)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "deployment version=15 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
-      "family-r6swjd5e server deployed",
-      "FAMILY r6swjd5e: deployed, answers from this build",
+      "deployment version=16 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
+      "family-r6swjd5e server deployed (unchanged since 9f8f90e)",
+      "FAMILY r6swjd5e: unchanged, answers from build 9f8f90e",
       "all 1 family servers deployed",
-      "took 12s"
+      "took 7s"
     ],
     "install": [
       "+ npm ci",
@@ -31,7 +28,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 5s",
+      "added 657 packages, and audited 658 packages in 7s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -45,7 +42,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 4s"
+      "took 7s"
     ]
   }
 }
