@@ -4,7 +4,7 @@ import { byTimeDesc, clock, elapsedHM, eventTime, forgottenWake, lastBottle, las
 import { GENERIC_ICON, type Medicine, VITAMIN_D_ID, allDoneToday, doneToday, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
-import { logBottle, logMedicine, quickLog, toggleSleep } from '../actions';
+import { archiveMedicine, logBottle, logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, kindOfBottle, monthDayText, timeOf } from '../labels';
 import { useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
@@ -320,6 +320,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
             if (confirm.id === VITAMIN_D_ID) quickLog('vitamin_d');
             else logMedicine(confirm, true);
           }}
+          onArchive={medicineToday(confirm, events, now).course?.done ? () => (setConfirm(null), archiveMedicine(confirm)) : undefined}
         />,
         )}
     </section>

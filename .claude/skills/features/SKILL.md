@@ -74,6 +74,9 @@ is reviewed against every skill that owns the file.
   made "90 ml", a bottle nobody gave).
 
 ## Owner decisions in force (newest first; history in `docs/CHANGELOG.md`, F15-F18 rounds in `docs/BACKLOG.md`)
+- Medicines with a course (feedback #6 / #7, 28 Nov): after the dose that ends the course (`endsCourse`) the toast or the
+  window's row offers "העברה לארכיון"; the "course over" confirm offers it too; archived leaves Home and the window, doses stay,
+  "בטל" or Settings brings it back. An "as needed" medicine has no known last dose (only the confirm offers it).
 - Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every
   question is listed in "בחירת שאלות" for every family, the unfit ones off (nursing questions too for bottles only: this
   replaces the F18 "only with nursing" listing rule; turned on, an unsuitable one shows why there is no answer, never an answer
@@ -81,20 +84,10 @@ is reviewed against every skill that owns the file.
   כדאי לדעת" mentions engorgement softly for nursing families (owner's wording, softened; not advice).
 - Age: explanations in "תובנות" that mention an age stay; nothing disappears by itself with the age (the parents hide it).
 - Age above Summary / "תובנות" and a quiet line at the top of Home's recent list on each whole month (girl / boy wording).
-- Bottles (F18), all live:
-  - Settings card "🍼 האכלה" for both phones: nursing / expressed / formula switches (one stays on), default ml per kind.
-  - Home: "בקבוק" is the third button in the feed row, on the LEFT of the nursing buttons; with three in a row the icon stays
-    above the label (checked at 393 / 375 / 360 wide). One kind: one tap logs it; both: the window (kinds, default, -/+ 10,
-    no quick amounts). Without nursing: a button per kind instead of the nursing buttons.
-  - Every bottle starts from its kind's default. Toast: -20 / -10 / +10 / +20 and "היה לפני", stays while used. After 5 equal
-    bottles off the default: offer to update it ("לא עכשיו" remembered per phone and amount).
-  - Edit form: "הוכן" and "כמה נשאר" both with -/+ 10, left from 0, "נאכל" computed. Lists show what was eaten.
-  - One feeding = a bottle within the merge window of a nursing or a bottle; the next side and left / right from nursing only.
-  - Summary rows with bottles: "האכלות", "הנקות" (only with nursing), "בקבוקים", "מ״ל בבקבוקים"; nursing only keeps
-    "הנקות (האכלות)". The week: no bottle count; one ml card, split formula / expressed when both were given.
-  - Questions: "מתוכן X עם בקבוק" only with nursing AND bottles (sensitive: not every mother can nurse); "כמה מההאכלות עם
-    בקבוק?" only by hand; sides and cluster shown by themselves only with nursing (listed off otherwise, 27 Nov); "היום חריג" counts bottle ml only without nursing.
-  - Out of scope: pumping, stash, discard timers, volume targets, a mixed bottle, solids.
+- Bottles (F18), all live; the full list of decisions is in `docs/CHANGELOG.md` and `docs/BACKLOG.md` (F18). Kept here:
+  "בקבוק" is the third button in the feed row, LEFT of the nursing buttons (icon above label at 393 / 375 / 360 wide); one
+  feeding = a bottle within the merge window of a nursing or a bottle; the next side from nursing only; "מתוכן X עם בקבוק"
+  only with nursing AND bottles (sensitive: not every mother can nurse); out of scope: pumping, stash, timers, targets, solids.
 - Summary gap between feeds is the median ("רווח רגיל בין האכלות"), never a mean.
 - Questions (F16) replaced insight cards: a question shows by itself once it has enough data (off until then), each parent
   turns any on or off on their own phone; one turned on early shows how much is missing. Every card has "מה זה אומר?" with
@@ -129,6 +122,8 @@ is reviewed against every skill that owns the file.
   every path that sets the same moment (the button, the form, "שכחתם התעוררות?") fills it; test each path.
 - A detail that starts to carry something for a type that refused any detail makes a phone a version behind refuse patches
   on such rows until it reopens -> patches leave `detail` out unless they mean to change it, and the report names the window.
+- A browser test seeded a dose on a fixed date; two weeks later it fell out of the 14 days the app loads and the test failed
+  on a day with no change -> seed relative to today (`addDaysLocal(todayLocal(), -1)`, `pinPageDay`), never a fixed date.
 - An old browser test encoded an owner rule the owner later replaced (bottle-only families saw no nursing questions) -> when a
   decision replaces an earlier one, find the tests of the old rule and say in them which decision replaced it.
 - Mockups: a temporary `e2e/zz-*.spec.ts` that injects markup into the real app and screenshots to the scratchpad; delete it after.
@@ -143,4 +138,4 @@ or timing also `MOCK_DELAY=250` and the three heights. Screenshots of the change
 - F11 Siri shortcuts: built and signed; the owner's test on the phones is on hold (owner).
 - F8: which questions get used (usage counts per question in the "שימוש" tab).
 
-Last reviewed: 27 November 2026 (feedback round: wake-up name, every question listed, timeline midnight line).
+Last reviewed: 28 November 2026 (medicine archive offers; bottle details moved to the changelog).

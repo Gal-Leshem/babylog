@@ -239,6 +239,17 @@ function ToastView() {
           </span>
         </div>
       )}
+      {t.offer && t.done !== 'undo' && (
+        // (owner, feedback #6) after a medicine's last dose: archive it from here (it replaces this toast with its own)
+        <div class="tact" data-testid="toast-offer">
+          <span data-testid="toast-offer-text">{t.offer.text}</span>
+          <span class="tbtns">
+            <button type="button" data-testid="toast-offer-yes" onClick={() => t.offer!.act()}>
+              {t.offer.label}
+            </button>
+          </span>
+        </div>
+      )}
       {t.earlier && (
         // two taps to log something that happened a little while ago: the button, then one of these (owner)
         <div class="tback" data-testid="toast-earlier">

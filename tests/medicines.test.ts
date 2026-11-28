@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, allDoneToday, courseProgress, doneToday, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, allDoneToday, courseProgress, endsCourse, doneToday, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -181,5 +181,29 @@ describe('done for today', () => {
     expect(allDoneToday([DEFAULT_VITAMIN_D, twice, prn], [...given, dose('m1', '2026-11-14 11:00')], NOW)).toBe(true);
     expect(allDoneToday([prn], [dose('m2', '2026-11-14 08:00')], NOW)).toBe(false);
     expect(allDoneToday([], [], NOW)).toBe(false);
+  });
+});
+
+// Owner (feedback #6): after the dose that ends a course, offer to archive the medicine.
+describe('endsCourse', () => {
+  const d = (start: string) => ev({ type: 'medicine', detail: 'm1', start });
+  it('X doses: true exactly at the last one', () => {
+    const m = med({ schedule: 'daily', course: 'doses', courseCount: 3 });
+    expect(endsCourse(m, [d('2026-11-12 08:00'), d('2026-11-13 08:00')], NOW)).toBe(false);
+    expect(endsCourse(m, [d('2026-11-12 08:00'), d('2026-11-13 08:00'), d('2026-11-14 08:00')], NOW)).toBe(true);
+    expect(endsCourse(m, [d('2026-11-11 08:00'), d('2026-11-12 08:00'), d('2026-11-13 08:00'), d('2026-11-14 08:00')], NOW), 'given after the end').toBe(false);
+  });
+  it('X days or until a date: on the last day, when the day\'s amount is complete', () => {
+    const days = med({ schedule: 'times', timesPerDay: 2, course: 'days', courseCount: 2 });
+    expect(endsCourse(days, [d('2026-11-13 08:00'), d('2026-11-13 20:00'), d('2026-11-14 08:00')], NOW), 'one of two on the last day').toBe(false);
+    expect(endsCourse(days, [d('2026-11-13 08:00'), d('2026-11-13 20:00'), d('2026-11-14 08:00'), d('2026-11-14 11:00')], NOW)).toBe(true);
+    expect(endsCourse(days, [d('2026-11-14 08:00'), d('2026-11-14 11:00')], NOW), 'the first of two days').toBe(false);
+    const until = med({ schedule: 'daily', course: 'until', courseUntil: '2026-11-14' });
+    expect(endsCourse(until, [d('2026-11-14 08:00')], NOW)).toBe(true);
+    expect(endsCourse(until, [d('2026-11-14 08:00')], T('2026-11-13 12:00')), 'before the last day').toBe(false);
+  });
+  it('no course, or as needed: never a known last dose', () => {
+    expect(endsCourse(med({ schedule: 'daily' }), [d('2026-11-14 08:00')], NOW)).toBe(false);
+    expect(endsCourse(med({ schedule: 'prn', course: 'days', courseCount: 1 }), [d('2026-11-14 08:00')], NOW)).toBe(false);
   });
 });

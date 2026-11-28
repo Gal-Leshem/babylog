@@ -854,6 +854,18 @@ No names, addresses or secrets in this file (the repository is public).
   longer than usual can lead to engorgement, so one may consider offering a feed or pumping, and ask a lactation consultant
   or טיפת חלב. Not for a family that gives bottles only. Browser test (both families; failed with the condition removed).
 
+## 28 November 2026
+- Medicines whose course is over **(owner, feedback #6 and #7)**: after the dose that ends a course (X doses reached; on the
+  last day of X days or "until a date", the day's amount complete) the toast after the Home button says "זו הייתה המנה
+  האחרונה" with "העברה לארכיון" (6 s), and in the medicines window the same row appears under the medicine. When someone tries
+  to give a medicine whose course is over, the confirm ("משך מתן התרופה הסתיים · לרשום בכל זאת?") also offers "העברה
+  לארכיון", from Home and from the window. Archived, the medicine leaves Home and the window; its doses stay; the toast's "בטל"
+  or Settings > תרופות brings it back. An "as needed" medicine has no known last dose: only the confirm offers it. Tests: unit
+  (`endsCourse` for each kind of course) and browser (the toast and "בטל", nothing before the last dose, the confirm, the
+  window's row and its confirm); each part failed when broken.
+- Tests: "archive and restore" in Settings seeded a dose on a fixed date (14 Nov) that fell out of the 14 days the app loads
+  on 28 Nov and failed with no change; it now seeds yesterday.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

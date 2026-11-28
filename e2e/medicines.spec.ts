@@ -142,7 +142,7 @@ test('medicines: archive and restore; delete only while no dose was logged', asy
       ],
     },
   });
-  await seed(request, [{ type: 'medicine', detail: 'm1', start: '2026-11-14 08:00' }]);
+  await seed(request, [{ type: 'medicine', detail: 'm1', start: `${addDaysLocal(todayLocal(), -1)} 08:00` }]); // (a fixed date fell out of the 14 days the app loads)
   await install(page);
   await openMeds(page);
   await expect(page.getByTestId('med-row')).toHaveCount(3);

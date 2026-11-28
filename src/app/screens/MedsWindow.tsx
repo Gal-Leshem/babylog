@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, medicineToday, todayText } from '../../shared/medicines';
 import { localDate } from '../../shared/tz';
-import { EARLIER_MIN, type Mark, logMedicine, undoMarks } from '../actions';
+import { EARLIER_MIN, type Mark, archiveMedicine, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
 import { count, engine, useEngine, useNow } from '../state';
 import { ConfirmDose } from './ConfirmDose';
@@ -131,6 +131,17 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
                 )}
+                {latest?.last && (
+                  // (owner, feedback #6) the dose just marked ended the course: archive the medicine from here
+                  <div class="tact medback" data-testid="meds-last">
+                    <span>זו הייתה המנה האחרונה</span>
+                    <span class="tbtns">
+                      <button type="button" data-testid="meds-archive" onClick={() => archiveMedicine(m)}>
+                        העברה לארכיון
+                      </button>
+                    </span>
+                  </div>
+                )}
               </li>
             );
           })}
@@ -162,6 +173,7 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
             give(pending);
             setPending(null);
           }}
+          onArchive={medicineToday(pending, events, now).course?.done ? () => (setPending(null), archiveMedicine(pending)) : undefined}
         />
       )}
     </div>

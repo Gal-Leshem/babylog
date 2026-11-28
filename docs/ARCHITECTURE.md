@@ -170,6 +170,8 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   active medicines (none: neither is shown and the grid drops a row; one: one tap logs it; several: a window to mark doses). Status
   uses only what was given, the gap and the daily count, never clock times. Mixed Hebrew/Latin parts are wrapped in `<bdi>`.
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
+  When the course is over it also offers "העברה לארכיון"; after the dose that ends a course (`endsCourse`) the toast (or the
+  window's row) offers it (owner, feedback #6 / #7; `archiveMedicine`, "בטל" makes it active again).
   When every medicine with a daily amount is given today (`allDoneToday`; as-needed ones do not count) the button is quiet
   (`.big.done`: transparent, dashed, muted, "✓" beside the name, a line saying when / how many); it works as before (owner).
   Before that, each medicine done for today fades (30%, grey) on the button and shows a "✓" in place of its icon in the window

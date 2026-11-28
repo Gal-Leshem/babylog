@@ -12,6 +12,7 @@ export function ConfirmDose({
   last,
   onConfirm,
   onCancel,
+  onArchive,
 }: {
   medicine: Medicine;
   warnings: string[];
@@ -19,6 +20,8 @@ export function ConfirmDose({
   last: BabyEvent | undefined;
   onConfirm: () => void;
   onCancel: () => void;
+  /** (owner, feedback #7) the medicine's course is over: offer to archive it instead of logging */
+  onArchive?: () => void;
 }) {
   return (
     <div class="sheet-backdrop confirm" data-testid="confirm-dose" onClick={(e) => e.target === e.currentTarget && onCancel()}>
@@ -43,6 +46,11 @@ export function ConfirmDose({
           <button type="button" class="primary" data-testid="confirm-yes" onClick={onConfirm}>
             לרשום בכל זאת
           </button>
+          {onArchive && (
+            <button type="button" data-testid="confirm-archive" onClick={onArchive}>
+              העברה לארכיון
+            </button>
+          )}
           <button type="button" data-testid="confirm-no" onClick={onCancel}>
             ביטול
           </button>

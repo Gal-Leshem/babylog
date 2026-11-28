@@ -1,5 +1,5 @@
 import { type BottleKind, bottleDetail, clampGiven, defaultMl, feedingOf, parseBottle } from '../shared/bottle';
-import { type Medicine, VITAMIN_D_ID } from '../shared/medicines';
+import { type Medicine, VITAMIN_D_ID, endsCourse } from '../shared/medicines';
 import type { ApiRequest } from '../shared/protocol';
 import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
@@ -29,6 +29,8 @@ function savedText(label: string, time: string, pending: boolean): string {
  * while the baby is marked asleep (one more row to read). A used button closes it sooner (TOAST_DONE_MS).
  */
 export const TAP_TOAST_MS = 3_000;
+/** (owner, feedback #6) the toast after a medicine's last dose offers to archive it: a little longer to read and decide */
+export const OFFER_TOAST_MS = 6_000;
 const TAP_TOAST_ASLEEP_MS = 5_000;
 
 /** Minutes offered in the toast after a one-tap log for "it happened earlier" (owner). */
@@ -243,6 +245,8 @@ export interface Mark {
   unmove?: () => void;
   /** the minutes picked last, if any */
   chosen?: number;
+  /** (owner, feedback #6) this dose was the course's last: offer to archive the medicine */
+  last?: boolean;
 }
 
 /**
@@ -263,8 +267,27 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
   count(toast ? 'log.medicine' : 'meds.mark');
   const offline = engine.getState().status === 'offline';
   const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
-  if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })) }, TAP_TOAST_MS);
-  return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove };
+  const last = endsCourse(m, engine.getState().allEvents, parseLocal(start));
+  const offer = last ? { text: 'זו הייתה המנה האחרונה', label: 'העברה לארכיון', act: () => void archiveMedicine(m) } : undefined;
+  if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })), ...(offer ? { offer } : {}) }, offer ? OFFER_TOAST_MS : TAP_TOAST_MS);
+  return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove, ...(last ? { last } : {}) };
+}
+
+/**
+ * (owner, feedback #6 / #7) Moves a medicine whose course is over to the archive: it leaves Home and the medicines window; its
+ * doses stay, and Settings > תרופות brings it back. The toast's "בטל" makes it active again.
+ */
+export function archiveMedicine(m: Medicine): boolean {
+  const { created: _c, ...rest } = m;
+  const withStatus = (status: Medicine['status']): ApiRequest => ({ action: 'settings', set: { medicines: [{ ...rest, status }] } });
+  const res = engine.dispatch(withStatus('archived'));
+  if (!res.ok) {
+    fail(res.error, res.detail);
+    return false;
+  }
+  count('meds.archive');
+  showToast({ text: `${m.name} הועבר לארכיון`, undo: () => undoOp(res.opId, withStatus('active')) });
+  return true;
 }
 
 /** Takes back doses marked by mistake (newest first). */

@@ -76,6 +76,8 @@ const LABELS = {
   'bottle.defaultNo': 'בקבוק: לא עכשיו להצעה',
   // (owner, F15 option B) the owner copied every server's usage days
   'feedback.usageCopy': 'משוב: העתקת נתוני שימוש',
+  // (owner, feedback #6 / #7) a medicine whose course is over, archived from the confirm or after its last dose
+  'meds.archive': 'תרופות: העברה לארכיון',
 } as const;
 
 export type UsageName = keyof typeof LABELS;

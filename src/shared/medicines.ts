@@ -309,3 +309,20 @@ export function todayText(m: Medicine, count: number): string {
   if (perDay !== null) return `${count} מתוך ${perDay}`;
   return count > 0 ? `${count} היום` : 'עדיין לא';
 }
+
+/**
+ * (owner, feedback #6) The dose just given was the course's last: X doses reached, or on the last day of X days / "until" the
+ * day's amount is complete. A medicine given as needed has no known last dose (the confirm offers archiving later instead).
+ * `events` already hold the dose; false when there is no course or it was over before.
+ */
+export function endsCourse(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): boolean {
+  if (m.course === 'none') return false;
+  const doses = dosesOf(m, events);
+  if (m.course === 'doses') return doses.length === m.courseCount;
+  const perDay = dosesPerDay(m);
+  if (perDay === null || doses.length === 0) return false;
+  const today = localDate(nowEpoch);
+  const lastDay = m.course === 'until' ? m.courseUntil : addDays(doses[0]!.start.slice(0, 10), m.courseCount - 1);
+  if (today !== lastDay) return false;
+  return doses.filter((e) => e.start.slice(0, 10) === today).length === perDay;
+}

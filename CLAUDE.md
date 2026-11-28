@@ -68,3 +68,5 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   data -> a guide is checked against the code or by whoever worked in the area before it is trusted, and corrected at once.
 - A session's clone is shallow (about 50 commits): comparing branches showed old session branches as hundreds of commits
   "not in dev" -> `git fetch --unshallow origin` before comparing history or judging that work is missing.
+- Tests that seed fixed dates rot: a dose on 14 Nov fell out of the app's 14 loaded days on 28 Nov and failed CI with no code
+  change -> seed relative to today, or fix the page clock and the data together.

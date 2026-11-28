@@ -130,6 +130,8 @@ export interface Toast {
    */
   amount?: { ml: number; step: (deltaMl: number) => { text: string; ml: number; suggest: Suggest | null } | null; suggest?: Suggest | null };
   sticky?: boolean;
+  /** (owner, feedback #6) one more step offered in a row of its own, e.g. after a medicine's last dose: archive it */
+  offer?: { text: string; label: string; act: () => void };
 }
 
 /** How long the toast stays after one of its buttons was used (owner: a moment of feedback, then gone). */
