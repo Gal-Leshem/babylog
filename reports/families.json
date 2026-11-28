@@ -1,10 +1,10 @@
 {
   "job": "families",
   "status": "success",
-  "sha": "5836348",
+  "sha": "6595953",
   "ref": "main",
-  "at": "2026-11-27T17:34:26.727Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46042117212",
+  "at": "2026-11-28T01:57:50.036Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46095196177",
   "logs": {
     "deploy-families": [
       "+ npx tsx scripts/deploy-families.ts",
@@ -13,17 +13,17 @@
       "::add-mask::[deployment]",
       "::add-mask::[deployment]",
       "server bundle ready (family, 78 KB)",
-      "Pushed 2 files at 5:34:20 PM.",
+      "Pushed 2 files at 1:57:46 AM.",
       "└─ apps-script/dist/appsscript.json",
       "└─ apps-script/dist/Code.js",
-      "redeployed existing web app deployment (version 14)",
+      "redeployed existing web app deployment (version 15)",
       "::add-mask::[deployment]",
       "deployment version=HEAD entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "deployment version=14 entryPoints=[WEB_APP(access=ANYONE_ANONYMOUS, executeAs=USER_DEPLOYING)]",
       "family-r6swjd5e server deployed",
       "FAMILY r6swjd5e: deployed, answers from this build",
       "all 1 family servers deployed",
-      "took 13s"
+      "took 9s"
     ],
     "install": [
       "+ npm ci",
@@ -31,7 +31,7 @@
       "npm warn deprecated glob@11.1.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting [email]",
       "",
-      "added 657 packages, and audited 658 packages in 6s",
+      "added 657 packages, and audited 658 packages in 5s",
       "",
       "210 packages are looking for funding",
       "  run `npm fund` for details",
@@ -45,7 +45,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 6s"
+      "took 5s"
     ]
   }
 }
