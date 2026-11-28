@@ -1,7 +1,7 @@
 import { byTimeAsc, eventTime, lastBottle, lastFeed, live, nextSide, openSleep, vitaminDOnDate, WOKE_PREFIX, wokeDetail } from '../shared/domain';
 import type { Change, Since } from './journal';
 import { FEEDBACK_KINDS, FEEDBACK_LOG_MAX, FEEDBACK_TEXT_MAX, type FeedbackItem, type FeedbackKind } from '../shared/protocol';
-import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD } from '../shared/medicines';
+import { type Medicine, VITAMIN_D_ID, normalizeMedicine, withVitaminD, withVitaminDYear } from '../shared/medicines';
 import { API_VERSION, type ApiOk, type ApiResponse, type EventPatch, type UsageDayRow, type UsageTotal } from '../shared/protocol';
 import { type Voice, voiceFor } from '../shared/speech';
 import { QUESTION_STATES, type QuestionStateName, USAGE_LABELS, USAGE_MAX_DAYS, USAGE_QUESTIONS, type UsageDay } from '../shared/usage';
@@ -378,6 +378,16 @@ function dispatch(o: Obj, deps: Deps): ApiResponse {
     // (owner, F15) not log data and nobody waits for it: no lock (each phone writes only its own rows), no revision
     case 'usage':
       return saveUsage(o, store, now);
+    // (owner, 28 Nov 2026) the doses of a long course that are older than what the phone holds; read only
+    case 'doseCount': {
+      const id = str(o.medicine);
+      const from = str(o.from);
+      const to = str(o.to);
+      if (!id || !isDateString(from) || !isDateString(to) || to < from) return fail('bad_request', 'medicine, from and to (dates) are needed');
+      const isDose = (e: BabyEvent) => (id === VITAMIN_D_ID ? e.type === 'vitamin_d' : e.type === 'medicine' && e.detail === id);
+      const day = (e: BabyEvent) => e.start.slice(0, 10);
+      return { ok: true, count: live(rowsSince(store, dayStart(from))).filter((e) => isDose(e) && day(e) >= from && day(e) <= to).length };
+    }
     case 'usageTotals':
     case 'usageDays': {
       const n = o.days === undefined ? (o.action === 'usageDays' ? 14 : 7) : o.days;
@@ -476,6 +486,8 @@ function saveSettings(set: unknown, deps: Deps, now: number): ApiResponse {
   const current = settingsOf(store);
   const merged: Settings = { ...current, ...patch, medicines: medicines ? mergeMedicines(current.medicines, medicines, store, now) : current.medicines };
   if (merged.babyBirth === '') delete merged.babyBirth; // cleared
+  // (owner) vitamin D is for the first year: a new or changed date of birth gives it that course unless the parents chose one
+  merged.medicines = withVitaminDYear(merged.medicines, current.babyBirth, merged.babyBirth);
   store.setSettings(merged);
   return { ok: true, settings: merged, sheetUrl: store.sheetUrl() };
 }

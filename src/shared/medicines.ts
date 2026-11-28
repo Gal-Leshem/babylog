@@ -51,6 +51,13 @@ export interface Medicine {
   courseCount: number;
   /** course 'until': the last day, YYYY-MM-DD; otherwise empty */
   courseUntil: string;
+  /**
+   * (owner, 28 Nov 2026) courses of doses or days: the day the course started, YYYY-MM-DD (set at its first dose, editable in the
+   * form); empty until then. The phone holds only about 15 days, so a longer course counts from this, not from what it holds.
+   */
+  courseStart: string;
+  /** (runtime only, never saved) doses of the course older than the days the phone holds, from the server (`doseCount`) */
+  courseOlder?: number;
   status: MedicineStatus;
   /** when it was first saved (set by the server) */
   created: string;
@@ -113,6 +120,8 @@ export function normalizeMedicine(raw: unknown): { ok: true; medicine: Omit<Medi
   }
   let courseCount = 0;
   let courseUntil = '';
+  const start = typeof o.courseStart === 'string' ? o.courseStart.replace(/^'/, '') : '';
+  const courseStart = (course === 'doses' || course === 'days') && isDateString(start) ? start : '';
   if (course === 'until') {
     courseUntil = typeof o.courseUntil === 'string' ? o.courseUntil : '';
     if (!isDateString(courseUntil)) return { ok: false, error: 'course end date missing' };
@@ -123,7 +132,7 @@ export function normalizeMedicine(raw: unknown): { ok: true; medicine: Omit<Medi
   }
   return {
     ok: true,
-    medicine: { id, name, icon, dose, doseUnit, schedule, timesPerDay, everyHours, minGapHours, maxPerDay, course, courseCount, courseUntil, status },
+    medicine: { id, name, icon, dose, doseUnit, schedule, timesPerDay, everyHours, minGapHours, maxPerDay, course, courseCount, courseUntil, courseStart, status },
   };
 }
 
@@ -177,6 +186,7 @@ export const DEFAULT_VITAMIN_D: Medicine = {
   course: 'none',
   courseCount: 0,
   courseUntil: '',
+  courseStart: '',
   status: 'active',
   created: '',
 };
@@ -207,15 +217,30 @@ export interface CourseProgress {
   done: boolean;
 }
 
-/** Where a course stands. Doses and days count from the first dose given; "until" ends after its last day. */
-export function courseProgress(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): CourseProgress | null {
+/** The doses that belong to the course: from its start day when known (a course started again does not count older doses). */
+function courseDoses(m: Medicine, events: readonly BabyEvent[]): BabyEvent[] {
+  const doses = dosesOf(m, events);
+  return m.courseStart ? doses.filter((e) => e.start.slice(0, 10) >= m.courseStart) : doses;
+}
+
+/** The course's first day: its start date when known, else the first dose the phone holds. */
+const courseFirstDay = (m: Medicine, doses: readonly BabyEvent[]): string | null => m.courseStart || (doses[0]?.start.slice(0, 10) ?? null);
+
+/**
+ * Where a course stands. Doses and days count from the course's start (`courseStart`, else the first dose held); "until" ends
+ * after its last day. `older`: doses of the course given before the days the phone holds (asked from the server, `doseCount`).
+ */
+export function courseProgress(m: Medicine, events: readonly BabyEvent[], nowEpoch: number, older = m.courseOlder ?? 0): CourseProgress | null {
   if (m.course === 'none') return null;
   const today = localDate(nowEpoch);
   if (m.course === 'until') return { text: `עד ${shortDate(m.courseUntil)}`, done: today > m.courseUntil };
-  const doses = dosesOf(m, events);
-  if (m.course === 'doses') return { text: `מנה ${doses.length} מתוך ${m.courseCount}`, done: doses.length >= m.courseCount };
-  if (doses.length === 0) return { text: `${m.courseCount} ימים, עוד לא התחיל`, done: false };
-  const first = doses[0]!.start.slice(0, 10);
+  const doses = courseDoses(m, events);
+  if (m.course === 'doses') {
+    const n = older + doses.length;
+    return { text: `מנה ${n} מתוך ${m.courseCount}`, done: n >= m.courseCount };
+  }
+  const first = courseFirstDay(m, doses);
+  if (first === null) return { text: `${m.courseCount} ימים, עוד לא התחיל`, done: false };
   const last = addDays(first, m.courseCount - 1);
   let day = 1;
   while (addDays(first, day) <= today && day <= m.courseCount) day++;
@@ -315,19 +340,42 @@ export function todayText(m: Medicine, count: number): string {
  * on the last day of X days / "until" the day's doses are complete: once a day given, X times a day reached, or every X hours
  * with no further dose before midnight. An "as needed" medicine with a course of days or a date has no known last dose (the
  * confirm offers the archive once the course is over). `events` already hold the dose; false when there is no course or it
- * was over before. Known limit, as for `courseProgress`: the phone holds about 15 days, so a longer course of doses or days
- * is never seen to end here.
+ * was over before. A course longer than the ~15 days the phone holds counts from `courseStart`, and its older doses come in
+ * `older` (from the server).
  */
-export function endsCourse(m: Medicine, events: readonly BabyEvent[], nowEpoch: number): boolean {
+export function endsCourse(m: Medicine, events: readonly BabyEvent[], nowEpoch: number, older = m.courseOlder ?? 0): boolean {
   if (m.course === 'none') return false;
-  const doses = dosesOf(m, events);
-  if (m.course === 'doses') return doses.length === m.courseCount;
+  const doses = courseDoses(m, events);
+  if (m.course === 'doses') return older + doses.length === m.courseCount;
   if (m.schedule === 'prn' || doses.length === 0) return false;
   const today = localDate(nowEpoch);
-  const lastDay = m.course === 'until' ? m.courseUntil : addDays(doses[0]!.start.slice(0, 10), m.courseCount - 1);
+  const lastDay = m.course === 'until' ? m.courseUntil : addDays(courseFirstDay(m, doses)!, m.courseCount - 1);
   if (today !== lastDay) return false;
   const todays = doses.filter((e) => e.start.slice(0, 10) === today);
   if (todays.length === 0) return false;
   if (m.schedule === 'interval') return parseLocal(todays[todays.length - 1]!.start) + m.everyHours * 3_600_000 >= dayStart(addDays(today, 1));
   return todays.length === dosesPerDay(m);
+}
+
+/**
+ * (owner, 28 Nov 2026) Vitamin D is given for the first year: with the date of birth its default course ends the day before
+ * the first birthday (born on Feb 29: the day before Mar 1).
+ */
+export function vitaminDYearEnd(birth: string): string {
+  const [y, mm, dd] = birth.split('-');
+  const birthday = mm === '02' && dd === '29' ? `${Number(y) + 1}-03-01` : `${Number(y) + 1}-${mm}-${dd}`;
+  return addDays(birthday, -1);
+}
+
+/**
+ * When the date of birth is set or changed, vitamin D without a course of its own (none, or the default from the date before)
+ * gets the course "until" the end of the first year; a course the parents chose stays as it is.
+ */
+export function withVitaminDYear(meds: readonly Medicine[], birthBefore: string | undefined, birthAfter: string | undefined): Medicine[] {
+  if (!birthAfter || birthAfter === birthBefore) return [...meds];
+  return meds.map((m) =>
+    m.id === VITAMIN_D_ID && (m.course === 'none' || (m.course === 'until' && birthBefore !== undefined && m.courseUntil === vitaminDYearEnd(birthBefore)))
+      ? { ...m, course: 'until' as const, courseCount: 0, courseUntil: vitaminDYearEnd(birthAfter) }
+      : m,
+  );
 }

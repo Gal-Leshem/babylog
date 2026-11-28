@@ -3,7 +3,7 @@ import { type Medicine, doneToday, doseText, doseWarnings, dosesPerDay, endsCour
 import { localDate } from '../../shared/tz';
 import { EARLIER_MIN, type Mark, archiveMedicine, logMedicine, undoMarks } from '../actions';
 import { dayName, timeOf } from '../labels';
-import { count, engine, useEngine, useNow } from '../state';
+import { count, engine, useEngine, useNow, useOlderDoses, withOlderDoses } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 
 /**
@@ -57,7 +57,8 @@ export function MedsWindow({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     void engine.resume(); // the other parent may have just given something (one small request)
   }, []);
-  const meds = settings.medicines.filter((m) => m.status === 'active');
+  useOlderDoses();
+  const meds = withOlderDoses(settings.medicines.filter((m) => m.status === 'active')); // (long courses: their older doses from the server)
   // (owner) the dose just marked can be moved earlier or taken back from its own row, like the toast after a tap
   const moveEarlier = (mk: Mark, mins: number) => {
     if (mk.pick?.(mins) === null) return;

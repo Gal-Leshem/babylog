@@ -65,6 +65,11 @@ export type ApiRequest =
    */
   | { action: 'usageTotals'; days?: number }
   /**
+   * (owner, 28 Nov 2026) How many live doses of one medicine were given from `from` to `to` (dates, inclusive): a course of doses
+   * longer than the days the phone holds adds this to its own count. Read only (no lock, the revision does not move).
+   */
+  | { action: 'doseCount'; medicine: string; from: string; to: string }
+  /**
    * (owner, F15 option B) Every phone's usage counts and question states per day for the last `days` whole days (ending yesterday:
    * the phones send only whole past days), with
    * the parents as "הורה 1" / "הורה 2" (never their names) and the phones as numbers. Same keys as `usageTotals`.
@@ -161,6 +166,8 @@ export interface ApiOk {
   feedback?: FeedbackItem[];
   /** `usageTotals`: one entry per day, oldest first. */
   usageTotals?: UsageTotal[];
+  /** `doseCount`: the number of doses. */
+  count?: number;
   /** `usageDays`: one entry per phone and day, oldest first. */
   usageDays?: UsageDayRow[];
   /** `sync`: nothing changed on the server since the revision the phone sent (apart from its own operations). */

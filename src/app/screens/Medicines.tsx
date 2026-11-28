@@ -16,7 +16,7 @@ import {
   scheduleText,
 } from '../../shared/medicines';
 import { addDays, localDate } from '../../shared/tz';
-import { engine, useEngine, useNow } from '../state';
+import { engine, useEngine, useNow, useOlderDoses, withOlderDoses } from '../state';
 import { DateField } from './DateField';
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
@@ -63,6 +63,8 @@ interface Draft {
   course: CourseKind;
   courseCount: string;
   courseUntil: string;
+  /** (owner) the course's start day: empty until its first dose (or a new kind of course) */
+  courseStart: string;
   status: Medicine['status'];
 }
 
@@ -82,6 +84,7 @@ function toDraft(m: Medicine | undefined, all: readonly Medicine[], today: strin
     course: m?.course ?? 'none',
     courseCount: numText(m?.courseCount ?? 0),
     courseUntil: m?.courseUntil || addDays(today, 7),
+    courseStart: m?.courseStart ?? '',
     status: m?.status ?? 'active',
   };
 }
@@ -200,7 +203,14 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
       <label class="fl">משך מתן התרופה</label>
       <div class="chips" role="radiogroup">
         {COURSE_LABEL.map(([id, label]) => (
-          <button type="button" key={id} class={`chip ${d.course === id ? 'on' : ''}`} data-testid={`med-course-${id}`} onClick={() => set('course', id)}>
+          <button
+            type="button"
+            key={id}
+            class={`chip ${d.course === id ? 'on' : ''}`}
+            data-testid={`med-course-${id}`}
+            // another kind of course is a new course: it starts again at its first dose
+            onClick={() => (id === d.course ? undefined : (setD({ ...d, course: id, courseStart: '' }), setError('')))}
+          >
             {label}
           </button>
         ))}
@@ -209,6 +219,15 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
         <>
           <label class="fl">{d.course === 'doses' ? 'כמה מנות' : 'כמה ימים'} (נספר מהמנה הראשונה)</label>
           <input data-testid="med-count" type="number" inputMode="numeric" min={1} max={365} value={d.courseCount} onInput={field('courseCount')} />
+          {/* (owner) the start is kept with the medicine, so a course longer than the ~15 days the phone holds still counts right */}
+          <label class="fl">התחלת התקופה</label>
+          {d.courseStart ? (
+            <DateField testId="med-start" value={d.courseStart} max={today} onChange={(v) => set('courseStart', v)} />
+          ) : (
+            <p class="muted" data-testid="med-start-none">
+              תתחיל במנה הראשונה
+            </p>
+          )}
         </>
       )}
       {d.course === 'until' && (
@@ -246,7 +265,8 @@ export function Medicines({ onBack }: { onBack: () => void }) {
   const now = useNow(60_000);
   const [editing, setEditing] = useState<Medicine | 'new' | null>(null);
   const [error, setError] = useState('');
-  const active = settings.medicines.filter((m) => m.status === 'active');
+  useOlderDoses();
+  const active = withOlderDoses(settings.medicines.filter((m) => m.status === 'active')); // (long courses: their older doses from the server)
   const archived = settings.medicines.filter((m) => m.status === 'archived');
   const change = (m: Medicine, status: Medicine['status']) => setError(save({ action: 'settings', set: { medicines: [{ ...strip(m), status }] } }) ?? '');
 

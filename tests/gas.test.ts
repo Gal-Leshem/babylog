@@ -191,10 +191,10 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     expect(r.ok).toBe(true);
     const rows = rt.sheets.get('Medicines')!;
     // new columns go at the end, so rows written by the first version still line up
-    expect(rows[0]).toEqual(['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created', 'icon', 'dose_unit', 'course_until']);
+    expect(rows[0]).toEqual(['id', 'name', 'dose', 'schedule', 'times_per_day', 'every_hours', 'min_gap_hours', 'max_per_day', 'course', 'course_count', 'status', 'created', 'icon', 'dose_unit', 'course_until', 'course_start']);
     expect(rows.map((r) => r[0])).toEqual(['id', 'vitamin_d', 'm1']); // vitamin D is written along, so the sheet shows it too
     expect(rows[2]!.slice(0, 11)).toEqual(['m1', 'אקמול', '2.5', 'prn', '', '', 4, 4, 'until', '', 'active']);
-    expect(rows[2]!.slice(12)).toEqual(['🍓', 'מ״ל', "'2026-12-01"]);
+    expect(rows[2]!.slice(12)).toEqual(['🍓', 'מ״ל', "'2026-12-01", '']);
     expect(post({ key, action: 'settings' }).settings.medicines).toEqual(r.settings.medicines);
     expect(JSON.stringify(rt.sheets.get('קרא אותי'))).toContain('Sheet \\"Medicines\\"');
     expect(post({ key, action: 'log', id: 'd1', type: 'medicine', detail: 'm1', start: '2000-01-01 08:00', user: 'P', source: 'app' }).ok).toBe(true);
@@ -208,10 +208,16 @@ describe('built Apps Script bundle against a fake Google runtime', () => {
     rt.sheets.get('Medicines')![2]![14] = new Date('2026-12-01T10:00:00Z');
     rt.props.delete('SETTINGS_JSON');
     expect(post({ key, action: 'settings' }).settings.medicines[1].courseUntil).toBe('2026-12-01');
+    // (owner, 28 Nov 2026) the start of a course of days is kept in its own column, as text, and read back as the same day
+    const days = { ...med, id: 'm2', name: 'ברזל', schedule: 'daily', minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 30, courseUntil: '', courseStart: '2026-11-01' };
+    post({ key, action: 'settings', set: { medicines: [days] } });
+    expect(rt.sheets.get('Medicines')!.find((r) => r[0] === 'm2')![15]).toBe("'2026-11-01");
+    rt.props.delete('SETTINGS_JSON');
+    expect(post({ key, action: 'settings' }).settings.medicines.find((m: { id: string }) => m.id === 'm2').courseStart).toBe('2026-11-01');
     // a row written by the first version (12 columns, dose as free text) still reads
     rt.sheets.get('Medicines')!.push(['old', 'ישן', '5 מ״ל', 'daily', '', '', '', '', 'none', '', 'active', '']);
     rt.props.delete('SETTINGS_JSON');
-    expect(post({ key, action: 'settings' }).settings.medicines[2]).toMatchObject({ id: 'old', dose: '5 מ״ל', doseUnit: '', icon: '💊', course: 'none' });
+    expect(post({ key, action: 'settings' }).settings.medicines.find((m: { id: string }) => m.id === 'old')).toMatchObject({ id: 'old', dose: '5 מ״ל', doseUnit: '', icon: '💊', course: 'none', courseStart: '' });
   });
 
   // Measured on the real server: reading the settings tabs took 0.5 to 2 s of every list; properties 20 to 400 ms per call.

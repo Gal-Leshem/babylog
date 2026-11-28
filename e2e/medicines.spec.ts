@@ -12,7 +12,7 @@ const openMeds = async (page: import('@playwright/test').Page) => {
   await expect(page.getByTestId('medicines')).toBeVisible();
 };
 const row = (page: import('@playwright/test').Page, id: string) => page.locator(`[data-testid="med-row"][data-id="${id}"]`);
-type M = { id: string; name: string; icon: string; dose: string; doseUnit: string; everyHours: number; course: string; courseCount: number; courseUntil: string; status: string };
+type M = { id: string; name: string; icon: string; dose: string; doseUnit: string; everyHours: number; course: string; courseCount: number; courseUntil: string; courseStart: string; status: string };
 const serverMeds = async (request: import('@playwright/test').APIRequestContext): Promise<M[]> => (await api(request, { action: 'settings' })).settings.medicines;
 
 test('medicines: add one with an amount and unit, a schedule and a course; saved to the sheet and listed after vitamin D', async ({ page, request }) => {
@@ -186,4 +186,32 @@ test('medicines: the vitamin D schedule can be changed, and Home follows it (twi
   await expect(page.getByTestId('btn-vitamin_d')).toBeEnabled({ timeout: 3000 });
   await page.getByTestId('btn-vitamin_d').click();
   await expect(page.getByTestId('confirm-warnings')).toContainText('כבר ניתנו היום 2 מתוך 2'); // a third one asks
+});
+
+// Owner (28 Nov 2026): a course keeps its start day, set at its first dose and shown in the form; another kind of course
+// starts again at its own first dose.
+test('the first dose of a course of days keeps its start day; the form shows it; another kind of course clears it', async ({ page, request }) => {
+  await api(request, { action: 'settings', set: { medicines: [{ id: 'vitamin_d', name: 'ויטמין D', schedule: 'daily', status: 'archived' }, { id: 'm1', name: 'ברזל', schedule: 'daily', course: 'days', courseCount: 30 }] } });
+  await install(page);
+  await page.getByTestId('btn-med').click();
+  const today = todayLocal();
+  await expect.poll(async () => (await serverMeds(request)).find((m) => m.id === 'm1')?.courseStart).toBe(today);
+  await openMeds(page);
+  await row(page, 'm1').getByTestId('med-edit').click();
+  await expect(page.getByTestId('med-start')).toHaveValue(today);
+  await page.getByTestId('med-course-doses').click();
+  await expect(page.getByTestId('med-start-none')).toHaveText('תתחיל במנה הראשונה');
+  await page.getByTestId('med-save').click();
+  await expect.poll(async () => (await serverMeds(request)).find((m) => m.id === 'm1')?.courseStart).toBe('');
+});
+
+// Owner (28 Nov 2026): a course of doses that began before the ~14 days the phone holds counts its older doses from the server.
+test('a course of 25 doses started 20 days ago counts every dose, also those older than the days the phone holds', async ({ page, request }) => {
+  const today = todayLocal();
+  const start = addDaysLocal(today, -20);
+  await api(request, { action: 'settings', set: { medicines: [{ id: 'm1', name: 'ברזל', schedule: 'daily', course: 'doses', courseCount: 25, courseStart: start }] } });
+  await seed(request, Array.from({ length: 21 }, (_, i) => ({ type: 'medicine', detail: 'm1', start: `${addDaysLocal(start, i)} 08:00` })));
+  await install(page);
+  await openMeds(page);
+  await expect(row(page, 'm1')).toContainText('מנה 21 מתוך 25'); // without the server's count: 14
 });

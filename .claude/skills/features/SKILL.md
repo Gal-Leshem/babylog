@@ -79,7 +79,9 @@ is reviewed against every skill that owns the file.
 - Medicines with a course (feedback #6 / #7, 28 Nov): after the dose that ends the course (`endsCourse`) the toast or the
   window's row offers "העברה לארכיון"; the "course over" confirm offers it too; archived leaves Home and the window, doses stay,
   "בטל" or Settings brings it back. Last dose: the Xth of X doses (as needed too), or the last day's doses complete; as needed
-  with days / a date has none (only the confirm offers it). Courses longer than the ~15 loaded days are never seen to end.
+  with days / a date has none (only the confirm offers it). Long courses: `courseStart` (kept, editable) and `doseCount`.
+- Vitamin D is an ordinary medicine in the app (owner, 28 Nov): one logging path; stored type `vitamin_d` kept; default course
+  "until" the day before the first birthday when the date of birth is saved (unless the parents chose one).
 - Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every
   question is listed in "בחירת שאלות" for every family, the unfit ones off (nursing questions too for bottles only: this
   replaces the F18 "only with nursing" listing rule; turned on, an unsuitable one shows why there is no answer, never an answer
@@ -125,8 +127,8 @@ is reviewed against every skill that owns the file.
   every path that sets the same moment (the button, the form, "שכחתם התעוררות?") fills it; test each path.
 - A detail that starts to carry something for a type that refused any detail makes a phone a version behind refuse patches
   on such rows until it reopens -> patches leave `detail` out unless they mean to change it, and the report names the window.
-- Vitamin D on Home logs through `quickLog('vitamin_d')`, the window through `logMedicine` -> anything about a medicine dose
-  covers both paths; and every X hours fits more doses a day than floor(24 / X): end a day by "no further dose fits".
+- Vitamin D once had its own logging path and missed a medicine feature -> one path for every medicine (`logMedicine`); every X
+  hours fits more doses a day than floor(24 / X): end a day by "no further dose fits".
 - A browser test seeded a dose on a fixed date; two weeks later it fell out of the 14 days the app loads and the test failed
   on a day with no change -> seed relative to today (`addDaysLocal(todayLocal(), -1)`, `pinPageDay`), never a fixed date.
 - An old browser test encoded an owner rule the owner later replaced (bottle-only families saw no nursing questions) -> when a
@@ -143,4 +145,4 @@ or timing also `MOCK_DELAY=250` and the three heights. Screenshots of the change
 - F11 Siri shortcuts: built and signed; the owner's test on the phones is on hold (owner).
 - F8: which questions get used (usage counts per question in the "שימוש" tab).
 
-Last reviewed: 28 November 2026 (medicine archive offers; bottle details moved to the changelog).
+Last reviewed: 28 November 2026 (vitamin D as a medicine, first-year course, course start and long courses).

@@ -6,7 +6,7 @@ import { localDate, parseLocal } from '../../shared/tz';
 import type { BabyEvent } from '../../shared/types';
 import { archiveMedicine, logBottle, logMedicine, quickLog, toggleSleep } from '../actions';
 import { KIND_ICON, KIND_LABEL, type Kind, eventIcon, eventLabel, kindOfBottle, monthDayText, timeOf } from '../labels';
-import { useEngine, useNow } from '../state';
+import { useEngine, useNow, useOlderDoses, withOlderDoses } from '../state';
 import { ConfirmDose } from './ConfirmDose';
 import { overlay } from '../overlay';
 import { type BabyWords, babyWords } from '../words';
@@ -97,7 +97,8 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
   const last = lastB && (!lastNursing || eventTime(lastB) >= eventTime(lastNursing)) ? lastB : lastNursing;
   const next = nextSide(events);
   const sleep = sleepState(events);
-  const meds = settings.medicines.filter((m) => m.status === 'active');
+  useOlderDoses();
+  const meds = withOlderDoses(settings.medicines.filter((m) => m.status === 'active')); // (long courses: their older doses from the server)
   const tile = meds.length ? medsTile(meds, events, now) : null;
   const w = babyWords(settings.babySex);
   const recent = useMemo(() => recentRows(events, settings.medicines, w), [events, settings.medicines, w]);
@@ -140,7 +141,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
     if (list.length === 1) {
       const m = list[0]!;
       const id = m.id === VITAMIN_D_ID ? 'vitamin_d' : 'med';
-      const give = () => (m.id === VITAMIN_D_ID ? quickLog('vitamin_d') : void logMedicine(m, true));
+      const give = () => void logMedicine(m, true); // (owner) vitamin D is a medicine like any other
       const t = done ? medicineToday(m, events, now) : null;
       const perDay = dosesPerDay(m);
       return (
@@ -317,8 +318,7 @@ export function Home({ onEdit, onAddLate, onOpenMeds, onOpenBottle, onFixWake }:
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
             setConfirm(null);
-            if (confirm.id === VITAMIN_D_ID) quickLog('vitamin_d');
-            else logMedicine(confirm, true);
+            logMedicine(confirm, true);
           }}
           onArchive={medicineToday(confirm, events, now).course?.done ? () => (setConfirm(null), archiveMedicine(confirm)) : undefined}
         />,

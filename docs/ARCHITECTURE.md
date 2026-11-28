@@ -171,8 +171,11 @@ Hebrew sleep shortcuts are picked by the baby's sex in the settings. Shortcuts m
   uses only what was given, the gap and the daily count, never clock times. Mixed Hebrew/Latin parts are wrapped in `<bdi>`.
   Before a dose that the parents' limits say "not now" (`doseWarnings`), `ConfirmDose` asks; this is the only extra tap anywhere.
   When the course is over it also offers "העברה לארכיון"; after the dose that ends a course (`endsCourse`) the toast (or the
-  window's row) offers it (owner, feedback #6 / #7; `archiveMedicine`, "בטל" makes it active again). Known limit: the phone
-  holds about 15 days, so a course of more doses or days than that is never seen to end (progress and the offer alike).
+  window's row) offers it (owner, feedback #6 / #7; `archiveMedicine`, "בטל" makes it active again). A course keeps its start
+  day (`courseStart`, set at its first dose, editable): X days count from it; X doses older than the ~14 held days come from the
+  server once per course and day (`doseCount`, `withOlderDoses`, attached as `courseOlder`, never saved). Vitamin D is logged
+  like any medicine (owner); its doses keep the stored type `vitamin_d`; a date of birth gives it the course "until" the day
+  before the first birthday unless the parents chose one.
   When every medicine with a daily amount is given today (`allDoneToday`; as-needed ones do not count) the button is quiet
   (`.big.done`: transparent, dashed, muted, "✓" beside the name, a line saying when / how many); it works as before (owner).
   Before that, each medicine done for today fades (30%, grey) on the button and shows a "✓" in place of its icon in the window

@@ -290,7 +290,7 @@ describe('medicines (F7)', () => {
     const r = ok(save(med({ timesPerDay: 3, maxPerDay: 4 })));
     expect(r.settings!.medicines).toEqual([
       DEFAULT_VITAMIN_D,
-      { id: 'm1', name: 'אנטיביוטיקה', icon: '💊', dose: '5', doseUnit: 'מ״ל', schedule: 'interval', timesPerDay: 0, everyHours: 8, minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 7, courseUntil: '', status: 'active', created: '2026-11-14 12:00' },
+      { id: 'm1', name: 'אנטיביוטיקה', icon: '💊', dose: '5', doseUnit: 'מ״ל', schedule: 'interval', timesPerDay: 0, everyHours: 8, minGapHours: 0, maxPerDay: 0, course: 'days', courseCount: 7, courseUntil: '', courseStart: '', status: 'active', created: '2026-11-14 12:00' },
     ]);
   });
 
@@ -895,5 +895,36 @@ describe('Siri sentences in Hebrew', () => {
     expect(siri({ action: 'next' }).speech).toBe('ההנקה הבאה: צד ימין'); // (owner) which side next
     expect(ok(call({ action: 'next' })).speech).toBe('Next: right side');
     expect(store.all().filter((e) => e.type === 'feed')).toHaveLength(2); // asking writes nothing
+  });
+});
+
+// Owner (28 Nov 2026): saving the date of birth gives vitamin D the course "until the end of the first year".
+describe('vitamin D for the first year (server)', () => {
+  it('a date of birth saved in Settings gives vitamin D its course; a course chosen later is kept', () => {
+    const vit = () => ok(call({ action: 'settings' })).settings!.medicines.find((m) => m.id === 'vitamin_d')!;
+    expect(vit().course).toBe('none');
+    ok(call({ action: 'settings', set: { babyBirth: '2026-08-15' } }));
+    expect(vit()).toMatchObject({ course: 'until', courseUntil: '2027-08-14' });
+    ok(call({ action: 'settings', set: { medicines: [{ ...vit(), courseUntil: '2027-10-01' }] } }));
+    ok(call({ action: 'settings', set: { babyBirth: '2026-08-16' } }));
+    expect(vit().courseUntil).toBe('2027-10-01');
+  });
+});
+
+// Owner (28 Nov 2026): a course of doses longer than the days a phone holds asks the server for its older doses.
+describe('doseCount', () => {
+  it('counts the live doses of one medicine between two dates (vitamin D by its own type); read only', () => {
+    const dose = (id: string, detail: string, start: string, type = 'medicine') => ok(call({ action: 'log', id, type, detail, start, user: 'P', source: 'app' }));
+    ok(call({ action: 'settings', set: { medicines: [{ id: 'm1', name: 'ברזל', schedule: 'daily' }] } }));
+    dose('a', 'm1', '2026-11-01 08:00');
+    dose('b', 'm1', '2026-11-02 08:00');
+    dose('c', 'm1', '2026-11-10 08:00');
+    dose('v', '', '2026-11-02 09:00', 'vitamin_d');
+    ok(call({ action: 'delete', id: 'b' }));
+    const rev = ok(call({ action: 'poll' })).rev;
+    expect(ok(call({ action: 'doseCount', medicine: 'm1', from: '2026-11-01', to: '2026-11-09' })).count).toBe(1); // b deleted, c after
+    expect(ok(call({ action: 'doseCount', medicine: 'vitamin_d', from: '2026-11-01', to: '2026-11-09' })).count).toBe(1);
+    expect(ok(call({ action: 'poll' })).rev).toBe(rev);
+    expect(call({ action: 'doseCount', medicine: 'm1', from: '2026-11-09', to: '2026-11-01' })).toMatchObject({ ok: false, error: 'bad_request' });
   });
 });

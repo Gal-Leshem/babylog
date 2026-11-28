@@ -876,6 +876,19 @@ No names, addresses or secrets in this file (the repository is public).
   one feeding), and Home's feed tile and next side count from the latest press. Locked in by a unit test (failed when the
   window was measured from the first press) and a browser test of the tile.
 
+- Vitamin D is an ordinary medicine in the app **(owner)**: Home logs it like any medicine (one path, the same rules, warnings,
+  confirm and archive offer); its doses keep the stored type `vitamin_d` (old rows, the signed Siri shortcuts, older phones).
+- Vitamin D for the first year **(owner)**: when the date of birth is set or changed in Settings, vitamin D gets the course
+  "until" the day before the first birthday, unless the parents chose a course of their own (a family whose date of birth was
+  set before gets it the next time the date is saved, or sets it in Settings > תרופות). Tests: unit and server (failed without).
+- Courses longer than the ~14 days the phone holds **(owner)**: each medicine keeps the day its course started (new column
+  `course_start` at the end of the Medicines tab), set at the course's first dose, shown and editable in the medicine form,
+  cleared when the kind of course changes. X days count from it exactly; for X doses the phone asks the server once for the
+  doses older than what it holds (new read-only action `doseCount`) and adds its own. Tests: unit (days and doses past the held
+  days), the sheet in the fake Google runtime (the column read back), server (`doseCount`), browser (the start saved at the
+  first dose and shown, cleared by another kind of course; 25 doses over 20 days counted as 21, 14 without the server's count);
+  each failed when broken. API: one new action, additive; a server change, so every server gets it.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

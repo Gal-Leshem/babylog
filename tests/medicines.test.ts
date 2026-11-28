@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_VITAMIN_D, type Medicine, allDoneToday, courseProgress, endsCourse, doneToday, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
+import { DEFAULT_VITAMIN_D, type Medicine, allDoneToday, courseProgress, endsCourse, vitaminDYearEnd, withVitaminDYear, doneToday, doseText, doseWarnings, dosesOf, dosesPerDay, medicineToday, pickIcon, todayText, withVitaminD } from '../src/shared/medicines';
 import { T, ev } from './helpers';
 
 const med = (over: Partial<Medicine> = {}): Medicine => ({ ...DEFAULT_VITAMIN_D, id: 'm1', name: 'x', icon: '💊', created: '', ...over });
@@ -216,5 +216,45 @@ describe('endsCourse', () => {
     const sixteen = med({ schedule: 'interval', everyHours: 16, course: 'until', courseUntil: '2026-11-14' });
     expect(endsCourse(sixteen, [d('2026-11-14 01:00')], T('2026-11-14 01:00')), 'a second dose at 17:00 still fits').toBe(false);
     expect(endsCourse(sixteen, [d('2026-11-14 01:00'), d('2026-11-14 17:00')], T('2026-11-14 17:00'))).toBe(true);
+  });
+});
+
+// Owner (28 Nov 2026): vitamin D is given for the first year: the date of birth gives it that course unless the parents chose one.
+describe('vitamin D for the first year', () => {
+  it('ends the day before the first birthday (Feb 29: the day before Mar 1)', () => {
+    expect(vitaminDYearEnd('2026-08-15')).toBe('2027-08-14');
+    expect(vitaminDYearEnd('2028-02-29')).toBe('2029-02-28');
+    expect(vitaminDYearEnd('2026-01-01')).toBe('2026-12-31');
+  });
+  it('a new or changed date of birth sets it when vitamin D has no course of its own; a chosen course stays', () => {
+    const vit = { ...DEFAULT_VITAMIN_D };
+    expect(withVitaminDYear([vit], undefined, '2026-08-15')[0]).toMatchObject({ course: 'until', courseUntil: '2027-08-14' });
+    const auto = withVitaminDYear([vit], undefined, '2026-08-15');
+    expect(withVitaminDYear(auto, '2026-08-15', '2026-08-20')[0]).toMatchObject({ course: 'until', courseUntil: '2027-08-19' }); // moved with the date
+    const chosen = { ...vit, course: 'until' as const, courseUntil: '2027-01-01' };
+    expect(withVitaminDYear([chosen], '2026-08-15', '2026-08-20')[0]!.courseUntil).toBe('2027-01-01');
+    expect(withVitaminDYear([{ ...vit, course: 'days' as const, courseCount: 30 }], undefined, '2026-08-15')[0]!.course).toBe('days');
+    expect(withVitaminDYear([vit], '2026-08-15', '2026-08-15')[0]!.course, 'the same date: nothing changes').toBe('none');
+    expect(withVitaminDYear([med()], undefined, '2026-08-15')[0]!.course, 'other medicines never').toBe('none');
+  });
+});
+
+// Owner (28 Nov 2026): the phone holds about 15 days; a course counts from its kept start and its older doses come from the server.
+describe('courses longer than the days the phone holds', () => {
+  const d = (start: string) => ev({ type: 'medicine', detail: 'm1', start });
+  // what the phone holds: a dose a day from Oct 31 to today (Nov 14)
+  const held = ['2026-10-31', ...Array.from({ length: 14 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`)].map((day) => d(`${day} 08:00`));
+  it('X days: counts from the kept start, not from the first dose held', () => {
+    const m = med({ schedule: 'daily', course: 'days', courseCount: 30, courseStart: '2026-10-25' });
+    expect(courseProgress(m, held, NOW)).toEqual({ text: 'יום 21 מתוך 30', done: false });
+    expect(courseProgress({ ...m, courseCount: 20 }, held, NOW)?.done).toBe(true); // ended on Nov 13
+    expect(courseProgress({ ...m, courseStart: '' }, held, NOW)?.text, 'without it: from the first dose held').toBe('יום 15 מתוך 30');
+  });
+  it('X doses: older doses from the server are added; doses before the start do not count', () => {
+    const m = med({ schedule: 'daily', course: 'doses', courseCount: 25, courseStart: '2026-11-03' });
+    expect(courseProgress(m, held, NOW)?.text).toBe('מנה 12 מתוך 25'); // Nov 3 to 14 held
+    expect(courseProgress(m, held, NOW, 13)).toEqual({ text: 'מנה 25 מתוך 25', done: true });
+    expect(endsCourse(m, held, NOW, 13)).toBe(true);
+    expect(endsCourse(m, held, NOW, 12)).toBe(false);
   });
 });

@@ -9,6 +9,8 @@ import { insights } from '../shared/insights';
 import { moreAnswers } from '../shared/questions-data';
 import { allQuestions, questionState } from './questions';
 import { feedingOf } from '../shared/bottle';
+import type { Medicine } from '../shared/medicines';
+import { addDays } from '../shared/tz';
 
 export const engine = new Engine({ storage: browserStorage, onRequest: countRequest });
 /** (owner) every request to the server and the entries it carries, for the shared daily quota (adds to counts in memory only) */
@@ -205,3 +207,41 @@ export const useToast = (): Toast | null =>
     },
     () => toast,
   );
+
+/**
+ * (owner, 28 Nov 2026) A course of doses that began before the days the phone holds: its older doses are counted by the server
+ * (`doseCount`), asked once per course and day, and attached to the medicine as `courseOlder` (never saved). Until the answer
+ * comes the course counts what the phone holds, as before.
+ */
+const olderDoses = new Map<string, number | 'asking'>();
+const olderListeners = new Set<() => void>();
+export function withOlderDoses(meds: readonly Medicine[]): Medicine[] {
+  const from = engine.defaultRange().from;
+  return meds.map((m) => {
+    if (m.course !== 'doses' || !m.courseStart || m.courseStart >= from) return m;
+    const key = `${m.id}|${m.courseStart}|${from}`;
+    const known = olderDoses.get(key);
+    if (typeof known === 'number') return { ...m, courseOlder: known };
+    if (known === undefined) {
+      olderDoses.set(key, 'asking');
+      engine.ask({ action: 'doseCount', medicine: m.id, from: m.courseStart, to: addDays(from, -1) }).then(
+        (r) => {
+          if (r.ok && typeof r.count === 'number') olderDoses.set(key, r.count);
+          else olderDoses.delete(key); // an older server or a refusal: ask again next time
+          for (const f of olderListeners) f();
+        },
+        () => olderDoses.delete(key),
+      );
+    }
+    return m;
+  });
+}
+/** Re-renders when a count of older doses arrives. */
+export function useOlderDoses(): void {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    const f = () => bump((n) => n + 1);
+    olderListeners.add(f);
+    return () => void olderListeners.delete(f);
+  }, []);
+}
