@@ -1,10 +1,10 @@
 {
   "job": "pages",
   "status": "success",
-  "sha": "9f8f90e",
+  "sha": "ed22911",
   "ref": "main",
-  "at": "2026-11-28T02:32:30.569Z",
-  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46098034750",
+  "at": "2026-11-28T05:22:54.706Z",
+  "run": "https://github.com/Gal-Leshem/babylog/actions/runs/46111376719",
   "logs": {
     "build-app": [
       "+ npm run build",
@@ -21,13 +21,13 @@
       "dist/manifest.webmanifest         0.46 kB",
       "dist/index.html                   1.77 kB │ gzip:  0.85 kB",
       "dist/assets/index-CSI_I7vg.css   30.47 kB │ gzip:  6.35 kB",
-      "dist/assets/index-5Oy3Tvgk.js   225.76 kB │ gzip: 70.86 kB",
+      "dist/assets/index-BcL6dhvS.js   226.29 kB │ gzip: 71.01 kB",
       "",
-      "✓ built in 115ms",
+      "✓ built in 116ms",
       "",
       "PWA v2.0.0",
       "mode      generateSW",
-      "precache  10 entries (252.09 KiB)",
+      "precache  10 entries (252.61 KiB)",
       "files generated",
       "  dist/sw.js",
       "  dist/workbox-9c191d2f.js",
@@ -60,7 +60,7 @@
       "  npm audit fix --force",
       "",
       "Run `npm audit` for details.",
-      "took 8s"
+      "took 7s"
     ],
     "privacy": [
       "+ npm run privacy",
@@ -69,20 +69,19 @@
       "> tsx scripts/privacy-check.ts",
       "",
       "Privacy check passed (9 forbidden words, tree + build + history scanned).",
-      "took 1s"
+      "took 0s"
     ],
     "publish": [
       "+ bash scripts/publish-pages.sh",
-      "published 9f8f90e to gh-pages",
-      "took 1s"
+      "published ed22911 to gh-pages",
+      "took 2s"
     ],
     "verify": [
       "+ node scripts/verify-pages.mjs",
-      "attempt 1: serves 6595953, waiting for 9f8f90e",
-      "attempt 2: serves 6595953, waiting for 9f8f90e",
-      "attempt 3: serves 6595953, waiting for 9f8f90e",
-      "site is live and serves 9f8f90e",
-      "took 31s"
+      "attempt 1: serves 9f8f90e, waiting for ed22911",
+      "attempt 2: serves 9f8f90e, waiting for ed22911",
+      "site is live and serves ed22911",
+      "took 21s"
     ]
   }
 }
