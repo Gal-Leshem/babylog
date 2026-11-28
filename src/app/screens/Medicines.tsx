@@ -114,9 +114,10 @@ function iconChips(group: readonly string[], value: string, set: (v: string) => 
 
 /** Add or edit one medicine. */
 function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone: () => void; onBack: () => void }) {
-  const { settings } = useEngine();
+  const { settings, allEvents } = useEngine();
   const today = localDate(useNow(60_000));
   const [d, setD] = useState<Draft>(() => toDraft(initial, settings.medicines, today));
+  const hasDoses = initial !== undefined && dosesOf(initial, allEvents).length > 0;
   const [error, setError] = useState('');
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     setD({ ...d, [k]: v });
@@ -208,8 +209,8 @@ function MedicineForm({ initial, onDone, onBack }: { initial?: Medicine; onDone:
             key={id}
             class={`chip ${d.course === id ? 'on' : ''}`}
             data-testid={`med-course-${id}`}
-            // another kind of course is a new course: it starts again at its first dose
-            onClick={() => (id === d.course ? undefined : (setD({ ...d, course: id, courseStart: '' }), setError('')))}
+            // another kind of course is a new course: today when the medicine already has doses (editable), else at its first dose
+            onClick={() => (id === d.course ? undefined : (setD({ ...d, course: id, courseStart: hasDoses ? today : '' }), setError('')))}
           >
             {label}
           </button>

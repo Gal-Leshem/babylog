@@ -209,29 +209,32 @@ export const useToast = (): Toast | null =>
   );
 
 /**
- * (owner, 28 Nov 2026) A course of doses that began before the days the phone holds: its older doses are counted by the server
- * (`doseCount`), asked once per course and day, and attached to the medicine as `courseOlder` (never saved). Until the answer
- * comes the course counts what the phone holds, as before.
+ * (owner, 28 Nov 2026) A course of doses that began before the days the phone holds: its older doses (from its start up to the
+ * day before `defaultRange().from`) are counted by the server (`doseCount`), asked once per course and day, and attached to the
+ * medicine as `courseOlder` with the last day counted (`courseOlderThrough`), so the phone counts only its own days after it
+ * (it may hold that day too: no dose counted twice). Never saved. A refusal (an older server) or a failure is remembered for
+ * ten minutes, so a screen never asks again and again; until a count comes the course counts what the phone holds.
  */
-const olderDoses = new Map<string, number | 'asking'>();
+const RETRY_DOSE_COUNT_MS = 10 * 60_000;
+const olderDoses = new Map<string, number | 'asking' | { failedAt: number }>();
 const olderListeners = new Set<() => void>();
 export function withOlderDoses(meds: readonly Medicine[]): Medicine[] {
   const from = engine.defaultRange().from;
+  const through = addDays(from, -1);
   return meds.map((m) => {
     if (m.course !== 'doses' || !m.courseStart || m.courseStart >= from) return m;
     const key = `${m.id}|${m.courseStart}|${from}`;
     const known = olderDoses.get(key);
-    if (typeof known === 'number') return { ...m, courseOlder: known };
-    if (known === undefined) {
+    if (typeof known === 'number') return { ...m, courseOlder: known, courseOlderThrough: through };
+    const failed = typeof known === 'object' && Date.now() - known.failedAt < RETRY_DOSE_COUNT_MS;
+    if (known === undefined || (typeof known === 'object' && !failed)) {
       olderDoses.set(key, 'asking');
-      engine.ask({ action: 'doseCount', medicine: m.id, from: m.courseStart, to: addDays(from, -1) }).then(
-        (r) => {
-          if (r.ok && typeof r.count === 'number') olderDoses.set(key, r.count);
-          else olderDoses.delete(key); // an older server or a refusal: ask again next time
-          for (const f of olderListeners) f();
-        },
-        () => olderDoses.delete(key),
-      );
+      const fail = () => void olderDoses.set(key, { failedAt: Date.now() });
+      engine.ask({ action: 'doseCount', medicine: m.id, from: m.courseStart, to: through }).then((r) => {
+        if (!r.ok || typeof r.count !== 'number') return fail();
+        olderDoses.set(key, r.count);
+        for (const f of olderListeners) f(); // only a count re-renders
+      }, fail);
     }
     return m;
   });

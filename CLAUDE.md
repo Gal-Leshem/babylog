@@ -70,3 +70,5 @@ background -> live site serves the commit, "LIVE TEST PASSED", "prod server depl
   "not in dev" -> `git fetch --unshallow origin` before comparing history or judging that work is missing.
 - Tests that seed fixed dates rot: a dose on 14 Nov fell out of the app's 14 loaded days on 28 Nov and failed CI with no code
   change -> seed relative to today, or fix the page clock and the data together.
+- A side effect that saved a whole medicine record from the phone could overwrite the other parent's edit -> derived data the
+  server can work out (a course's start) is set by the server under the lock, and its answer hands it back to the phone.

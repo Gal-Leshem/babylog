@@ -79,7 +79,8 @@ is reviewed against every skill that owns the file.
 - Medicines with a course (feedback #6 / #7, 28 Nov): after the dose that ends the course (`endsCourse`) the toast or the
   window's row offers "העברה לארכיון"; the "course over" confirm offers it too; archived leaves Home and the window, doses stay,
   "בטל" or Settings brings it back. Last dose: the Xth of X doses (as needed too), or the last day's doses complete; as needed
-  with days / a date has none (only the confirm offers it). Long courses: `courseStart` (kept, editable) and `doseCount`.
+  with days / a date has none (only the confirm offers it). Long courses: `courseStart` (the server sets it at the first dose;
+  a new kind of course with doses starts today) and `doseCount` up to the day before the window (`courseOlderThrough`).
 - Vitamin D is an ordinary medicine in the app (owner, 28 Nov): one logging path; stored type `vitamin_d` kept; default course
   "until" the day before the first birthday when the date of birth is saved (unless the parents chose one).
 - Feedback of 27 Nov: the "התעורר" row names who marked the wake-up (`wokeBy`; recent list only, History unchanged); every

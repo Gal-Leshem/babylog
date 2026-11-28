@@ -1,5 +1,5 @@
 import { type BottleKind, bottleDetail, clampGiven, defaultMl, feedingOf, parseBottle } from '../shared/bottle';
-import { type Medicine, VITAMIN_D_ID, dosesOf, endsCourse } from '../shared/medicines';
+import { type Medicine, VITAMIN_D_ID, endsCourse } from '../shared/medicines';
 import type { ApiRequest } from '../shared/protocol';
 import { openSleep } from '../shared/domain';
 import { formatLocal, parseLocal } from '../shared/tz';
@@ -259,7 +259,6 @@ export function logMedicine(m: Medicine, toast = false): Mark | null {
   count(toast ? 'log.medicine' : 'meds.mark');
   const offline = engine.getState().status === 'offline';
   const mv = earlierFor(id, 'start', start, (t) => savedText(m.name, timeOf(t), offline));
-  rememberCourseStart(m.id);
   const offer = toast ? lastDoseOffer(m, start) : undefined;
   if (toast) showToast({ text: savedText(m.name, timeOf(start), offline), earlier: mv.earlier, undo: () => (mv.unmove(), undoOp(res.opId, { action: 'delete', id })), ...(offer ? { offer } : {}) }, offer ? OFFER_TOAST_MS : TAP_TOAST_MS);
   return { opId: res.opId, id, medicineId: m.id, pick: mv.earlier.pick, unmove: mv.unmove };
@@ -282,20 +281,6 @@ export function archiveMedicine(m: Medicine, toast = true): (() => void) | null 
   // (the medicines window shows its own line instead: a toast would cover the window's buttons)
   if (toast) showToast({ text: `הועבר לארכיון: ${m.name}`, undo });
   return undo;
-}
-
-/**
- * (owner, 28 Nov 2026) A course of doses or days keeps its start day with the medicine, so a course longer than the ~15 days the
- * phone holds still counts from its real beginning: the first dose of the course sets it (or, for a course that began before
- * this was kept, its first dose the phone still holds). Saved like any change of the medicine.
- */
-function rememberCourseStart(medicineId: string): void {
-  const m = engine.getState().settings.medicines.find((x) => x.id === medicineId);
-  if (!m || m.courseStart || (m.course !== 'doses' && m.course !== 'days')) return;
-  const first = dosesOf(m, engine.getState().allEvents)[0];
-  if (!first) return;
-  const { created: _c, ...rest } = m;
-  engine.dispatch({ action: 'settings', set: { medicines: [{ ...rest, courseStart: first.start.slice(0, 10) }] } });
 }
 
 /** (owner, feedback #6) The toast's offer after the dose that ended `m`'s course, if it did. */

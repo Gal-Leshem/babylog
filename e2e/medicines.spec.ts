@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addDaysLocal, api, install, pickDate, pinPageDay, resetServer, seed, todayLocal } from './helpers';
+import { MOCK, addDaysLocal, api, control, install, pickDate, pinPageDay, resetServer, seed, todayLocal } from './helpers';
 
 // F7: medicines are defined in Settings. Vitamin D is there by default and can be archived (not deleted).
 test.beforeEach(async ({ request }) => {
@@ -188,9 +188,9 @@ test('medicines: the vitamin D schedule can be changed, and Home follows it (twi
   await expect(page.getByTestId('confirm-warnings')).toContainText('כבר ניתנו היום 2 מתוך 2'); // a third one asks
 });
 
-// Owner (28 Nov 2026): a course keeps its start day, set at its first dose and shown in the form; another kind of course
-// starts again at its own first dose.
-test('the first dose of a course of days keeps its start day; the form shows it; another kind of course clears it', async ({ page, request }) => {
+// Owner (28 Nov 2026): a course keeps its start day, set by the server at its first dose and shown in the form; another kind of
+// course on a medicine that already has doses starts today (editable).
+test('the first dose of a course of days keeps its start day; the form shows it; another kind of course starts today', async ({ page, request }) => {
   await api(request, { action: 'settings', set: { medicines: [{ id: 'vitamin_d', name: 'ויטמין D', schedule: 'daily', status: 'archived' }, { id: 'm1', name: 'ברזל', schedule: 'daily', course: 'days', courseCount: 30 }] } });
   await install(page);
   await page.getByTestId('btn-med').click();
@@ -199,10 +199,11 @@ test('the first dose of a course of days keeps its start day; the form shows it;
   await openMeds(page);
   await row(page, 'm1').getByTestId('med-edit').click();
   await expect(page.getByTestId('med-start')).toHaveValue(today);
+  // another kind of course on a medicine that has doses: a new course from today (editable)
   await page.getByTestId('med-course-doses').click();
-  await expect(page.getByTestId('med-start-none')).toHaveText('תתחיל במנה הראשונה');
+  await expect(page.getByTestId('med-start')).toHaveValue(today);
   await page.getByTestId('med-save').click();
-  await expect.poll(async () => (await serverMeds(request)).find((m) => m.id === 'm1')?.courseStart).toBe('');
+  await expect.poll(async () => (await serverMeds(request)).find((m) => m.id === 'm1')).toMatchObject({ course: 'doses', courseStart: today });
 });
 
 // Owner (28 Nov 2026): a course of doses that began before the ~14 days the phone holds counts its older doses from the server.
@@ -214,4 +215,22 @@ test('a course of 25 doses started 20 days ago counts every dose, also those old
   await install(page);
   await openMeds(page);
   await expect(row(page, 'm1')).toContainText('מנה 21 מתוך 25'); // without the server's count: 14
+});
+
+// (review) a server a version behind refuses doseCount: the phone asks once and keeps the course counted from what it holds,
+// never again and again (one request per re-render would eat the shared daily quota)
+test('a server that refuses the dose count is asked once, not again on every screen', async ({ page, request }) => {
+  const today = todayLocal();
+  const start = addDaysLocal(today, -20);
+  await api(request, { action: 'settings', set: { medicines: [{ id: 'm1', name: 'ברזל', schedule: 'daily', course: 'doses', courseCount: 25, courseStart: start }] } });
+  await seed(request, Array.from({ length: 21 }, (_, i) => ({ type: 'medicine', detail: 'm1', start: `${addDaysLocal(start, i)} 08:00` })));
+  await control(request, 'refuse=doseCount');
+  await install(page);
+  await openMeds(page);
+  await expect(row(page, 'm1')).toContainText('מנה 14 מתוך 25');
+  await page.getByTestId('med-back').click();
+  await openMeds(page);
+  await page.waitForTimeout(1_500);
+  const asked = (await (await request.get(`${MOCK}/__calls`)).json() as string[]).filter((c) => c === 'doseCount').length;
+  expect(asked).toBe(1);
 });

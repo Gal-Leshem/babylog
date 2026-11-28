@@ -145,6 +145,9 @@ test('vitamin D: status tile; a second tap the same day asks first, cancel logs 
   await page.getByTestId('btn-vitamin_d').click();
   await page.getByTestId('confirm-yes').click();
   await expect.poll(async () => (await serverEvents(request)).filter((e) => e.type === 'vitamin_d').length).toBe(2);
+  // (owner) vitamin D is a medicine like any other: the same toast as every medicine, not its own "נרשם שוב" warning
+  await expect(page.getByTestId('toast-text')).toContainText('ויטמין D');
+  await expect(page.getByTestId('toast-text')).not.toContainText('נרשם שוב');
 });
 
 test('works without a connection: queued, visible, survives reload, syncs when back', async ({ page, request }) => {

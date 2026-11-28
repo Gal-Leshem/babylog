@@ -888,6 +888,14 @@ No names, addresses or secrets in this file (the repository is public).
   days), the sheet in the fake Google runtime (the column read back), server (`doseCount`), browser (the start saved at the
   first dose and shown, cleared by another kind of course; 25 doses over 20 days counted as 21, 14 without the server's count);
   each failed when broken. API: one new action, additive; a server change, so every server gets it.
+  The `change-reviewer` agent's findings, fixed before the push: a server that refuses the count (one a version behind) made
+  the phone ask again on every re-render (450 requests in 1.5 s when the fix was taken out): a failure is now remembered for
+  ten minutes and only a count re-renders; the day before the phone's window could be counted twice (the server counts up
+  to it, the phone now only after it); the start is set by the server at the course's first dose, from the whole sheet (no
+  longer a whole medicine record sent from the phone, which could overwrite the other parent's edit), and the answer carries
+  the settings; a new kind of course on a medicine with doses starts today in the form (editable); a phone a version behind
+  that saves the same kind of course keeps the start. The first dose of a course writes the settings once (about 0.1 to 0.5 s
+  more on that one tap). Vitamin D's test now checks the toast of an ordinary medicine.
 
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.

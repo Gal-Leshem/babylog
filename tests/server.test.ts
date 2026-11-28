@@ -928,3 +928,40 @@ describe('doseCount', () => {
     expect(call({ action: 'doseCount', medicine: 'm1', from: '2026-11-09', to: '2026-11-01' })).toMatchObject({ ok: false, error: 'bad_request' });
   });
 });
+
+// Owner (28 Nov 2026, review): the server keeps a course's start day, set at the first dose, from the whole sheet.
+describe('course start (server)', () => {
+  const med = (over = {}) => ({ id: 'm1', name: 'ברזל', schedule: 'daily', course: 'days', courseCount: 30, ...over });
+  const dose = (id: string, start: string) => call({ action: 'log', id, type: 'medicine', detail: 'm1', start, user: 'P', source: 'app' });
+  const m1 = () => ok(call({ action: 'settings' })).settings!.medicines.find((m) => m.id === 'm1')!;
+  it('the first dose sets it and hands the settings back; a later dose does not touch the settings', () => {
+    ok(call({ action: 'settings', set: { medicines: [med()] } }));
+    const r = ok(dose('a', '2026-11-10 08:00'));
+    expect(r.settingsChanged).toBe(true);
+    expect(r.settings!.medicines.find((m) => m.id === 'm1')!.courseStart).toBe('2026-11-10');
+    expect(ok(dose('b', '2026-11-11 08:00')).settingsChanged).toBeUndefined();
+    expect(m1().courseStart).toBe('2026-11-10');
+  });
+  it('a course saved before the start was kept begins at the first dose in the whole sheet', () => {
+    ok(call({ action: 'settings', set: { medicines: [med({ course: 'none' })] } }));
+    ok(dose('a', '2026-11-01 08:00'));
+    ok(dose('b', '2026-11-05 08:00'));
+    ok(call({ action: 'settings', set: { medicines: [med()] } })); // a course with no start (as an older phone saves it)
+    ok(dose('c', '2026-11-12 08:00'));
+    expect(m1().courseStart).toBe('2026-11-01');
+  });
+  it('an older phone that saves the same kind of course without a start keeps it; another kind does not', () => {
+    ok(call({ action: 'settings', set: { medicines: [med({ courseStart: '2026-11-03' })] } }));
+    ok(call({ action: 'settings', set: { medicines: [med({ courseCount: 40 })] } }));
+    expect(m1()).toMatchObject({ courseCount: 40, courseStart: '2026-11-03' });
+    ok(call({ action: 'settings', set: { medicines: [med({ course: 'doses', courseCount: 20 })] } }));
+    expect(m1().courseStart).toBe('');
+  });
+  it('the other phone hears that the settings changed (changes since its revision)', () => {
+    ok(call({ action: 'settings', set: { medicines: [med()] } }));
+    const rev = ok(call({ action: 'poll' })).rev!;
+    ok(call({ action: 'sync', from: '2026-11-14', to: '2026-11-14', ops: [{ action: 'log', id: 'a', type: 'medicine', detail: 'm1', start: '2026-11-14 08:00', user: 'P', source: 'app' }] }));
+    const other = ok(call({ action: 'sync', from: '2026-11-14', to: '2026-11-14', rev, delta: true }));
+    expect(other.settings!.medicines.find((m) => m.id === 'm1')!.courseStart).toBe('2026-11-14');
+  });
+});

@@ -257,4 +257,11 @@ describe('courses longer than the days the phone holds', () => {
     expect(endsCourse(m, held, NOW, 13)).toBe(true);
     expect(endsCourse(m, held, NOW, 12)).toBe(false);
   });
+  // (review) the phone may hold the day before its window: the server counted it already, so it is not counted twice
+  it('X doses with the server\'s count: the phone counts only the days after the last day the server counted', () => {
+    const m = med({ schedule: 'daily', course: 'doses', courseCount: 26, courseStart: '2026-10-20', courseOlder: 12, courseOlderThrough: '2026-10-31' });
+    expect(courseProgress(m, held, NOW)).toEqual({ text: 'מנה 26 מתוך 26', done: true }); // 12 (Oct 20-31) + 14 (Nov 1-14)
+    expect(endsCourse(m, held, NOW)).toBe(true);
+    expect(courseProgress({ ...m, courseOlderThrough: undefined }, held, NOW)?.text, 'without the boundary: Oct 31 twice').toBe('מנה 27 מתוך 26');
+  });
 });

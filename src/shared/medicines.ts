@@ -56,8 +56,10 @@ export interface Medicine {
    * form); empty until then. The phone holds only about 15 days, so a longer course counts from this, not from what it holds.
    */
   courseStart: string;
-  /** (runtime only, never saved) doses of the course older than the days the phone holds, from the server (`doseCount`) */
+  /** (runtime only, never saved) doses of the course older than the days the phone holds, from the server (`doseCount`)... */
   courseOlder?: number;
+  /** ...counted up to this day (inclusive): the phone counts only its own doses after it */
+  courseOlderThrough?: string;
   status: MedicineStatus;
   /** when it was first saved (set by the server) */
   created: string;
@@ -219,8 +221,11 @@ export interface CourseProgress {
 
 /** The doses that belong to the course: from its start day when known (a course started again does not count older doses). */
 function courseDoses(m: Medicine, events: readonly BabyEvent[]): BabyEvent[] {
-  const doses = dosesOf(m, events);
-  return m.courseStart ? doses.filter((e) => e.start.slice(0, 10) >= m.courseStart) : doses;
+  const after = m.courseOlder !== undefined && m.courseOlderThrough ? m.courseOlderThrough : '';
+  return dosesOf(m, events).filter((e) => {
+    const day = e.start.slice(0, 10);
+    return (!m.courseStart || day >= m.courseStart) && (!after || day > after); // the server counted up to `after`
+  });
 }
 
 /** The course's first day: its start date when known, else the first dose the phone holds. */

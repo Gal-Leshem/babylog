@@ -206,7 +206,11 @@ function mergeMedicines(current: readonly Medicine[], changes: readonly Medicine
       if (ch.id === VITAMIN_D_ID) fail('bad_request', 'vitamin D cannot be removed: archive it instead');
       if (live(store.all()).some((e) => e.type === 'medicine' && e.detail === ch.id)) fail('bad_request', 'medicine has doses: archive it instead');
       list = list.filter((m) => m.id !== ch.id);
-    } else if (i >= 0) list[i] = { ...ch, created: list[i]!.created || stamp(now) }; // vitamin D gets its time when first saved
+    } else if (i >= 0) {
+      // a phone a version behind sends no course start: the same kind of course keeps the one the server has
+      const keepStart = !ch.courseStart && ch.course === list[i]!.course ? { courseStart: list[i]!.courseStart ?? '' } : {};
+      list[i] = { ...ch, ...keepStart, created: list[i]!.created || stamp(now) }; // vitamin D gets its time when first saved
+    }
     else {
       if (list.length >= MAX_MEDICINES) fail('bad_request', 'too many medicines');
       list.push({ ...ch, created: stamp(now) });
@@ -528,7 +532,7 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
           if (!r.duplicate && !r.noop) {
             changed = true;
             if (r.event) change.events = [...change.events.filter((e) => e.id !== r.event!.id), r.event];
-            if ((raw as Obj).action === 'settings') change.settings = true;
+            if ((raw as Obj).action === 'settings' || r.settingsChanged) change.settings = true;
           }
           delete r.speech; // only Siri needs sentences
         }
@@ -558,7 +562,7 @@ function sync(o: Obj, deps: Deps, now: number): ApiResponse {
 function write(deps: Deps, fn: () => ApiResponse): ApiResponse {
   return deps.withLock(() => {
     const r = fn();
-    if (r.ok && !r.duplicate && !r.noop) deps.store.bump({ events: r.event ? [r.event] : [] });
+    if (r.ok && !r.duplicate && !r.noop) deps.store.bump({ events: r.event ? [r.event] : [], ...(r.settingsChanged ? { settings: true } : {}) });
     return r;
   });
 }
@@ -626,7 +630,31 @@ function logEvent(o: Obj, deps: Deps, now: number): ApiResponse {
   } else speech = voiceOf(o, store).logged(e, [...recent, e]);
 
   store.append(e);
-  return { ok: true, event: e, speech, ...(warning ? { warning } : {}) };
+  // a dose that set its course's start day hands the settings back too: the phone's own answer would otherwise say "nothing new"
+  const settingsChanged = rememberCourseStart(e, store);
+  return { ok: true, event: e, speech, ...(warning ? { warning } : {}), ...(settingsChanged ? { settingsChanged: true as const, settings: settingsOf(store) } : {}) };
+}
+
+/**
+ * (owner, 28 Nov 2026) A course of doses or days keeps the day it started, so a course longer than the days a phone holds still
+ * counts from its real beginning. The server sets it at the first dose logged while it is empty, from the first live dose of that
+ * medicine in the whole sheet (the course of a medicine saved before this was kept began there; a new medicine's first dose is
+ * this one). The phone's form sets it itself when the kind of course changes on a medicine that already has doses.
+ */
+function rememberCourseStart(e: BabyEvent, store: Store): boolean {
+  if (e.type !== 'medicine' && e.type !== 'vitamin_d') return false;
+  const id = e.type === 'vitamin_d' ? VITAMIN_D_ID : e.detail;
+  const s = settingsOf(store);
+  const m = s.medicines.find((x) => x.id === id);
+  if (!m || m.courseStart || (m.course !== 'doses' && m.course !== 'days')) return false;
+  const isDose = (x: BabyEvent) => (id === VITAMIN_D_ID ? x.type === 'vitamin_d' : x.type === 'medicine' && x.detail === id);
+  const first = live(store.all())
+    .filter((x) => isDose(x) && x.start)
+    .map((x) => x.start.slice(0, 10))
+    .sort()[0];
+  if (!first) return false;
+  store.setSettings({ ...s, medicines: s.medicines.map((x) => (x.id === id ? { ...x, courseStart: first } : x)) });
+  return true;
 }
 
 function asleep(o: Obj, deps: Deps, now: number): ApiResponse {

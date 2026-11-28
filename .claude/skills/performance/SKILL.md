@@ -87,6 +87,9 @@ quota. The next log should show a stretch of more than 10 minutes open and untou
 every 5 minutes there, and a touch then bringing one), and the tap's "לשונית ושורות" share again.
 
 ## Learned (add one line per new trap: what happened -> the rule)
+- A request made from a render (`doseCount` in `withOlderDoses`) deleted its key and re-rendered on a refusal: 450 requests in
+  1.5 s against a server a version behind -> remember a failure (with a retry time) and re-render only on success; test the
+  refusal (`__control?refuse=<action>` on the mock) and count `/__calls`.
 - A return logged "אין חיבור" followed within 2 s by "פתיחה" was the page reloading for a new version, not the network -> check
   the `report: pages` times on `ci-status` before blaming the network.
 - A server time far above its timed parts was untimed sheet calls (the spreadsheet loads on the first one) -> time every Google

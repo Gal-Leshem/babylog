@@ -167,6 +167,8 @@ export interface ApiOk {
   /** `usageTotals`: one entry per day, oldest first. */
   usageTotals?: UsageTotal[];
   /** `doseCount`: the number of doses. */
+  /** A dose that also changed the settings (it set a course's start day): the other phones are told the settings changed. */
+  settingsChanged?: true;
   count?: number;
   /** `usageDays`: one entry per phone and day, oldest first. */
   usageDays?: UsageDayRow[];

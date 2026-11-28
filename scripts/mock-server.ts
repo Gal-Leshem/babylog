@@ -34,6 +34,8 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
   let offline = false;
   /** Behave like a server from before `sync` (API 0.3.0). */
   let old = false;
+  /** actions answered unknown_action, as by a server a version behind (`__control?refuse=doseCount`; empty to stop) */
+  let refuse: string[] = [];
   // A write that is still on its way (MOCK_DELAY) when a test resets the server must not land in the next test's fresh store.
   let generation = 0;
   const server = createServer((req, res) => {
@@ -48,6 +50,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
       // after 10 s, so with 12 s on every request a check that slipped in before the tap ended as "no connection")
       if (q.has('opsDelay')) opsDelayMs = Number(q.get('opsDelay'));
       if (q.has('old')) old = q.get('old') === '1';
+      if (q.has('refuse')) refuse = (q.get('refuse') ?? '').split(',').filter(Boolean);
       if (q.has('family')) family = q.get('family') === '1';
       if (q.has('forget')) kinds.length = 0;
       if (q.has('reset')) {
@@ -58,6 +61,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
         kinds.length = 0;
         offline = false;
         old = false;
+        refuse = [];
         family = false;
         delayMs = baseDelay;
         opsDelayMs = null;
@@ -99,7 +103,7 @@ export function startMockServer(port = 8787, key = 'test-key', adminKey = 'admin
         const t0 = Date.now();
         // "old": a server from before `sync` (and so also before feedback)
         const act = String((parsed as { action?: string } | null)?.action ?? '');
-        const answer = old && (act === 'sync' || act.startsWith('feedback')) ? { ok: false, error: 'unknown_action', detail: act } : handle(parsed, deps);
+        const answer = (old && (act === 'sync' || act.startsWith('feedback'))) || refuse.includes(act) ? { ok: false, error: 'unknown_action', detail: act } : handle(parsed, deps);
         const p = parsed as { action?: string; ops?: unknown[] } | null;
         const a = answer as { unchanged?: boolean; events?: unknown; changes?: unknown };
         kinds.push(p?.action === 'sync' ? `sync${p.ops?.length ? `:${p.ops.length}` : ''}${a.events ? '+list' : ''}${a.changes ? '+changes' : ''}` : (p?.action ?? '?'));
