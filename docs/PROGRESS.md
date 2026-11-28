@@ -29,12 +29,14 @@ data in the owner's private Google Sheet, server = Google Apps Script web app, h
   "היה לפני" / "בטל" under a marked medicine in the window; History "24 שעות אחרונות"; feedback in the app (🐞); Siri in Hebrew
   and English (two shortcut sets, an asking shortcut, "which side next"), with two fixes to `sign.sh` found on the owner's Mac.
 
-## Where we are (open items with the owner; one list for every area, 27 November 2026)
+## Where we are (open items with the owner; one list for every area, 28 November 2026)
 Everything built is live; the three parallel sessions are closed and their knowledge is in the skills (`CLAUDE.md`).
 `dev` may be ahead of `main` by guides and docs only; they reach `main` with the next app change (owner: docs alone are not
 shipped). Last ship: the slowed full list (27 Nov), with every guide and doc waiting until then.
 
 Waiting for the owner (ask when it fits, do not build before):
+0. **Next feed from the last side?** "מתי ההנקה הבאה צפויה?" counts from the start of the last feeding plus the usual gap
+   (start to start); counting from its last side needs gaps measured end to start. Asked 28 Nov, no answer yet.
 1. **Families, consent at install**: on hold until the owner's legal research (`docs/BACKLOG.md`).
 
 Decided not now (owner, 27 Nov): moving a family's sheet to its own Drive (only when a family asks).
@@ -59,7 +61,8 @@ On hold by the owner:
     Lessons from the Mac: Google answers a POST with a redirect that takes only GET; `shortcuts sign` needs the `.shortcut` extension.
 8. **F17 visit journal**: researched, proposal written, parked at low priority (open decisions in `docs/BACKLOG.md`).
 
-Owner-only steps still open: see "Owner-only actions" below (second parent's phone, an optional second `rotateKey`).
+Owner-only, optional: vitamin D's first-year course comes by itself when the date of birth is saved; the owner's family had it
+set before, so save it again (or set the course in Settings > תרופות). Owner-only steps still open: see "Owner-only actions" below (second parent's phone, an optional second `rotateKey`).
 
 ## How to resume (first 10 minutes in a new session)
 1. Attach the repository with push access (`add_repo`), clone it, `npm ci` (Chromium and Playwright are preinstalled in the sandbox).
