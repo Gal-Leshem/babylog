@@ -29,6 +29,15 @@ describe('feed grouping and next side', () => {
     expect(g.map((x) => x.events.length)).toEqual([2, 2, 1, 1]);
   });
 
+  // owner (28 Nov 2026): the window runs from each press to the next, not from the first: a third and a fourth side 15 minutes
+  // apart are still the same feeding, although the last is 45 minutes after the first
+  it('chains the window from press to press: a third and fourth side within it stay one feeding', () => {
+    const chain = ['10:00', '10:15', '10:30', '10:45', '11:06'].map((t, i) => ev({ type: 'feed', detail: i % 2 ? 'right' : 'left', start: `2026-11-14 ${t}` }));
+    const g = feedGroups(chain, 20);
+    expect(g.map((x) => x.events.length)).toEqual([4, 1]); // 11:06 is 21 minutes after 10:45: a new feeding
+    expect(g[0]!.start).toBe(T('2026-11-14 10:00'));
+  });
+
   it('respects a different window', () => {
     expect(feedGroups(feeds, 0)).toHaveLength(6);
     expect(feedGroups(feeds, 150)).toHaveLength(3); // gaps of 168 and 160 min still split

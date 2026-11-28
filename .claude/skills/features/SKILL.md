@@ -74,6 +74,8 @@ is reviewed against every skill that owns the file.
   made "90 ml", a bottle nobody gave).
 
 ## Owner decisions in force (newest first; history in `docs/CHANGELOG.md`, F15-F18 rounds in `docs/BACKLOG.md`)
+- Merge window (owner, 28 Nov, confirmed as built): it runs from each press to the next (`feedGroups`), so a third or fourth
+  side stays the same feeding while each comes within the window; Home's feed tile and the next side count from the latest press.
 - Medicines with a course (feedback #6 / #7, 28 Nov): after the dose that ends the course (`endsCourse`) the toast or the
   window's row offers "העברה לארכיון"; the "course over" confirm offers it too; archived leaves Home and the window, doses stay,
   "בטל" or Settings brings it back. Last dose: the Xth of X doses (as needed too), or the last day's doses complete; as needed

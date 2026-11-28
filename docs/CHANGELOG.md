@@ -872,6 +872,10 @@ No names, addresses or secrets in this file (the repository is public).
 - Tests: "archive and restore" in Settings seeded a dose on a fixed date (14 Nov) that fell out of the 14 days the app loads
   on 28 Nov and failed with no change; it now seeds yesterday.
 
+- Checked **(owner)**: the merge window already runs from each press to the next (a third and fourth side 15 minutes apart are
+  one feeding), and Home's feed tile and next side count from the latest press. Locked in by a unit test (failed when the
+  window was measured from the first press) and a browser test of the tile.
+
 ## Habits that paid off
 - After adding a regression test, break the fix temporarily and confirm the test fails.
 - Run the browser suite against a slow server; timing bugs only show there.

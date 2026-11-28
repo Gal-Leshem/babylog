@@ -862,3 +862,16 @@ test('an edit of the wake-up keeps who marked it; deleting the wake-up and "בט
   await expect.poll(async () => (await detail()).detail).toBe('woke:Parent One');
   await expect(wakeRow.locator('.rm')).toHaveText('Parent One');
 });
+
+// Owner (28 Nov 2026): several sides in a row are one feeding, and the feed tile counts from the latest of them, not the first.
+test('the feed tile counts from the latest side of a feeding made of several sides', async ({ page, request }) => {
+  await resetServer(request);
+  await seed(request, [
+    { type: 'feed', detail: 'left', start: nowLocal(-45) },
+    { type: 'feed', detail: 'right', start: nowLocal(-30) },
+    { type: 'feed', detail: 'left', start: nowLocal(-15) },
+  ]);
+  await install(page);
+  await expect(page.getByTestId('tile-feed')).toContainText(/לפני 0:1[56] · שמאל/);
+  await expect(page.getByTestId('tile-feed-sub')).toHaveText('הבאה: ימין');
+});
